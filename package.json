@@ -1,0 +1,21 @@
+{
+  "author": {
+    "name": "Jay Sylvester",
+    "email": "jay@jaysylvester.com",
+    "url": "http://jaysylvester.com/"
+  },
+  "name": "citizen",
+  "description": "An event-driven MVC framework for Node.js web applications.",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jaysylvester/citizen"
+  },
+  "main": "./index",
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {
+    "handlebars": "1.*"
+  }
+}
