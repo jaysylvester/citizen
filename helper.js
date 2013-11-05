@@ -143,7 +143,7 @@ function group(params, functions, callback) {
 		});
 		// Copies of params and emitters are passed so these functions can't pollute
 		// the original objects upstream or interfere with each other
-		functions[property](chode.helper.copy(params), chode.helper.copy(emitters));
+		functions[property](citizen.helper.copy(params), citizen.helper.copy(emitters));
 	};
 };
 

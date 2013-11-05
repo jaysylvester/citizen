@@ -4,14 +4,17 @@ var events = require('events'),
 	fs = require('fs'),
 	http = require('http'),
 	querystring = require('querystring'),
-	util = require('util');
+	util = require('util'),
+	config = require('./config').config,
+	helper = require('./helper'),
+	router = require('./router');
 
 module.exports = {
 	'start': start
 };
 
 function error(params, e) {
-	switch ( chode.config.mode ) {
+	switch ( config.mode ) {
 		case 'production':
 			console.log(util.inspect(e, { depth: null }));
 			// TODO: redirect to the error pattern
@@ -26,19 +29,19 @@ function error(params, e) {
 
 function start() {
 	http.createServer( function (request, response) {
-		var route = chode.router.getRoute(request.url), // Get the route name from the URL
+		var route = router.getRoute(request.url), // Get the route name from the URL
 			controller = {},
 			emitters = {},
 			staticPath = '',
 			params = {},
 			body = '',
-			urlParams = chode.router.getUrlParams(request.url);
+			urlParams = router.getUrlParams(request.url);
 
 		// If it's a dynamic page request, fire the controller and serve the response when it's ready
 		if ( !route.isStatic ) {
 
 			params = {
-				'chode': chode,
+				'citizen': citizen,
 				'request': request,
 				'response': response,
 				'route': route,
@@ -47,7 +50,7 @@ function start() {
 			};
 
 			try {
-				emitters = chode.helper.mvcEmitterSet(route.name);
+				emitters = helper.mvcEmitterSet(route.name);
 				controller[route.name] = eval("app.patterns." + route.name + ".controller");
 			
 				// Overwrite the default route parameters with URL parameters if they exist
@@ -67,10 +70,10 @@ function start() {
 				switch ( request.method ) {
 					case 'GET':
 						emitters[route.name].controller.on('ready', function (params) {
-							response.write(chode.helper.renderView(route.name, params));
+							response.write(helper.renderView(route.name, params));
 							response.end();
 						});
-						controller[route.name].handler(chode.helper.copy(params), chode.helper.copy(emitters));
+						controller[route.name].handler(helper.copy(params), helper.copy(emitters));
 						break;
 					case 'POST':
 						params.route.action = 'form';
@@ -79,11 +82,11 @@ function start() {
 						});
 						request.on('end', function () {
 							emitters[route.name].controller.on('ready', function (params) {
-								response.write(chode.helper.renderView(route.name, params));
+								response.write(helper.renderView(route.name, params));
 								response.end();
 							});
 							params.form = querystring.parse(body);
-							controller[route.name].handler(chode.helper.copy(params), chode.helper.copy(emitters));
+							controller[route.name].handler(helper.copy(params), helper.copy(emitters));
 						});
 						break;
 				};
@@ -91,7 +94,7 @@ function start() {
 				error(params, e);
 			}
 		} else {
-			staticPath = chode.config.webRoot + route.name;
+			staticPath = config.webRoot + route.name;
 			fs.exists(staticPath, function (exists) {
 				if ( exists ) {
 					fs.readFile(staticPath, function (err, data) {
@@ -111,5 +114,5 @@ function start() {
 				}
 			});
 		};
-	}).listen(chode.config.port);
+	}).listen(config.port);
 };
