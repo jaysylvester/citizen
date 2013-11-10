@@ -6,6 +6,7 @@ module.exports = function (config) {
 		handlebars = require('handlebars'),
 		util = require('util'),
 		methods = {
+			
 			public: {
 
 				cachePatterns: function (path) {
@@ -94,7 +95,7 @@ module.exports = function (config) {
 					return mergedObject;
 				},
 
-				group: function (params, functions, callback) {
+				functionListener: function (params, functions, callback) {
 					var emitters = {},
 						output = {},
 						ready = {},
@@ -117,15 +118,50 @@ module.exports = function (config) {
 					};
 
 					for ( var property in functions ) {
-						emitters = methods.public.mvcEmitterSet(property);
-						emitters[property].controller.on('ready', function (result) {
+						emitters[property] = new events.EventEmitter();
+						emitters[property].on('ready', function (result) {
 							eval("ready." + property + " = true");
 							eval("output." + property + " = result");
 							groupTracker();
 						});
 						// Copies of params and emitters are passed so these functions can't pollute
 						// the original objects upstream or interfere with each other
-						functions[property](methods.public.copy(params), methods.public.copy(emitters));
+						functions[property](methods.public.copy(params), emitters);
+					};
+				},
+
+				patternListener: function (params, patterns, callback) {
+					var emitters = {},
+						output = {},
+						ready = {},
+						groupTracker = function () {
+							var allReady = true;
+
+							for ( var property in ready ) {
+								if ( ready[property] === false ) {
+									allReady = false;
+								}
+							}
+
+							if ( allReady && typeof callback !== 'undefined' ) {
+								callback(output);
+							}
+						};
+
+					for ( var property in patterns ) {
+						eval("ready." + property + " = false");
+					};
+
+					for ( var property in patterns ) {
+						emitters = methods.public.mvcEmitterSet(property);
+						emitters[property].controller.on('ready', function (result) {
+							eval("ready." + property + " = true");
+							eval("output." + property + " = result");
+							groupTracker();
+						});
+						// A copy of params is passed so these patterns can't pollute
+						// the original object upstream or interfere with each other
+						patterns[property](methods.public.copy(params), emitters);
 					};
 				},
 
@@ -175,7 +211,7 @@ module.exports = function (config) {
 						l = val.length;
 
 						do {
-							val[i] = getValue(val[i]);
+							val[i] = methods.private.getValue(val[i]);
 						} while (++i < l);
 					} else if ( isObject ) {
 						val = methods.public.copy(obj);

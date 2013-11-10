@@ -4,7 +4,9 @@ module.exports = function (config) {
 	var url = require('url'),
 		helper = require('./helper')(config),
 		methods = {
+			
 			public: {
+
 				getRoute: function (urlToParse) {
 					var pathToParse = url.parse(urlToParse).pathname,
 						nameRegex = /^\/([A-Za-z0-9-_]+)\/?.*/,
@@ -56,6 +58,7 @@ module.exports = function (config) {
 					return urlParams;
 				}
 			},
+
 			private: {
 
 			}

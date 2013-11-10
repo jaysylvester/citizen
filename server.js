@@ -9,9 +9,10 @@ module.exports = function (config) {
 		helper = require('./helper')(config),
 		router = require('./router')(config),
 		methods = {
+			
 			public: {
 
-				start: function (port) {
+				start: function () {
 					http.createServer( function (request, response) {
 						var route = router.getRoute(request.url), // Get the route name from the URL
 							controller = {},
@@ -103,7 +104,7 @@ module.exports = function (config) {
 								}
 							});
 						};
-					}).listen(port);
+					}).listen(config.httpPort);
 				}
 			},
 

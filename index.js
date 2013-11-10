@@ -1,18 +1,21 @@
-// framework
+// Initializes the framework and starts the web server
 
 module.exports = function (customConfig) {
 	var helper = require('./helper')(),
 		defaultConfig = {
 			mode: 'production',
 			appPath: '/',
-			webRoot: '/'
+			webRoot: '/',
+			appUrlFolder: '/',
+			httpPort: 80
 		},
-		config = helper.extend(defaultConfig, customConfig);
+		config = helper.extend(defaultConfig, customConfig),
+		server = require('./server')(config);
+
+	server.start();
 
 	return {
 		config: config,
-		helper: require('./helper')(config),
-		router: require('./router')(config),
-		server: require('./server')(config)
+		helper: require('./helper')(config)
 	};
 };
