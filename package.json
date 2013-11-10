@@ -6,7 +6,7 @@
   },
   "name": "citizen",
   "description": "An event-driven MVC framework for Node.js web applications.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "https://github.com/jaysylvester/citizen"
@@ -17,5 +17,15 @@
   },
   "dependencies": {
     "handlebars": "1.*"
-  }
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "readme": "citizen\n=======\n\nAn event-driven MVC framework for Node.js web applications\n",
+  "readmeFilename": "README.md",
+  "bugs": {
+    "url": "https://github.com/jaysylvester/citizen/issues"
+  },
+  "_id": "citizen@0.0.1",
+  "_from": "citizen@"
 }
