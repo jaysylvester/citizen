@@ -8,7 +8,17 @@ The goal of citizen is to handle serving, routing, and event emitter creation, w
 The only dependency at this point is [Handlebars](https://npmjs.org/package/handlebars), but I'll probably add a static file server at some point as well (current static file serving is only a placeholder to ease development).
 
 
-Initalizing citizen
+Installing citizen
+------------------
+
+	npm install citizen
+
+I had some issues because of the Handlebars dependency, but installing with the `--no-bin-links` flag worked:
+
+	npm install citizen --no-bin-links
+
+
+Initializing citizen
 -------------------
 
 citizen can accept arguments when it starts, so initializing it is a bit different from typical Node.js modules because it's a function call. The following assignment will initialize citizen with a default configuration.
@@ -66,7 +76,7 @@ Instead of query strings, citizen uses an SEO-friendly method of passing URL par
 
 citizen also lets you optionally insert relevent content into your URLs, like so:
 
-	http://www.cleverna.me/article/My-clever-article-title/id/237
+	http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
 
 
 MVC Patterns
