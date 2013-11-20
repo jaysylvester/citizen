@@ -41,7 +41,7 @@ You can pass arguments to change citizen's startup parameters:
 
 		// If the full web address is 'http://www.mysite.com/to/myapp', then this setting would be '/to/myapp'.
 		// Default is '/'.
-		appUrlFolder: '/',
+		appUrlFolder: '/to/myapp',
 
 		// Port for the web server, which citizen creates and starts automatically on initialization.
 		// Default is 80.

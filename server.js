@@ -9,7 +9,7 @@ module.exports = function (config) {
 		helper = require('./helper')(config),
 		router = require('./router')(config),
 		methods = {
-			
+
 			public: {
 
 				start: function () {
@@ -35,7 +35,7 @@ module.exports = function (config) {
 
 							try {
 								emitters = helper.mvcEmitterSet(route.name);
-								controller[route.name] = eval("app.patterns." + route.name + ".controller");
+								controller = require(config.appPath + '/patterns/' + route.name + '/' + route.name + '-controller');
 							
 								// Overwrite the default route parameters with URL parameters if they exist
 								if ( typeof urlParams.type !== 'undefined' ) {
@@ -53,11 +53,11 @@ module.exports = function (config) {
 
 								switch ( request.method ) {
 									case 'GET':
-										emitters[route.name].controller.on('ready', function (params) {
+										emitters.controller.on('ready', function (params) {
 											response.write(helper.renderView(route.name, params));
 											response.end();
 										});
-										controller[route.name].handler(helper.copy(params), helper.copy(emitters));
+										controller.handler(helper.copy(params), helper.copy(emitters));
 										break;
 									case 'POST':
 										params.route.action = 'form';
@@ -65,12 +65,12 @@ module.exports = function (config) {
 											body += chunk.toString();
 										});
 										request.on('end', function () {
-											emitters[route.name].controller.on('ready', function (params) {
+											emitters.controller.on('ready', function (params) {
 												response.write(helper.renderView(route.name, params));
 												response.end();
 											});
 											params.form = querystring.parse(body);
-											controller[route.name].handler(helper.copy(params), helper.copy(emitters));
+											controller.handler(helper.copy(params), helper.copy(emitters));
 										});
 										break;
 								};

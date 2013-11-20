@@ -6,7 +6,7 @@ module.exports = function (config) {
 		handlebars = require('handlebars'),
 		util = require('util'),
 		methods = {
-			
+
 			public: {
 
 				cachePatterns: function (path) {
@@ -95,8 +95,8 @@ module.exports = function (config) {
 					return mergedObject;
 				},
 
-				functionListener: function (params, functions, callback) {
-					var emitters = {},
+				groupListener: function (functions, callback) {
+					var emitter = {},
 						output = {},
 						ready = {},
 						groupTracker = function () {
@@ -114,54 +114,30 @@ module.exports = function (config) {
 						};
 
 					for ( var property in functions ) {
-						eval("ready." + property + " = false");
+						ready[property] = false;
 					};
 
 					for ( var property in functions ) {
-						emitters[property] = new events.EventEmitter();
-						emitters[property].on('ready', function (result) {
-							eval("ready." + property + " = true");
-							eval("output." + property + " = result");
-							groupTracker();
-						});
-						// Copies of params and emitters are passed so these functions can't pollute
-						// the original objects upstream or interfere with each other
-						functions[property](methods.public.copy(params), emitters);
-					};
-				},
-
-				patternListener: function (params, patterns, callback) {
-					var emitters = {},
-						output = {},
-						ready = {},
-						groupTracker = function () {
-							var allReady = true;
-
-							for ( var property in ready ) {
-								if ( ready[property] === false ) {
-									allReady = false;
-								}
-							}
-
-							if ( allReady && typeof callback !== 'undefined' ) {
-								callback(output);
-							}
-						};
-
-					for ( var property in patterns ) {
-						eval("ready." + property + " = false");
-					};
-
-					for ( var property in patterns ) {
-						emitters = methods.public.mvcEmitterSet(property);
-						emitters[property].controller.on('ready', function (result) {
-							eval("ready." + property + " = true");
-							eval("output." + property + " = result");
-							groupTracker();
-						});
-						// A copy of params is passed so these patterns can't pollute
-						// the original object upstream or interfere with each other
-						patterns[property](methods.public.copy(params), emitters);
+						if ( functions[property]['controller'] ) {
+							emitters = methods.public.mvcEmitterSet(property);
+							emitters.controller.on('ready', function (result) {
+								ready[this.name] = true;
+								output[this.name] = result;
+								groupTracker();
+							});
+							// A copy of params is passed so these patterns can't pollute
+							// the original object upstream or interfere with each other
+							functions[property]['controller'](methods.public.copy(functions[property]['args']), emitters);
+						} else {
+							emitter = new events.EventEmitter();
+							emitter['name'] = property;
+							emitter.on('ready', function (result) {
+								ready[this.name] = true;
+								output[this.name] = result;
+								groupTracker();
+							});
+							functions[property]['method'](functions[property]['args'], emitter);
+						}
 					};
 				},
 
@@ -172,10 +148,10 @@ module.exports = function (config) {
 				mvcEmitterSet: function (name) {
 					var emitters = {};
 
-					emitters[name] = {};
-					emitters[name].model = new events.EventEmitter();
-					emitters[name].view = new events.EventEmitter();
-					emitters[name].controller = new events.EventEmitter();
+					emitters.model = new events.EventEmitter();
+					emitters.view = new events.EventEmitter();
+					emitters.controller = new events.EventEmitter();
+					emitters.controller.name = name;
 
 					return emitters;
 				},
