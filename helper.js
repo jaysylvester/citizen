@@ -23,12 +23,14 @@ module.exports = function (config) {
 								viewContents = fs.readFileSync(path + '/' + patternName + '/' + patternName + '.html', { 'encoding': 'utf8' });
 								viewContents = viewContents.replace(/[\n|\t|\r]/g, '');
 								viewContents = viewContents.replace(/'/g, "\\'");
-								eval("patterns." + patternName + " = {}");
-								eval("patterns." + patternName + ".controller = require('" + path + "/" + patternName + "/" + patternName + "-controller')");
-								eval("patterns." + patternName + ".model = require('" + path + "/" + patternName + "/" + patternName + "-model')");
-								eval("patterns." + patternName + ".view = {}");
-								eval("patterns." + patternName + ".view.raw = '" + viewContents + "'");
-								eval("patterns." + patternName + ".view.compiled = handlebars.compile(viewContents)");
+								patterns[patternName] = {
+									model: require(path + "/" + patternName + "/" + patternName + "-model"),
+									controller: require(path + "/" + patternName + "/" + patternName + "-controller"),
+									view: {
+										raw: viewContents,
+										compiled: handlebars.compile(viewContents)
+									}
+								};
 							} catch (e) {
 								console.log(util.inspect(e));
 							}
@@ -60,10 +62,10 @@ module.exports = function (config) {
 					};
 
 					for ( var property in functions ) {
-						eval("ready." + property + " = false");
+						ready[property] = false;
 					};
 
-
+					// TODO
 					// Create an array containing the incoming functions and their 'ready' emitters in reverse order,
 					// then loop over the array, firing each function and passing the next function (next index)
 					// into the current function as a callback. At the end of the array, fire the final function
@@ -125,8 +127,8 @@ module.exports = function (config) {
 								output[this.name] = result;
 								groupTracker();
 							});
-							// A copy of params is passed so these patterns can't pollute
-							// the original object upstream or interfere with each other
+							// A copy of args is passed in case it contains shared objects so
+							// the original isn't polluted by changes made inside the pattern
 							functions[property]['controller'](methods.public.copy(functions[property]['args']), emitters);
 						} else {
 							emitter = new events.EventEmitter();
@@ -136,7 +138,7 @@ module.exports = function (config) {
 								output[this.name] = result;
 								groupTracker();
 							});
-							functions[property]['method'](functions[property]['args'], emitter);
+							functions[property]['method'](methods.public.copy(functions[property]['args']), emitter);
 						}
 					};
 				},
@@ -157,12 +159,11 @@ module.exports = function (config) {
 				},
 
 				renderView: function (view, params) {
-					var template = eval('app.patterns.' + view + '.view.compiled'),
-						viewOutput = '';
+					var viewOutput = '';
 
 					switch ( params.route.format ) {
 						case 'html':
-							viewOutput = template(params);
+							viewOutput = app.patterns[view].view.compiled(params);
 							break;
 						case 'json':
 							viewOutput = JSON.stringify(params.content);

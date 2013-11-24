@@ -4,7 +4,7 @@ module.exports = function (config) {
 	var url = require('url'),
 		helper = require('./helper')(config),
 		methods = {
-			
+
 			public: {
 
 				getRoute: function (urlToParse) {
@@ -47,12 +47,7 @@ module.exports = function (config) {
 							pathToParse = pathToParse.replace(/(.+\/)[A-Za-z]+[0-9]*\/[A-Za-z0-9-_]+\/?$/, '$1');
 						}
 						for ( var i = 0; i <= parameterNames.length-1; i+=1 ) {
-							if ( helper.isNumeric(parameterValues[i]) ) {
-								assignment = 'urlParams.' + parameterNames[i] + ' = ' + parameterValues[i] + ';';
-							} else {
-								assignment = 'urlParams.' + parameterNames[i] + ' = \'' + parameterValues[i] + '\';'
-							};
-							eval(assignment);
+							urlParams[parameterNames[i]] = parameterValues[i];
 						}
 					};
 					return urlParams;

@@ -6,7 +6,7 @@
   },
   "name": "citizen",
   "description": "An event-driven MVC framework for Node.js web applications.",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "repository": {
     "type": "git",
     "url": "https://github.com/jaysylvester/citizen"
