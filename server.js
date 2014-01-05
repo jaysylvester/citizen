@@ -21,20 +21,23 @@ module.exports = function (config) {
 							params = {},
 							body = '',
 							urlParams = router.getUrlParams(request.url);
+							// cookies = methods.private.getCookies(request.headers.cookie);
+
+							// console.log(util.inspect(request.headers.cookie));
 
 						// If it's a dynamic page request, fire the controller and serve the response when it's ready
 						if ( !route.isStatic ) {
 
 							params = {
-								'request': request,
-								'response': response,
-								'route': route,
-								'urlParams': urlParams,
-								'form': {}
+								request: request,
+								response: response,
+								route: route,
+								urlParams: urlParams,
+								// cookies: request.headers.cookie,
+								form: {}
 							};
 
 							try {
-								emitters = helper.mvcEmitterSet(route.name);
 								controller = require(config.appPath + '/patterns/' + route.name + '/' + route.name + '-controller');
 							
 								// Overwrite the default route parameters with URL parameters if they exist
@@ -53,11 +56,15 @@ module.exports = function (config) {
 
 								switch ( request.method ) {
 									case 'GET':
-										emitters.controller.on('ready', function (params) {
-											response.write(helper.renderView(route.name, params));
+										helper.listener({
+											pattern: {
+												method: controller.handler,
+												args: params
+											}
+										}, function (output) {
+											response.write(helper.renderView(output.pattern));
 											response.end();
 										});
-										controller.handler(helper.copy(params), helper.copy(emitters));
 										break;
 									case 'POST':
 										params.route.action = 'form';
@@ -65,12 +72,16 @@ module.exports = function (config) {
 											body += chunk.toString();
 										});
 										request.on('end', function () {
-											emitters.controller.on('ready', function (params) {
-												response.write(helper.renderView(route.name, params));
+											params.form = querystring.parse(body);
+											helper.listener({
+												pattern: {
+													method: controller.handler,
+													args: params
+												}
+											}, function (output) {
+												response.write(helper.renderView(output.pattern));
 												response.end();
 											});
-											params.form = querystring.parse(body);
-											controller.handler(helper.copy(params), helper.copy(emitters));
 										});
 										break;
 								};
