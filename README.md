@@ -35,6 +35,9 @@ You can pass arguments to change citizen's startup parameters:
 		// Full directory path pointing to this app. Default is '/'.
 		appPath: '/path/to/your/app',
 
+		// Path to your MVC patterns
+		patternPath: '/path/to/your/patterns',
+
 		// Full directory path pointing to your web root (necessary if citizen will be serving up your static
 		// files as well, but not recommended). Default is '/'.
 		webRoot: '/srv/www/myapp/static',
