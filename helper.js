@@ -131,16 +131,21 @@ module.exports = function (config) {
 					return viewOutput;
 				},
 
-				setCookie: function (args) {
-					var defaults = {
-							ssl: false
-						},
-						mergedArgs = methods.public.extend(defaults, args);
+				parseCookie: function (cookie) {
+					var pairs = [],
+						pair = [],
+						cookies = {};
 
-				},
+					if ( cookie ) {
+						pairs = cookie.split(';');
+						for ( var i = 0; i < pairs.length; i += 1 ) {
+							pair = pairs[i].trim();
+							pair = pair.split('=');
+							cookies[pair[0]] = pair[1];
+						}
+					}
 
-				getCookie: function (name) {
-
+					return cookies;
 				}
 			},
 

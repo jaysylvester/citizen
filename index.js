@@ -16,6 +16,7 @@ module.exports = function (customConfig) {
 
 	return {
 		config: config,
-		helper: require('./helper')(config)
+		helper: require('./helper')(config),
+		server: server
 	};
 };

@@ -20,10 +20,8 @@ module.exports = function (config) {
 							staticPath = '',
 							params = {},
 							body = '',
-							urlParams = router.getUrlParams(request.url);
-							// cookies = methods.private.getCookies(request.headers.cookie);
-
-							// console.log(util.inspect(request.headers.cookie));
+							urlParams = router.getUrlParams(request.url),
+							cookie = helper.parseCookie(request.headers.cookie);
 
 						// If it's a dynamic page request, fire the controller and serve the response when it's ready
 						if ( !route.isStatic ) {
@@ -33,7 +31,7 @@ module.exports = function (config) {
 								response: response,
 								route: route,
 								urlParams: urlParams,
-								// cookies: request.headers.cookie,
+								cookie: cookie,
 								form: {}
 							};
 
@@ -56,15 +54,7 @@ module.exports = function (config) {
 
 								switch ( request.method ) {
 									case 'GET':
-										helper.listener({
-											pattern: {
-												method: controller.handler,
-												args: params
-											}
-										}, function (output) {
-											response.write(helper.renderView(output.pattern));
-											response.end();
-										});
+										respond();
 										break;
 									case 'POST':
 										params.route.action = 'form';
@@ -73,18 +63,33 @@ module.exports = function (config) {
 										});
 										request.on('end', function () {
 											params.form = querystring.parse(body);
-											helper.listener({
-												pattern: {
-													method: controller.handler,
-													args: params
-												}
-											}, function (output) {
-												response.write(helper.renderView(output.pattern));
-												response.end();
-											});
+											respond();
 										});
 										break;
 								};
+
+								function respond() {
+									helper.listener({
+										pattern: {
+											method: controller.handler,
+											args: params
+										}
+									}, function (output) {
+										var cookie = [];
+										if ( output.pattern.setCookie ) {
+											for ( var property in output.pattern.setCookie ) {
+												cookie.push(methods.private.buildCookie({
+													name: property,
+													value: output.pattern.setCookie[property]['value'],
+													expires: output.pattern.setCookie[property]['expires']
+												}));
+											}
+											response.setHeader('Set-Cookie', cookie);
+										}
+										response.write(helper.renderView(output.pattern));
+										response.end();
+									});
+								}
 							} catch ( e ) {
 								methods.private.error(params, e);
 							}
@@ -117,6 +122,7 @@ module.exports = function (config) {
 						};
 					}).listen(config.httpPort);
 				}
+
 			},
 
 			private: {
@@ -133,6 +139,24 @@ module.exports = function (config) {
 							params.response.end(e.stack);
 							break;
 					};
+				},
+
+				buildCookie: function (args) {
+					var defaults = {
+							ssl: false,
+							path: '/',
+							expires: 0
+						},
+						cookie = helper.extend(defaults, args),
+						cookieExpires = '';
+
+					if ( cookie.expires > 0 ) {
+						cookieExpires = new Date();
+						cookieExpires.setTime(cookieExpires.getTime() + cookie.expires);
+						cookieExpires = cookieExpires.toUTCString();
+					}
+
+					return cookie.name + '=' + cookie.value + ';path=' + cookie.path + ';expires=' + cookieExpires + ';';
 				}
 
 			}
