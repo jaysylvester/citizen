@@ -252,7 +252,7 @@ Cookie variables aren't available immediately after you set them. citizen has to
 Setting Session Variables
 -------------------------
 
-If sessions are enabled, citizen creates an array called `CTZN.sessions` and stores its session information there. You should avoid accessing this array directly and use `args.session` instead, which automatically references the current user's session.
+If sessions are enabled, citizen creates an object called `CTZN.sessions` and stores its session information there. You should avoid accessing this object directly and use `args.session` instead, which automatically references the current user's session.
 
 By default, the session has one property: `args.session.id`. This property is also sent to the browser as a cookie called `CTZN_sessionID`.
 
