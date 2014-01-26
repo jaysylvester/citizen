@@ -8,6 +8,7 @@ The goal of citizen is to handle serving, routing, and event emitter creation, w
 The only dependency at this point is [Handlebars](https://npmjs.org/package/handlebars). Current static file serving is just a hack to enable development; I use [nginx](http://nginx.org) as a front end and I'm debating whether I should even add a module to incorporate file serving into citizen.
 
 
+
 Installing citizen
 ------------------
 
@@ -16,6 +17,7 @@ Installing citizen
 I had some issues because of the Handlebars dependency, but installing with the `--no-bin-links` flag worked:
 
     npm install citizen --no-bin-links
+
 
 
 Initializing citizen
@@ -59,10 +61,12 @@ You can pass arguments to change citizen's startup parameters:
 The only objects citizen returns are its configuration (`app.config`) and helper functions (`app.helper`). It also creates a global namespace called `CTZN` that it uses for session storage and other things. You should avoid accessing this namespace directly; anything that you might use in your application will be exposed by the server through local scopes.
 
 
+
 Starting citizen
 ----------------
 
     app.server.start();
+
 
 
 Routing and URLs
@@ -90,9 +94,10 @@ Instead of query strings, citizen uses an SEO-friendly method of passing URL par
 
 citizen also lets you optionally insert relevent content into your URLs, like so:
 
-    http://www.cleverna.me/article/**My-clever-article-title**/id/237/page/2
+    http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
 
 This content is not parsed by the framework in any way and can be whatever you like, but it must always immediately follow the pattern name and precede any name/value pairs.
+
 
 
 MVC Patterns
@@ -122,12 +127,19 @@ Each controller requires at least one public function named `handler()`. The cit
 When it's first passed from the server, `args` contains the following objects:
 
 `request`:    The inital request object received by the server
+
 `response`:   The response object sent by the server
+
 `route`:      Details of the route, such as the requested URL and the name of the route (controller)
+
 `url`:        Any URL parameters that were passed (See "Routing and URLs" above)
+
 `content`:    An empty object where you can place content that will be delivered to the view
+
 `form`:       Data collected from a POST, if available
+
 `cookie`:     An object containing any cookies that were sent with the request
+
 `session`:    An object containing any session variables
 
 Based on the example URL above, you'll have the following `url` object:
@@ -150,6 +162,7 @@ You'll notice that `args` gets passed back to the server, which has two purposes
         emitter.emit('ready', args);
     };
 
+Here's a simple model:
 
     // article-model.js
 
@@ -202,6 +215,7 @@ In `article.html`, you can now reference the `content` object like so:
 The other reason `args` gets passed back to the server is so that you can set cookies and session variables, which are discussed next.
 
 
+
 Setting Cookies
 ---------------
 
@@ -234,6 +248,7 @@ Other cookie options include `path` (default is `/`), `httpOnly` (default is `tr
 Cookie variables aren't available immediately after you set them. citizen has to receive the output from the controller before it can send the cookie to the user agent, so use a local instance of the variable if you need access to it during the same request.
 
 
+
 Setting Session Variables
 -------------------------
 
@@ -246,6 +261,7 @@ Setting session variables is similar to setting cookie variables. Just use `args
     args.session.username = 'Danny';
 
 Just like cookies, session variables aren't available during the same request, so use a local instance if you need to access this data right away.
+
 
 
 Debugging
