@@ -272,8 +272,8 @@ Let's say our article model has two methods that need to be called before return
 
 
 
-Setting Cookies
----------------
+Cookies
+-------
 
 You set cookies by appending them to `args.set.cookie`. You can set one at a time or create a complete cookie object. The following code tells the server to set `username` and `nickname` cookies that never expire:
 
@@ -301,12 +301,14 @@ The following code sets the same cookies, but they expire at the end of the brow
 
 Other cookie options include `path` (default is `/`), `httpOnly` (default is `true`), and `secure` (default is `false`).
 
+Cookies you've set are available in `args.cookie`.
+
 Cookie variables aren't available immediately after you set them. citizen has to receive the output from the controller before it can send the cookie to the user agent, so use a local instance of the variable if you need access to it during the same request.
 
 
 
-Setting Session Variables
--------------------------
+Session Variables
+-----------------
 
 If sessions are enabled, citizen creates an object called `CTZN.sessions` and stores its session information there. You should avoid accessing this object directly and use `args.session` instead, which automatically references the current user's session.
 
@@ -315,6 +317,8 @@ By default, the session has two properties: `args.session.id` and `args.session.
 Setting session variables is similar to setting cookie variables. Just use `args.set.session`:
 
     args.session.username = 'Danny';
+
+Session variables are available in `args.session`.
 
 Just like cookies, session variables aren't available during the same request, so use a local instance if you need to access this data right away.
 
@@ -342,4 +346,11 @@ Helpers
 
 citizen includes some basic helper functions to make your life easier.
 
-TBD...
+Coming soon...
+
+
+
+Views
+-----
+
+Coming soon...
