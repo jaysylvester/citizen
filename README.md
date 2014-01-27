@@ -243,7 +243,7 @@ Let's say our article model has two methods that need to be called before return
     function handler(args, emitter) {
         app.helper.listener({
             getContent: {                                     // The property name, which can be any valid JavaScript variable name
-                method: app.pattern.article.model.getContent, // The method you want to call
+                method: app.patterns.article.model.getContent, // The method you want to call
                 args:   {                                     // Optional arguments object that gets passed to the method above
                     id:   237,
                     page: 2
