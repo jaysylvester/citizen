@@ -58,7 +58,17 @@ You can pass arguments to change citizen's startup parameters:
         sessionLength: 600000
     });
 
-The only objects citizen returns are its configuration (`app.config`) and helper functions (`app.helper`). It also creates a global namespace called `CTZN` that it uses for session storage and other things. You should avoid accessing this namespace directly; anything that you might use in your application will be exposed by the server through local scopes.
+Objects returned by citizen:
+
+`app.config`:   Includes the configuration settings you supplied at startup
+
+`app.helper`:   A function library to make it easier to work with citizen
+
+`app.patterns`: Controllers, models, and views (both raw and compiled) from your supplied patterns, which you can use instead of `require`
+
+`CTZN`:         A global namespace used by citizen for session storage, among other things.
+
+You should avoid accessing or modifying the `CTZN` namespace directly; anything that you might need in your application will be exposed by the server through local scopes.
 
 
 
@@ -110,7 +120,7 @@ citizen relies on a predefined model-view-controller pattern that has a few stri
 The article pattern requires the following structure:
 
     /your-app-path/patterns/article/article-controller.js
-    /your-app-path/patterns/article/article-model.js
+    /your-app-path/patterns/article/article-model.js        // 
     /your-app-path/patterns/article/article.html
 
 Each controller requires at least one public function named `handler()`. The citizen server calls `handler()` after it processes the initial request and passes it two arguments: an object containing the parameters of the request and an emitter for the controller to emit when it's done.
@@ -158,7 +168,8 @@ You'll notice that `args` gets passed back to the server, which has two purposes
     exports.handler = handler;
 
     function handler(args, emitter) {
-        args.content = model.getContent(args.url.id, args.url.page);
+        args.content = model.getContent(args.url.id, args.url.page); // Alternatively, you can use app.patterns.article.model.getContent()
+                                                                     // instead of using require('./article-model.js') above.
         emitter.emit('ready', args);
     };
 
@@ -216,6 +227,51 @@ The other reason `args` gets passed back to the server is so that you can set co
 
 
 
+listener()
+----------
+
+The previous example has simple methods that return static content immediately, but things are rarely that simple. The `listener()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listener()` functions for very powerful asynchronous function calls.
+
+`listener()` takes two arguments: an object containing one or several methods you want to call, and a callback to handle the output. `listener()` requires that your functions be written to accept an optional `args` object and an `emitter` object.
+
+Let's say our article model has two methods that need to be called before returning the results to the controller, and those methods need to be called asynchronously. One is called getContent() and the other is getViewers(). Assume that getContent() makes an asynchronous database call and won't be able to return its output immediately, so we have to listen for when it's ready and then react.
+
+    // article-controller.js
+
+    exports.handler = handler;
+
+    function handler(args, emitter) {
+        app.helper.listener({
+            getContent: {                                     // The property name, which can be any valid JavaScript variable name
+                method: app.pattern.article.model.getContent, // The method you want to call
+                args:   {                                     // Optional arguments object that gets passed to the method above
+                    id:   237,
+                    page: 2
+                }
+            },
+            getViewers: {
+                method: app.pattern.article.model.getViewers
+            }
+        }, function (output) {
+            args.content = output.getContent;                 // The property names you pass in become the property names within
+            args.viewers = output.getViewers;                 // the output object
+            emitter.emit('ready', args);                      // Emit `ready` now that we have the handler output
+        });
+    }
+
+
+    // article-model.js
+
+    exports.getContent = getContent;
+
+    function getContent(args, emitter) {
+        myFunction.that.gets.my.data({ id: args.id, page: args.page }, function (data) {
+            emitter.emit('ready', data);                      // When the emitter emits ready, the callback in the handler is fired
+        });
+    };
+
+
+
 Setting Cookies
 ---------------
 
@@ -254,7 +310,7 @@ Setting Session Variables
 
 If sessions are enabled, citizen creates an object called `CTZN.sessions` and stores its session information there. You should avoid accessing this object directly and use `args.session` instead, which automatically references the current user's session.
 
-By default, the session has one property: `args.session.id`. This property is also sent to the browser as a cookie called `CTZN_sessionID`.
+By default, the session has two properties: `args.session.id` and `args.session.expires`. The session ID is also sent to the browser as a cookie called `CTZN_sessionID`.
 
 Setting session variables is similar to setting cookie variables. Just use `args.set.session`:
 
@@ -278,3 +334,12 @@ You can specify the exact object to dump with the `debug` URL parameter:
     http://www.cleverna.me/article/id/237/page/2/debug/CTZN.session/dump/view   // Dumps CTZN.session to the browser
 
 In `development` mode, you must specify the `debug` parameter to enable debugging. If you're in `production` mode, debugging is disabled.
+
+
+
+Helpers
+-------
+
+citizen includes some basic helper functions to make your life easier.
+
+TBD...
