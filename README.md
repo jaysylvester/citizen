@@ -250,7 +250,7 @@ Let's say our article model has two methods that need to be called before return
                 }
             },
             getViewers: {
-                method: app.pattern.article.model.getViewers
+                method: app.patterns.article.model.getViewers
             }
         }, function (output) {
             args.content = output.getContent;                 // The property names you pass in become the property names within
