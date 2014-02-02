@@ -4,7 +4,6 @@ module.exports = function (config) {
     var events = require('events'),
         fs = require('fs'),
         http = require('http'),
-        querystring = require('querystring'),
         util = require('util'),
         helper = require('./helper')(config),
         router = require('./router')(config),
@@ -18,12 +17,13 @@ module.exports = function (config) {
                         var date = new Date(),
                             route = router.getRoute(request.url),
                             controller = {},
-                            emitters = {},
                             staticPath = '',
                             params = {},
                             body = '',
                             urlParams = router.getUrlParams(request.url),
                             sessionID = 0;
+
+                        // TODO: extend querystring with urlParams (url parameters should take precedence over query strings)
 
                         // If it's a dynamic page request, fire the controller and serve the response when it's ready
                         if ( !route.isStatic ) {
@@ -43,11 +43,11 @@ module.exports = function (config) {
                             }
 
                             params = {
+                                config: config,
                                 request: request,
                                 response: response,
                                 route: route,
                                 url: urlParams,
-                                content: {},
                                 form: {},
                                 cookie: helper.parseCookie(request.headers.cookie),
                                 session: {},
@@ -59,15 +59,15 @@ module.exports = function (config) {
                             };
 
                             if ( config.sessions ) {
-                                if ( params.cookie.CTZN_sessionID && CTZN.sessions[params.cookie.CTZN_sessionID] && CTZN.sessions[params.cookie.CTZN_sessionID].expires > date.getTime() ) {
-                                    CTZN.sessions[params.cookie.CTZN_sessionID].expires = date.getTime() + config.sessionLength;
-                                    params.session = CTZN.sessions[params.cookie.CTZN_sessionID];
+                                if ( params.cookie.ctzn_session_id && CTZN.sessions[params.cookie.ctzn_session_id] && CTZN.sessions[params.cookie.ctzn_session_id].expires > date.getTime() ) {
+                                    CTZN.sessions[params.cookie.ctzn_session_id].expires = date.getTime() + config.sessionLength;
+                                    params.session = CTZN.sessions[params.cookie.ctzn_session_id];
                                 } else {
                                     sessionID = session.new();
-                                    params.set.cookie.CTZN_sessionID = {
+                                    params.set.cookie.ctzn_session_id = {
                                         value: sessionID
                                     };
-                                    params.cookie.CTZN_sessionID = {
+                                    params.cookie.ctzn_session_id = {
                                         value: sessionID
                                     };
                                     params.session = CTZN.sessions[sessionID];
@@ -102,34 +102,36 @@ module.exports = function (config) {
                                             args: helper.copy(params)
                                         }
                                     }, function (output) {
-                                        var cookie = methods.private.buildCookie(helper.extend(params.set.cookie, output.pattern.set.cookie)),
+                                        var cookie = [],
                                             debugOutput = {};
 
+                                        if ( output.pattern.set && output.pattern.set.cookie ) {
+                                            params.set.cookie = helper.extend(params.set.cookie, output.pattern.set.cookie);
+                                        }
+                                        cookie = methods.private.buildCookie(params.set.cookie);
                                         if ( cookie.length ) {
                                             response.setHeader('Set-Cookie', cookie);
                                         }
 
-                                        if ( config.sessions ) {
-                                            // If set.session has properties, merge them with the existing session object
-                                            for ( var property in output.pattern.set.session ) {
-                                                CTZN.sessions[params.session.id] = helper.extend(CTZN.sessions[params.session.id], output.pattern.set.session);
-                                                break;
-                                            }
-                                        }
-
-                                        // If set.redirect has properties, send the redirect
-                                        if ( output.pattern.set.redirect.url ) {
-                                            response.writeHead(output.pattern.set.redirect.statusCode, {
-                                                'Location': output.pattern.set.redirect.url
-                                            });
+                                        // If sessions are enabled and set.session has properties, merge those properties
+                                        // with the existing session
+                                        if ( config.sessions && output.pattern.set && output.pattern.set.session ) {
+                                            CTZN.sessions[params.session.id] = helper.extend(CTZN.sessions[params.session.id], output.pattern.set.session);
                                         }
 
                                         // Debug handling
                                         if ( config.mode === 'debug' || ( config.mode === 'development' && params.url.debug ) ) {
-                                            output.pattern.debugOutput = methods.private.debug(output.pattern, request, response);
+                                            output.pattern.context.debugOutput = methods.private.debug(output.pattern.context, params);
                                         }
 
-                                        response.write(helper.renderView(output.pattern));
+                                        response.write(helper.renderView(params.route.name, params.route.format, helper.extend(output.pattern.context, params)));
+
+                                        // If set.redirect has properties, send the redirect
+                                        if ( output.pattern.set && output.pattern.set.redirect ) {
+                                            response.writeHead(output.pattern.set.redirect.statusCode, {
+                                                'Location': output.pattern.set.redirect.url
+                                            });
+                                        }
 
                                         // TODO: call onResponseEnd method inside here
                                         response.end();
@@ -172,17 +174,26 @@ module.exports = function (config) {
 
             private: {
 
-                debug: function (patternOutput, request, response) {
-                    var debug = patternOutput.url.debug || 'patternOutput',
-                        dump = patternOutput.url.dump || 'console';
+                debug: function (patternOutput, params) {
+                    var debug = 'patternOutput',
+                        showHidden = params.url.ctzn_debugShowHidden || false,
+                        depth = params.url.ctzn_debugDepth || 2,
+                        colors = params.url.ctzn_debugColors || false,
+                        dump = params.url.ctzn_dump || 'console',
+                        request = params.request,
+                        response = params.response;
+
+                    if ( params.url.ctzn_debug ) {
+                        debug = 'patternOutput.' + params.url.ctzn_debug;
+                    }
 
                     switch ( dump ) {
                         case 'console':
-                            console.log(debug + ':\n' + util.inspect(eval(debug)));
+                            console.log(debug + ':\n' + util.inspect(eval(debug), { showHidden: showHidden, depth: depth, colors: colors }));
                             return false;
                             break;
                         case 'view':
-                            return debug + ': ' + JSON.stringify(util.inspect(eval(debug)));
+                            return debug + ': ' + JSON.stringify(util.inspect(eval(debug), { showHidden: showHidden, depth: depth, colors: colors }));
                             break;
                     }
                 },
@@ -217,6 +228,7 @@ module.exports = function (config) {
 
                     for ( var property in cookies ) {
                         defaults = {
+                            value: '',
                             path: '/',
                             expires: 'session',
                             httpOnly: true,

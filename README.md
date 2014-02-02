@@ -30,8 +30,8 @@ citizen can accept arguments when it starts, so initializing it is a bit differe
 You can pass arguments to change citizen's startup parameters:
 
     app = require('citizen')({
-        // Mode determines certain framework behaviors such as error handling (dumps vs. friendly errors).
-        // Options are 'debug', 'development', or 'production'. Default is 'production'.
+        // Mode determines certain framework behaviors such as error handling (dumps vs. friendly
+        // errors). Options are 'debug', 'development', or 'production'. Default is 'production'.
         mode: 'debug',
 
         // Full directory path pointing to this app. Default is '/'.
@@ -40,12 +40,12 @@ You can pass arguments to change citizen's startup parameters:
         // Path to your MVC patterns
         patternPath: '/path/to/your/patterns',
 
-        // Full directory path pointing to your web root (necessary if citizen will be serving up your static
-        // files as well, but not recommended). Default is '/'.
+        // Full directory path pointing to your web root (necessary if citizen will be serving up
+        // your static files as well, but not recommended). Default is '/'.
         webRoot: '/srv/www/myapp/static',
 
-        // If the full web address is 'http://www.mysite.com/to/myapp', then this setting would be '/to/myapp'.
-        // Default is '/'.
+        // If the full web address is 'http://www.mysite.com/to/myapp', then this setting would be
+        // '/to/myapp'. Default is '/'.
         appUrlFolder: '/to/myapp',
 
         // Port for the web server. Default is 80.
@@ -60,20 +60,18 @@ You can pass arguments to change citizen's startup parameters:
 
 Objects returned by citizen:
 
-`app.config`:   Includes the configuration settings you supplied at startup
-
-`app.helper`:   A function library to make it easier to work with citizen
-
-`app.patterns`: Controllers, models, and views (both raw and compiled) from your supplied patterns, which you can use instead of `require`
-
-`CTZN`:         A global namespace used by citizen for session storage, among other things.
+- `app.config`:   Includes the configuration settings you supplied at startup
+- `app.helper`:   A function library to make it easier to work with citizen
+- `app.patterns`: Controllers, models, and views (both raw and compiled) from your supplied patterns, which you can use instead of `require`
+- `app.server`:   Functions related to starting and running the web server
+- `CTZN`:         A global namespace used by citizen for session storage, among other things.
 
 You should avoid accessing or modifying the `CTZN` namespace directly; anything that you might need in your application will be exposed by the server through local scopes.
 
 
 
-Starting citizen
-----------------
+Starting the web server
+-----------------------
 
     app.server.start();
 
@@ -84,7 +82,7 @@ Routing and URLs
 
 Apps using citizen have a simple URL structure that determines which controller to fire, passes URL parameters, and makes a bit of room for SEO-friendly content. The structure looks like this:
 
-    http://www.site.com/pattern-name/SEO-content-goes-here/parameterName/value/anotherParameter/anotherValue
+    http://www.site.com/pattern-name/SEO-content-goes-here/parameter/value/parameter2/value2
 
 For example, let's say your site's base URL is:
 
@@ -98,79 +96,67 @@ If you have an `article` pattern, you'd request it like this:
 
     http://www.cleverna.me/article
 
-Instead of query strings, citizen uses an SEO-friendly method of passing URL parameters consisting of name/value pairs. If you had to pass an article ID of 237 to get the correct article and a page number of 2 to get the correct page, you'd append name/value pairs to the URL:
+Instead of query strings, citizen uses an SEO-friendly method of passing URL parameters consisting of name/value pairs. If you had to pass an article ID of 237 and a page number of 2, you'd append name/value pairs to the URL:
 
     http://www.cleverna.me/article/id/237/page/2
+
+Valid parameter names must start with a letter or underscore and may contain numbers.
 
 citizen also lets you optionally insert relevent content into your URLs, like so:
 
     http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
 
-This content is not parsed by the framework in any way and can be whatever you like, but it must always immediately follow the pattern name and precede any name/value pairs.
+This SEO content is not parsed by the framework in any way and can be whatever you like, but it must always immediately follow the pattern name and precede any name/value pairs.
 
 
 
 MVC Patterns
 ------------
 
-citizen relies on a predefined model-view-controller pattern that has a few strict requirements. As discussed above, the following URL will cause the `article` pattern to fire:
-
-    http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
-
-The article pattern requires the following structure:
+citizen relies on a predefined model-view-controller pattern that has a few strict requirements. The article pattern mentioned above would require the following structure:
 
     /your-app-path/patterns/article/article-controller.js
-    /your-app-path/patterns/article/article-model.js        // 
+    /your-app-path/patterns/article/article-model.js
     /your-app-path/patterns/article/article.html
 
 Each controller requires at least one public function named `handler()`. The citizen server calls `handler()` after it processes the initial request and passes it two arguments: an object containing the parameters of the request and an emitter for the controller to emit when it's done.
 
+The `args` object contains the following objects:
+
+- `config`:       citizen config settings
+- `request`:      The inital request object received by the server
+- `response`:     The response object sent by the server
+- `route`:        Details of the route, such as the requested URL and the name of the route (controller)
+- `url`:          Any URL parameters that were passed (See "Routing and URLs" above)
+- `content`:      An empty object where you can place content that will be delivered to the view
+- `form`:         Data collected from a POST, if available
+- `cookie`:       An object containing any cookies that were sent with the request
+- `session`:      An object containing any session variables
+
+In addition to having access to these objects within your controller, they are also passed to your view context automatically so you can use them within your Handlebars templates (more details in the Views section).
+
+Based on the previous example URL...
+
+    http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
+
+...you'll have the following `url` object:
+
+    { id: 237, page: 2 }
+
+Using these parameters, I can retrieve the article content from the model, append it to the view context, and pass the context back to the server:
+
     // article-controller.js
 
     exports.handler = handler;
 
     function handler(args, emitter) {
-        // Do some stuff, and when it's ready to go, emit the 'ready' event and pass the args object back to the server
-        emitter.emit('ready', args);
-    };
+        // Populate your view context
+        var context = {
+            content: app.patterns.article.model.getContent(args.url.id, args.url.page)
+        };
 
-When it's first passed from the server, `args` contains the following objects:
-
-`request`:    The inital request object received by the server
-
-`response`:   The response object sent by the server
-
-`route`:      Details of the route, such as the requested URL and the name of the route (controller)
-
-`url`:        Any URL parameters that were passed (See "Routing and URLs" above)
-
-`content`:    An empty object where you can place content that will be delivered to the view
-
-`form`:       Data collected from a POST, if available
-
-`cookie`:     An object containing any cookies that were sent with the request
-
-`session`:    An object containing any session variables
-
-Based on the example URL above, you'll have the following `url` object:
-
-    {
-        id: 237,
-        page: 2
-    }
-
-You'll notice that `args` gets passed back to the server, which has two purposes. First, anything you want to put into your view should be appended to `args.content`. For example:
-
-    // article-controller.js
-
-    var model = require('./article-model.js');
-
-    exports.handler = handler;
-
-    function handler(args, emitter) {
-        args.content = model.getContent(args.url.id, args.url.page); // Alternatively, you can use app.patterns.article.model.getContent()
-                                                                     // instead of using require('./article-model.js') above.
-        emitter.emit('ready', args);
+        // Emit the 'ready' event and pass the view context back to the server for rendering
+        emitter.emit('ready', { context: context });
     };
 
 Here's a simple model:
@@ -182,19 +168,19 @@ Here's a simple model:
     function getContent(id, page) {
         var articles = {
             '236': {
-                title: 'I Hate Node.js',
-                summary: 'A list of things I hate about Node',
+                title: 'I <3 Node.js',
+                summary: 'Things I love about Node',
                 pages: {
                     '1': 'First page content',
                     '2': 'Second page content'
                 }
             },
             '237': {
-                title: 'I <3 Node.js',
-                summary: 'A list of things I love about Node',
+                title: 'What\'s in room 237?',
+                summary: 'Nothin\'. There\'s nothin\' in room 237.',
                 pages: {
-                    '1': 'First page content',
-                    '2': 'Second page content'
+                    '1': 'Nothing to see here.',
+                    '2': 'Actually, yeah, there is.'
                 }
             }
         };
@@ -223,8 +209,6 @@ In `article.html`, you can now reference the `content` object like so:
     </body>
     </html>
 
-The other reason `args` gets passed back to the server is so that you can set cookies and session variables, which are discussed next.
-
 
 
 listener()
@@ -232,9 +216,9 @@ listener()
 
 The previous example has simple methods that return static content immediately, but things are rarely that simple. The `listener()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listener()` functions for very powerful asynchronous function calls.
 
-`listener()` takes two arguments: an object containing one or several methods you want to call, and a callback to handle the output. `listener()` requires that your functions be written to accept an optional `args` object and an `emitter` object.
+`listener()` takes two arguments: an object containing one or more methods you want to call, and a callback to handle the output. `listener()` requires that your functions be written to accept an optional `args` object and an `emitter` object.
 
-Let's say our article model has two methods that need to be called before returning the results to the controller, and those methods need to be called asynchronously. One is called getContent() and the other is getViewers(). Assume that getContent() makes an asynchronous database call and won't be able to return its output immediately, so we have to listen for when it's ready and then react.
+Let's say our article model has two methods that need to be called before returning the results to the controller. One is called getContent() and the other is getViewers(). Assume that getViewers() makes an asynchronous database call and won't be able to return its output immediately, so we have to listen for when it's ready and then react.
 
     // article-controller.js
 
@@ -242,83 +226,169 @@ Let's say our article model has two methods that need to be called before return
 
     function handler(args, emitter) {
         app.helper.listener({
-            getContent: {                                     // The property name, which can be any valid JavaScript variable name
-                method: app.patterns.article.model.getContent, // The method you want to call
-                args:   {                                     // Optional arguments object that gets passed to the method above
+            // The property name, which can be any valid JavaScript object name
+            getContent: {
+                // The method you want to call
+                method: app.patterns.article.model.getContent,
+
+                // Optional arguments that get passed to the method above
+                args:   {
                     id:   237,
                     page: 2
                 }
             },
             getViewers: {
+                // getViewers takes no arguments, so we leave it out
                 method: app.patterns.article.model.getViewers
             }
         }, function (output) {
-            args.content = output.getContent;                 // The property names you pass in become the property names within
-            args.viewers = output.getViewers;                 // the output object
-            emitter.emit('ready', args);                      // Emit `ready` now that we have the handler output
+            var context = {
+                // The property name you assign to the method above becomes the name of the output
+                // object
+                content: output.getContent,
+                viewers: output.getViewers
+            };
+
+            // Emit `ready` now that we have the handler output
+            emitter.emit('ready', { context: context });
         });
     }
 
+And the model:
 
     // article-model.js
 
-    exports.getContent = getContent;
+    module.exports = {
+        getContent: getContent,
+        getViewers: getViewers
+    };
 
-    function getContent(args, emitter) {
-        myFunction.that.gets.my.data({ id: args.id, page: args.page }, function (data) {
-            emitter.emit('ready', data);                      // When the emitter emits ready, the callback in the handler is fired
+    function getContent(args) {
+        var articles = {
+            '236': {
+                title: 'I <3 Node.js',
+                summary: 'Things I love about Node',
+                pages: {
+                    '1': 'First page content',
+                    '2': 'Second page content'
+                }
+            },
+            '237': {
+                title: 'What\'s in room 237?',
+                summary: 'Nothin\'. There\'s nothin\' in room 237.',
+                pages: {
+                    '1': 'Nothing to see here.',
+                    '2': 'Actually, yeah, there is.'
+                }
+            }
+        };
+
+        return {
+            title: articles[args.id]['title'],
+            summary: articles[args.id]['summary'],
+            text: articles[args.id]['pages'][page]
+        };
+    };
+
+    function getViewers(emitter) {
+        myFunction.that.gets.viewers( function (data) {
+            // When the database returns the data, emit `ready` and pass the data back to listener()
+            emitter.emit('ready', data);
         });
     };
 
 
 
-Cookies
--------
+Setting Cookies and Session Variables
+-------------------------------------
 
-You set cookies by appending them to `args.set.cookie`. You can set one at a time or create a complete cookie object. The following code tells the server to set `username` and `nickname` cookies that never expire:
+In addition to the view context, the server's `ready` emitter also accepts an object called `set`, which is used for setting cookies and session variables.
 
-    // article-controller.js
+
+### Cookies
+
+You set cookies by appending them to `set.cookie`. Cookies can be set one at a time or in groups. The following code tells the server to set `username` and `passwordHash` cookies that never expire:
+
+    // login-controller.js
 
     function handler(args, emitter) {
-        args.set.cookie = {
-            username: {
-                value: 'Danny',
-                expires: 'never' // Valid options are 'now' (deletes an existing cookie), 'never' (current time plus 30 years),
-                                 // 'session', or time in milliseconds. Default is 'session'.
-            },
-            nickname: {
-                value: 'Doc',
-                expires: 'never'
+        app.helper.listener({
+            login: {
+                method: app.patterns.login.model.authenticate,
+                args: {
+                    username: args.form.username,
+                    password: args.form.password
+                }
             }
-        };
-        emitter.emit('ready', args);
+        }, function (output) {
+            var context = {
+                    login: output.login
+                },
+                set = {
+                    cookie: {}
+                };
+
+            if ( output.login.success === true ) {
+                set.cookie = {
+                    username: {
+                        value: 'Danny',
+                        // Valid expiration options are:
+                        // 'now' - deletes an existing cookie
+                        // 'never' - current time plus 30 years, so effectively never
+                        // 'session' - expires at the end of the browser session (default)
+                        // [time in milliseconds] - length of time, added to the current time
+                        expires: 'never'
+                    },
+                    passwordHash: {
+                        value: output.login.passwordHash,
+                        expires: 'never'
+                    }
+                };
+            }
+            
+            emitter.emit('ready', { context: context, set: set });
+        });
     };
 
 The following code sets the same cookies, but they expire at the end of the browser session:
 
-    args.set.cookie.username = 'Danny';
-    args.set.cookie.nickname = 'Doc';
+    set.cookie.username = 'Danny';
+    set.cookie.nickname = 'Doc';
 
 Other cookie options include `path` (default is `/`), `httpOnly` (default is `true`), and `secure` (default is `false`).
 
-Cookies you've set are available in `args.cookie`.
+Cookies sent by the client are available in `args.cookie` within the controller and simply `cookie` within the view context:
 
-Cookie variables aren't available immediately after you set them. citizen has to receive the output from the controller before it can send the cookie to the user agent, so use a local instance of the variable if you need access to it during the same request.
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <div id="welcome">
+            {{#if cookie.username}}
+                Welcome, {{cookie.username}}.
+            {{else}}
+                <a href="/login">Login</a>
+            {{/if}}
+        </div>
+    </body>
+    </html>
+
+Cookie variables aren't available in the controller within the `args.cookie` scope immediately after you set them. citizen has to receive the output from the controller before it can send the cookie to the client, so use a local instance of the variable if you need to access it during the same request.
 
 
 
-Session Variables
------------------
+### Session Variables
 
-If sessions are enabled, citizen creates an object called `CTZN.sessions` and stores its session information there. You should avoid accessing this object directly and use `args.session` instead, which automatically references the current user's session.
+If sessions are enabled, citizen creates an object called `CTZN.sessions` to store session information. You should avoid accessing this object directly and use `args.session` instead (or simply `session` within the view context), which automatically references the current user's session.
 
-By default, the session has two properties: `args.session.id` and `args.session.expires`. The session ID is also sent to the browser as a cookie called `CTZN_sessionID`.
+By default, the session has two properties: `id` and `expires`. The session ID is also sent to the client as a cookie called `ctzn_session_id`.
 
-Setting session variables is similar to setting cookie variables. Just use `args.set.session`:
+Setting session variables is the same as setting cookie variables:
 
-    args.session.username = 'Danny';
-
-Session variables are available in `args.session`.
+    var set = {
+            session: {
+                username: 'Danny'
+            }
+        };
 
 Just like cookies, session variables aren't available during the same request, so use a local instance if you need to access this data right away.
 
@@ -327,30 +397,32 @@ Just like cookies, session variables aren't available during the same request, s
 Debugging
 ---------
 
-If you set `mode: 'debug'` at startup, citizen dumps the current pattern's output to the console by default. You can also dump it to the view with the `dump` URL parameter:
+If you set `mode: 'debug'` at startup, citizen dumps the current pattern's output to the console by default. You can also dump it to the view with the `ctzn_dump` URL parameter:
 
-    http://www.cleverna.me/article/id/237/page/2/dump/view
+    http://www.cleverna.me/article/id/237/page/2/ctzn_dump/view
 
-You can specify the exact object to dump with the `debug` URL parameter:
+You can specify the exact object to debug with the `ctzn_debug` URL parameter:
 
-    http://www.cleverna.me/article/id/237/page/2/debug/CTZN.session             // Dumps CTZN.session to the console
+    // Dumps CTZN.session to the console
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session
 
-    http://www.cleverna.me/article/id/237/page/2/debug/CTZN.session/dump/view   // Dumps CTZN.session to the browser
+    // Dumps CTZN.session to the view
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session/ctzn_dump/view
 
-In `development` mode, you must specify the `debug` parameter to enable debugging. If you're in `production` mode, debugging is disabled.
+In `development` mode, you must specify the `ctzn_debug` parameter to enable debug output. If you're in `production` mode, debug output is disabled.
 
 
 
 Helpers
 -------
 
-citizen includes some basic helper functions to make your life easier.
+In addition to `listener()`, citizen includes a few more basic helper functions to make your life easier.
 
-Coming soon...
+(docs coming soon)
 
 
 
 Views
 -----
 
-Coming soon...
+citizen currently uses [Handlebars](https://npmjs.org/package/handlebars) for view rendering, but I'll probably add other options in the future.

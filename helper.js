@@ -12,15 +12,14 @@ module.exports = function (config) {
                 cachePatterns: function () {
                     var patterns = {},
                         patternFiles = fs.readdirSync(config.patternPath),
-                        patternCount = patternFiles.length,
                         patternName = '',
                         patternFileName = '',
                         viewContents = '',
                         regex = new RegExp(/^([A-Za-z0-9-_])*$/);
-                    for ( var i = 0; i < patternCount; i += 1 ) {
-                        patternFileName = patternFiles[i];
+
+                    patternFiles.forEach( function (patternFileName, index, array) {
                         if ( regex.test(patternFileName) ) {
-                            patternName = patternFileName.replace('-', '');
+                            patternName = patternFileName.replace('-', '_');
                             try {
                                 viewContents = fs.readFileSync(config.patternPath + '/' + patternFileName + '/' + patternFileName + '.html', { 'encoding': 'utf8' });
                                 viewContents = viewContents.replace(/[\n|\t|\r]/g, '');
@@ -37,7 +36,8 @@ module.exports = function (config) {
                                 console.log(util.inspect(e));
                             }
                         }
-                    };
+                    });
+
                     return patterns;
                 },
 
@@ -69,6 +69,7 @@ module.exports = function (config) {
                   return !isNaN(parseFloat(n)) && isFinite(n);
                 },
 
+                // TODO: create an optional timer to handle emitters that haven't been called due to error
                 listener: function (functions, callback) {
                     var emitter = {},
                         output = {},
@@ -79,6 +80,7 @@ module.exports = function (config) {
                             for ( var property in ready ) {
                                 if ( ready[property] === false ) {
                                     allReady = false;
+                                    break;
                                 }
                             }
 
@@ -99,7 +101,11 @@ module.exports = function (config) {
                             output[this.name] = result;
                             groupTracker();
                         });
-                        functions[property]['method'](functions[property]['args'], emitter);
+                        if ( functions[property]['args'] ) {
+                            functions[property]['method'](functions[property]['args'], emitter);
+                        } else {
+                            functions[property]['method'](emitter);
+                        }
                     };
                 },
 
@@ -107,29 +113,29 @@ module.exports = function (config) {
                     methods.extend(events[event], methods);
                 },
 
-                renderView: function (params) {
-                    var view = params.route.name.replace(/-/, ''),
+                renderView: function (view, format, context) {
+                    var viewName = view.replace(/-/, ''),
                         viewOutput = '';
 
-                    switch ( params.route.format ) {
+                    switch ( format ) {
                         case 'html':
                             switch ( config.mode ) {
                                 case 'production':
-                                    viewOutput = app.patterns[view].view.compiled(params);
+                                    viewOutput = app.patterns[viewName].view.compiled(context);
                                     break;
                                 case 'debug':
                                 case 'development':
-                                    viewOutput = fs.readFileSync(config.patternPath + '/' + params.route.name + '/' + params.route.name + '.html', { 'encoding': 'utf8' });
+                                    viewOutput = fs.readFileSync(config.patternPath + '/' + view + '/' + view + '.html', { 'encoding': 'utf8' });
                                     viewOutput = handlebars.compile(viewOutput);
-                                    viewOutput = viewOutput(params);
-                                    if ( params.debugOutput ) {
-                                        viewOutput = viewOutput.replace('</body>', '<div id="citizen-debug"><pre>' + params.debugOutput + '</pre></div></body>');
+                                    viewOutput = viewOutput(context);
+                                    if ( context.debugOutput ) {
+                                        viewOutput = viewOutput.replace('</body>', '<div id="citizen-debug"><pre>' + context.debugOutput + '</pre></div></body>');
                                     }
                                     break;
                             }
                             break;
                         case 'json':
-                            viewOutput = JSON.stringify(params.view.content);
+                            viewOutput = JSON.stringify(context.content);
                             break;
                     }
 
