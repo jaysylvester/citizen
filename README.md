@@ -60,11 +60,11 @@ You can pass arguments to change citizen's startup parameters:
 
 Objects returned by citizen:
 
-- `app.config`:   Includes the configuration settings you supplied at startup
-- `app.helper`:   A function library to make it easier to work with citizen
-- `app.patterns`: Controllers, models, and views (both raw and compiled) from your supplied patterns, which you can use instead of `require`
-- `app.server`:   Functions related to starting and running the web server
-- `CTZN`:         A global namespace used by citizen for session storage, among other things.
+- `app.config`   Includes the configuration settings you supplied at startup
+- `app.helper`   A function library to make it easier to work with citizen
+- `app.patterns` Controllers, models, and views (both raw and compiled) from your supplied patterns, which you can use instead of `require`
+- `app.server`   Functions related to starting and running the web server
+- `CTZN`         A global namespace used by citizen for session storage, among other things.
 
 You should avoid accessing or modifying the `CTZN` namespace directly; anything that you might need in your application will be exposed by the server through local scopes.
 
@@ -123,15 +123,14 @@ Each controller requires at least one public function named `handler()`. The cit
 
 The `args` object contains the following objects:
 
-- `config`:       citizen config settings
-- `request`:      The inital request object received by the server
-- `response`:     The response object sent by the server
-- `route`:        Details of the route, such as the requested URL and the name of the route (controller)
-- `url`:          Any URL parameters that were passed (See "Routing and URLs" above)
-- `content`:      An empty object where you can place content that will be delivered to the view
-- `form`:         Data collected from a POST, if available
-- `cookie`:       An object containing any cookies that were sent with the request
-- `session`:      An object containing any session variables
+- `config` citizen config settings
+- `request` The inital request object received by the server
+- `response` The response object sent by the server
+- `route` Details of the route, such as the requested URL and the name of the route (controller)
+- `url` Any URL parameters that were passed (See "Routing and URLs" above)
+- `form` Data collected from a POST, if available
+- `cookie` An object containing any cookies that were sent with the request
+- `session` An object containing any session variables
 
 In addition to having access to these objects within your controller, they are also passed to your view context automatically so you can use them within your Handlebars templates (more details in the Views section).
 
@@ -139,7 +138,7 @@ Based on the previous example URL...
 
     http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
 
-...you'll have the following `url` object:
+...you'll have the following `args.url` object passed to your controller:
 
     { id: 237, page: 2 }
 
@@ -238,7 +237,8 @@ Let's say our article model has two methods that need to be called before return
                 }
             },
             getViewers: {
-                // getViewers takes no arguments, so we leave it out
+                // getViewers takes no arguments besides the emitter created by listener(), so we
+                // don't need to include the args object
                 method: app.patterns.article.model.getViewers
             }
         }, function (output) {
@@ -330,8 +330,11 @@ You set cookies by appending them to `set.cookie`. Cookies can be set one at a t
 
             if ( output.login.success === true ) {
                 set.cookie = {
+                    // The cookie gets its name from the property name
                     username: {
-                        value: 'Danny',
+                        // The cookie value
+                        value: output.login.username,
+
                         // Valid expiration options are:
                         // 'now' - deletes an existing cookie
                         // 'never' - current time plus 30 years, so effectively never
@@ -390,7 +393,7 @@ Setting session variables is the same as setting cookie variables:
             }
         };
 
-Just like cookies, session variables aren't available during the same request, so use a local instance if you need to access this data right away.
+Like cookies, session variables you've just assigned aren't available during the same request, so use a local instance if you need to access this data right away.
 
 
 
@@ -409,7 +412,7 @@ You can specify the exact object to debug with the `ctzn_debug` URL parameter:
     // Dumps CTZN.session to the view
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session/ctzn_dump/view
 
-In `development` mode, you must specify the `ctzn_debug` parameter to enable debug output. If you're in `production` mode, debug output is disabled.
+In `development` mode, you must specify the `ctzn_debug` URL parameter to enable debug output. Debug output is disabled in production mode.
 
 
 
