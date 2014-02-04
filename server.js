@@ -121,7 +121,7 @@ module.exports = function (config) {
 
                                         // Debug handling
                                         if ( config.mode === 'debug' || ( config.mode === 'development' && params.url.debug ) ) {
-                                            output.pattern.context.debugOutput = methods.private.debug(extendedContext);
+                                            extendedContext.debugOutput = methods.private.debug(extendedContext);
                                         }
 
                                         response.write(helper.renderView(params.route.name, params.route.format, extendedContext));
