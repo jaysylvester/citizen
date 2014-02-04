@@ -67,9 +67,7 @@ module.exports = function (config) {
                                     params.set.cookie.ctzn_session_id = {
                                         value: sessionID
                                     };
-                                    params.cookie.ctzn_session_id = {
-                                        value: sessionID
-                                    };
+                                    params.cookie.ctzn_session_id = sessionID;
                                     params.session = CTZN.sessions[sessionID];
                                 }
                             }
@@ -103,7 +101,7 @@ module.exports = function (config) {
                                         }
                                     }, function (output) {
                                         var cookie = [],
-                                            debugOutput = {};
+                                            extendedContext = {};
 
                                         if ( output.pattern.set && output.pattern.set.cookie ) {
                                             params.set.cookie = helper.extend(params.set.cookie, output.pattern.set.cookie);
@@ -119,12 +117,14 @@ module.exports = function (config) {
                                             CTZN.sessions[params.session.id] = helper.extend(CTZN.sessions[params.session.id], output.pattern.set.session);
                                         }
 
+                                        extendedContext = helper.extend(output.pattern.context, params);
+
                                         // Debug handling
                                         if ( config.mode === 'debug' || ( config.mode === 'development' && params.url.debug ) ) {
-                                            output.pattern.context.debugOutput = methods.private.debug(output.pattern.context, params);
+                                            output.pattern.context.debugOutput = methods.private.debug(extendedContext);
                                         }
 
-                                        response.write(helper.renderView(params.route.name, params.route.format, helper.extend(output.pattern.context, params)));
+                                        response.write(helper.renderView(params.route.name, params.route.format, extendedContext));
 
                                         // If set.redirect has properties, send the redirect
                                         if ( output.pattern.set && output.pattern.set.redirect ) {
@@ -174,17 +174,15 @@ module.exports = function (config) {
 
             private: {
 
-                debug: function (patternOutput, params) {
-                    var debug = 'patternOutput',
-                        showHidden = params.url.ctzn_debugShowHidden || false,
-                        depth = params.url.ctzn_debugDepth || 2,
-                        colors = params.url.ctzn_debugColors || false,
-                        dump = params.url.ctzn_dump || 'console',
-                        request = params.request,
-                        response = params.response;
+                debug: function (context) {
+                    var debug = 'context',
+                        showHidden = context.url.ctzn_debugShowHidden || false,
+                        depth = context.url.ctzn_debugDepth || 2,
+                        colors = context.url.ctzn_debugColors || false,
+                        dump = context.url.ctzn_dump || 'console';
 
-                    if ( params.url.ctzn_debug ) {
-                        debug = 'patternOutput.' + params.url.ctzn_debug;
+                    if ( context.url.ctzn_debug ) {
+                        debug = 'context.' + context.url.ctzn_debug;
                     }
 
                     switch ( dump ) {

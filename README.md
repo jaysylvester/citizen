@@ -324,9 +324,7 @@ You set cookies by appending them to `set.cookie`. Cookies can be set one at a t
             var context = {
                     login: output.login
                 },
-                set = {
-                    cookie: {}
-                };
+                set = {};
 
             if ( output.login.success === true ) {
                 set.cookie = {
