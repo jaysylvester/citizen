@@ -263,7 +263,7 @@ And the model:
         getViewers: getViewers
     };
 
-    function getContent(args) {
+    function getContent(args, emitter) {
         var articles = {
             '236': {
                 title: 'I <3 Node.js',
@@ -283,11 +283,11 @@ And the model:
             }
         };
 
-        return {
+        emitter.emit('ready', {
             title: articles[args.id]['title'],
             summary: articles[args.id]['summary'],
             text: articles[args.id]['pages'][page]
-        };
+        });
     };
 
     function getViewers(emitter) {
