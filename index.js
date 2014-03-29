@@ -9,7 +9,7 @@ module.exports = function (appConfig) {
             appUrlFolder: '/',
             httpPort: 80,
             sessions: false,
-            sessionLength: 1200000
+            sessionLength: 1200000 // 20 minutes
         },
         config = helper.extend(defaultConfig, appConfig),
         helper = require('./helper')(config),

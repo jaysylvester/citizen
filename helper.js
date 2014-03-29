@@ -91,22 +91,22 @@ module.exports = function (config) {
 
                     for ( var property in functions ) {
                         ready[property] = false;
-                    };
+                    }
 
-                    for ( var property in functions ) {
+                    for ( property in functions ) {
                         emitter = new events.EventEmitter();
-                        emitter['name'] = property;
+                        emitter.name = property;
                         emitter.on('ready', function (result) {
                             ready[this.name] = true;
                             output[this.name] = result;
                             groupTracker();
                         });
-                        if ( functions[property]['args'] ) {
-                            functions[property]['method'](functions[property]['args'], emitter);
+                        if ( functions[property].args ) {
+                            functions[property].method(functions[property].args, emitter);
                         } else {
-                            functions[property]['method'](emitter);
+                            functions[property].method(emitter);
                         }
-                    };
+                    }
                 },
 
                 on: function (event, methods) {
@@ -114,7 +114,7 @@ module.exports = function (config) {
                 },
 
                 renderView: function (view, format, context) {
-                    var viewName = view.replace(/-/, ''),
+                    var viewName = view.replace(/-/, '_'),
                         viewOutput = '';
 
                     switch ( format ) {
@@ -157,7 +157,25 @@ module.exports = function (config) {
                     }
 
                     return cookies;
+                },
+
+                toLocalTime: function (time, timeZoneOffset) {
+
                 }
+
+                // <cffunction name="toLocalTime" access="public" returntype="string" output="no" hint="Converts a time value to local time based on the provided time zone offset. Assumes the provided time is UTC.">
+                //     <cfargument name="time" type="date" required="true" />
+                //     <cfargument name="timeZoneOffset" type="numeric" required="true" />
+                //     <cfset var itemLocalTime = dateAdd("h", fix(arguments.timeZoneOffset), arguments.time)>
+                //     <cfif find(".5", arguments.timeZoneOffset)>
+                //         <cfif arguments.timeZoneOffset gte 0>
+                //             <cfset itemLocalTime = dateAdd("n", 30, arguments.time)>
+                //         <cfelse>
+                //             <cfset itemLocalTime = dateAdd("n", -30, arguments.time)>
+                //         </cfif>
+                //     </cfif>
+                //     <cfreturn itemLocalTime />
+                // </cffunction>
             },
 
             private: {
@@ -187,6 +205,36 @@ module.exports = function (config) {
 
             }
         };
+
+
+
+        // handlebars.registerHelper('ifCond', function (v1, operator, v2, options) {
+        //
+        //     switch (operator) {
+        //         case '==':
+        //             return (v1 == v2) ? options.fn(this) : options.inverse(this);
+        //         case '===':
+        //             return (v1 === v2) ? options.fn(this) : options.inverse(this);
+        //         case '!=':
+        //             return (v1 != v2) ? options.fn(this) : options.inverse(this);
+        //         case '!==':
+        //             return (v1 !== v2) ? options.fn(this) : options.inverse(this);
+        //         case '<':
+        //             return (v1 < v2) ? options.fn(this) : options.inverse(this);
+        //         case '<=':
+        //             return (v1 <= v2) ? options.fn(this) : options.inverse(this);
+        //         case '>':
+        //             return (v1 > v2) ? options.fn(this) : options.inverse(this);
+        //         case '>=':
+        //             return (v1 >= v2) ? options.fn(this) : options.inverse(this);
+        //         case '&&':
+        //             return (v1 && v2) ? options.fn(this) : options.inverse(this);
+        //         case '||':
+        //             return (v1 || v2) ? options.fn(this) : options.inverse(this);
+        //         default:
+        //             return options.inverse(this);
+        //     }
+        // });
 
     return methods.public;
 };

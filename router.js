@@ -28,8 +28,8 @@ module.exports = function (config) {
                     } else {
                         if ( nameRegex.test(pathToParse) ) {
                             route.name = pathToParse.replace(/^\/([A-Za-z0-9-_]+)\/?.*/, '$1');
-                        };
-                    };
+                        }
+                    }
                     return route;
                 },
 
@@ -41,7 +41,7 @@ module.exports = function (config) {
                         assignment = '',
                         urlParams = {};
                     if ( regex.test(pathToParse) ) {
-                        for ( var i = 1; i > 0; i = pathToParse.search(/\/[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/) ) {
+                        for ( var pairExists = 1; pairExists > 0; pairExists = pathToParse.search(/\/[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/) ) {
                             parameterNames.unshift(pathToParse.replace(/.*\/([A-Za-z_]+[A-Za-z0-9_]*)\/[A-Za-z0-9-_\.]+\/?$/, '$1'));
                             parameterValues.unshift(pathToParse.replace(/.*\/[A-Za-z_]+[A-Za-z0-9_]*\/([A-Za-z0-9-_\.]+)\/?$/, '$1'));
                             pathToParse = pathToParse.replace(/(.+\/)[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/, '$1');
@@ -49,7 +49,7 @@ module.exports = function (config) {
                         for ( var i = 0; i <= parameterNames.length-1; i+=1 ) {
                             urlParams[parameterNames[i]] = parameterValues[i];
                         }
-                    };
+                    }
                     return urlParams;
                 }
             },

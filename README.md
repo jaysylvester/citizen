@@ -324,14 +324,16 @@ You set cookies by appending them to `set.cookie`. Cookies can be set one at a t
             var context = {
                     login: output.login
                 },
-                set = {};
+                set = {
+                    cookie: {}
+                };
 
-            if ( output.login.success === true ) {
+            if ( context.login.success === true ) {
                 set.cookie = {
                     // The cookie gets its name from the property name
                     username: {
                         // The cookie value
-                        value: output.login.username,
+                        value: context.login.username,
 
                         // Valid expiration options are:
                         // 'now' - deletes an existing cookie
@@ -341,12 +343,12 @@ You set cookies by appending them to `set.cookie`. Cookies can be set one at a t
                         expires: 'never'
                     },
                     passwordHash: {
-                        value: output.login.passwordHash,
+                        value: context.login.passwordHash,
                         expires: 'never'
                     }
                 };
             }
-            
+
             emitter.emit('ready', { context: context, set: set });
         });
     };
@@ -391,6 +393,10 @@ Setting session variables is the same as setting cookie variables:
             }
         };
 
+To forcibly clear and expire a user's session:
+
+    set.session.expires = 'now';
+
 Like cookies, session variables you've just assigned aren't available during the same request, so use a local instance if you need to access this data right away.
 
 
@@ -402,7 +408,13 @@ If you set `mode: 'debug'` at startup, citizen dumps the current pattern's outpu
 
     http://www.cleverna.me/article/id/237/page/2/ctzn_dump/view
 
-You can specify the exact object to debug with the `ctzn_debug` URL parameter:
+By default, the pattern's complete output is dumped to the console. You can specify the exact object to debug with the `ctzn_debug` URL parameter. You can access globals, `pattern`, and server `params`:
+
+    // Dumps pattern.content to the console
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/pattern.content
+
+    // Dumps the server params object to the console
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params
 
     // Dumps CTZN.session to the console
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session

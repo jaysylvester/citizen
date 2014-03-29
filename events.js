@@ -1,17 +1,17 @@
 // application event handlers
 
-module.exports = {
+module.exports = function (config) {
 
     var methods = {
 
         public: {
 
             requestStart: function(methods) {
-                
+
             },
 
             requestEnd: function(methods) {
-                
+
             },
 
             responseStart: function(methods) {
@@ -23,19 +23,19 @@ module.exports = {
             },
 
             sessionStart: function(methods) {
-                
+
             },
 
             sessionEnd: function(methods) {
-                
+
             },
 
             appStart: function(methods) {
-                
+
             },
 
             appEnd: function(methods) {
-                
+
             },
 
         },
@@ -49,4 +49,4 @@ module.exports = {
     };
 
     return methods.public;
-}
+};
