@@ -128,7 +128,8 @@ The `args` object contains the following objects:
 - `response` The response object sent by the server
 - `route` Details of the route, such as the requested URL and the name of the route (controller)
 - `url` Any URL parameters that were passed (See "Routing and URLs" above)
-- `form` Data collected from a POST, if available
+- `form` Data collected from a POST
+- `payload` Data collected from a PUT
 - `cookie` An object containing any cookies that were sent with the request
 - `session` An object containing any session variables
 
@@ -398,6 +399,27 @@ To forcibly clear and expire a user's session:
     set.session.expires = 'now';
 
 Like cookies, session variables you've just assigned aren't available during the same request, so use a local instance if you need to access this data right away.
+
+
+
+HTTP Access Control (CORS)
+--------------------------
+
+citizen supports cross-domain HTTP requests via access control headers. By default, all patterns respond to requests from the host only. To enable cross-domain access, simply add an `access` object with the necessary headers to your controller's exports:
+
+    module.exports = {
+        handler: handler,
+        headers: {
+            'Access-Control-Allow-Origin': 'http://www.somesite.com http://anothersite.com',
+            'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
+            'Access-Control-Max-Age': 1728000,
+            'Access-Control-Allow-Credentials': 'true',
+            'Access-Control-Allow-Methods': 'OPTIONS, PUT',
+            'Access-Control-Allow-Headers': 'Content-Type'
+        }
+    };
+
+For more details on CORS, check out this writeup on the [Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
 
 
 

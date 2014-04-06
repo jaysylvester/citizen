@@ -1,4 +1,4 @@
-// Initializes the framework and starts the web server
+// Initializes the framework
 
 module.exports = function (appConfig) {
     var helper = require('./helper')(),

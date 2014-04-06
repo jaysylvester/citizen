@@ -18,13 +18,17 @@ module.exports = function (config) {
                     http.createServer( function (request, response) {
                         var date = new Date(),
                             route = router.getRoute(request.url),
+                            controller = {},
                             staticPath = '',
                             params = {},
                             body = '',
                             urlParams = router.getUrlParams(request.url),
-                            sessionID = 0;
+                            sessionID = 0,
+                            serverDomain = domain.create(),
+                            respond = true;
 
                         // TODO: extend querystring with urlParams (url parameters should take precedence over query strings)
+                        // AJAX requests may also contain payloads in JSON format that need to be parsed as well.
 
                         // If it's a dynamic page request, fire the controller and serve the response when it's ready
                         if ( !route.isStatic ) {
@@ -50,6 +54,7 @@ module.exports = function (config) {
                                 route: route,
                                 url: urlParams,
                                 form: {},
+                                payload: {},
                                 cookie: helper.parseCookie(request.headers.cookie),
                                 session: {},
                                 set: {
@@ -59,7 +64,9 @@ module.exports = function (config) {
                                 }
                             };
 
-                            if ( config.sessions ) {
+                            controller = require(config.patternPath + '/' + route.name + '/' + route.name + '-controller');
+
+                            if ( config.sessions && !request.headers.origin ) {
                                 if ( params.cookie.ctzn_session_id && CTZN.sessions[params.cookie.ctzn_session_id] && CTZN.sessions[params.cookie.ctzn_session_id].expires > date.getTime() ) {
                                     CTZN.sessions[params.cookie.ctzn_session_id].expires = date.getTime() + config.sessionLength;
                                     params.session = CTZN.sessions[params.cookie.ctzn_session_id];
@@ -75,22 +82,66 @@ module.exports = function (config) {
                                 }
                             }
 
-                            switch ( request.method ) {
-                                case 'GET':
-                                    // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
-                                    methods.private.respond(route.name, helper.copy(params), response);
-                                    break;
-                                case 'POST':
-                                    params.route.action = 'form';
-                                    request.on('data', function (chunk) {
-                                        body += chunk.toString();
-                                    });
-                                    request.on('end', function () {
-                                        params.form = querystring.parse(body);
+                            // If the Origin header is received, check if it's allowed. If so,
+                            // set the response header to match the request header (per W3C recs).
+                            // If not, end the response.
+                            if ( request.headers.origin ) {
+                                if ( controller.access && controller.access['Access-Control-Allow-Origin'] ) {
+                                    if ( controller.access['Access-Control-Allow-Origin'].search(request.headers.origin) >= 0 || access['Access-Control-Allow-Origin'] === '*' ) {
+                                        if ( request.method === 'OPTIONS' && !request.headers['access-control-request-method'] ) {
+                                            respond = false;
+                                            response.end();
+                                        } else {
+                                            for ( var property in controller.access ) {
+                                                response.setHeader(property, controller.access[property]);
+                                            }
+                                            response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
+                                        }
+                                    } else {
+                                        respond = false;
+                                        response.end();
+                                    }
+                                } else {
+                                    respond = false;
+                                    response.end();
+                                }
+                            }
+
+                            if ( respond ) {
+                                switch ( request.method ) {
+                                    case 'GET':
+                                    case 'PUT':
+                                        // params.route.action = 'form';
+                                        request.on('data', function (chunk) {
+                                            body += chunk.toString();
+                                        });
+                                        request.on('end', function () {
+                                            params.payload = JSON.parse(body);
+                                            console.log(util.inspect(params.url));
+                                            // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
+                                            methods.private.respond(controller, params);
+                                        });
+                                        break;
+                                    case 'DELETE':
                                         // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
-                                        methods.private.respond(route.name, helper.copy(params), response);
-                                    });
-                                    break;
+                                        methods.private.respond(controller, params);
+                                        break;
+                                    case 'POST':
+                                        params.route.action = 'form';
+                                        request.on('data', function (chunk) {
+                                            body += chunk.toString();
+                                        });
+                                        request.on('end', function () {
+                                            params.form = querystring.parse(body);
+                                            // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
+                                            methods.private.respond(controller, params);
+                                        });
+                                        break;
+                                    case 'HEAD':
+                                    case 'OPTIONS':
+                                        response.end();
+                                        break;
+                                }
                             }
                         } else {
                             staticPath = config.webRoot + route.name;
@@ -223,31 +274,28 @@ module.exports = function (config) {
                     return cookieArray;
                 },
 
-                respond: function (routeName, params, response) {
+                respond: function (controller, params) {
                     var responseDomain = domain.create();
 
                     responseDomain.on('error', function (e) {
                         methods.private.error(params, e);
                     });
 
-                    responseDomain.add(routeName);
+                    responseDomain.add(controller);
                     responseDomain.add(params);
-                    responseDomain.add(response);
 
                     responseDomain.run( function () {
-                        var controller = require(config.patternPath + '/' + routeName + '/' + routeName + '-controller');
-
                         helper.listener({
                             pattern: {
                                 method: controller.handler,
-                                args: params
+                                args: helper.copy(params)
                             }
                         }, function (output) {
                             var cookie = [];
 
-                            // If sessions are enabled and set.session has properties, merge those properties
-                            // with the existing session
-                            if ( config.sessions && output.pattern.set && output.pattern.set.session ) {
+                            // If sessions are enabled, there is no Origin header (the request wasn't initiated by another host),
+                            // and set.session has properties, merge those properties with the existing session
+                            if ( config.sessions && !params.request.headers.origin && output.pattern.set && output.pattern.set.session ) {
                                 if ( output.pattern.set.session.expires && output.pattern.set.session.expires === 'now' ) {
                                     delete CTZN.sessions[params.session.id];
                                     params.set.cookie = helper.extend(params.set.cookie, { ctzn_session_id: { expires: 'now' }});
@@ -261,7 +309,7 @@ module.exports = function (config) {
                             }
                             cookie = methods.private.buildCookie(params.set.cookie);
                             if ( cookie.length ) {
-                                response.setHeader('Set-Cookie', cookie);
+                                params.response.setHeader('Set-Cookie', cookie);
                             }
 
                             // Debug handling
@@ -271,17 +319,17 @@ module.exports = function (config) {
 
                             // If set.redirect has properties, send the redirect
                             if ( output.pattern.set && output.pattern.set.redirect ) {
-                                response.writeHead(output.pattern.set.redirect.statusCode, {
+                                params.response.writeHead(output.pattern.set.redirect.statusCode, {
                                     'Location': output.pattern.set.redirect.url
                                 });
                             }
 
-                            response.write(helper.renderView(params.route.name, params.route.format, helper.extend(output.pattern.context, params)));
+                            params.response.write(helper.renderView(params.route.name, params.route.format, helper.extend(output.pattern.context, params)));
 
                             // TODO: call onResponseEnd method inside here
-                            response.end();
+                            params.response.end();
 
-                            console.log(util.inspect(CTZN));
+                            console.log('GET fired, session object: ' + util.inspect(CTZN.sessions));
                         });
                     });
                 }
