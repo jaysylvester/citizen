@@ -110,6 +110,9 @@ module.exports = function (config) {
                             if ( respond ) {
                                 switch ( request.method ) {
                                     case 'GET':
+                                        // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
+                                        methods.private.respond(controller, params);
+                                        break;
                                     case 'PUT':
                                         // params.route.action = 'form';
                                         request.on('data', function (chunk) {
@@ -117,7 +120,7 @@ module.exports = function (config) {
                                         });
                                         request.on('end', function () {
                                             params.payload = JSON.parse(body);
-                                            console.log(util.inspect(params.url));
+                                            console.log(params.payload);
                                             // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
                                             methods.private.respond(controller, params);
                                         });
