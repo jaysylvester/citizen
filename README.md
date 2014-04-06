@@ -409,13 +409,14 @@ citizen supports cross-domain HTTP requests via access control headers. By defau
 
     module.exports = {
         handler: handler,
-        headers: {
+        access: {
             'Access-Control-Allow-Origin': 'http://www.somesite.com http://anothersite.com',
             'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
             'Access-Control-Max-Age': 1728000,
             'Access-Control-Allow-Credentials': 'true',
             'Access-Control-Allow-Methods': 'OPTIONS, PUT',
-            'Access-Control-Allow-Headers': 'Content-Type'
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Vary': 'Origin'
         }
     };
 
