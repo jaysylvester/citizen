@@ -13,7 +13,8 @@ module.exports = function (appConfig) {
         },
         config = helper.extend(defaultConfig, appConfig),
         helper = require('./helper')(config),
-        server = require('./server')(config),
+        patterns = helper.cachePatterns(),
+        server = require('./server')(config, patterns),
         session = require('./session')(config);
 
     CTZN = {};
@@ -35,7 +36,7 @@ module.exports = function (appConfig) {
             onResponseStart: {},
             onResponseEnd: {},
         },
-        patterns: helper.cachePatterns(),
+        patterns: patterns,
         server: server,
         session: session
     };

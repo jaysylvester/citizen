@@ -1,6 +1,6 @@
 // server
 
-module.exports = function (config) {
+module.exports = function (config, patterns) {
     var domain = require('domain'),
         events = require('events'),
         fs = require('fs'),
@@ -24,155 +24,163 @@ module.exports = function (config) {
                             body = '',
                             urlParams = router.getUrlParams(request.url),
                             sessionID = 0,
-                            serverDomain = domain.create(),
+                            requestDomain = domain.create(),
                             respond = true;
 
-                        // TODO: extend querystring with urlParams (url parameters should take precedence over query strings)
-                        // AJAX requests may also contain payloads in JSON format that need to be parsed as well.
+                        requestDomain.add(request);
+                        requestDomain.add(response);
 
-                        // If it's a dynamic page request, fire the controller and serve the response when it's ready
-                        if ( !route.isStatic ) {
+                        requestDomain.on('error', function (e) {
+                            methods.private.error(e, request, response);
+                        });
 
-                            // Overwrite the default route parameters with URL parameters if they exist
-                            if ( typeof urlParams.type !== 'undefined' ) {
-                                route.type = urlParams.type;
-                            }
-                            if ( typeof urlParams.format !== 'undefined' ) {
-                                route.format = urlParams.format;
-                            }
-                            if ( typeof urlParams.do !== 'undefined' ) {
-                                route.do = urlParams.do;
-                            }
-                            if ( typeof urlParams.show !== 'undefined' ) {
-                                route.show = urlParams.show;
-                            }
+                        requestDomain.run( function () {
+                            // If it's a dynamic page request, fire the controller and serve the response when it's ready
+                            if ( !route.isStatic ) {
 
-                            params = {
-                                config: config,
-                                request: request,
-                                response: response,
-                                route: route,
-                                url: urlParams,
-                                form: {},
-                                payload: {},
-                                cookie: helper.parseCookie(request.headers.cookie),
-                                session: {},
-                                set: {
-                                    cookie: {},
+                                // Overwrite the default route parameters with URL parameters if they exist
+                                if ( typeof urlParams.type !== 'undefined' ) {
+                                    route.type = urlParams.type;
+                                }
+                                if ( typeof urlParams.format !== 'undefined' ) {
+                                    route.format = urlParams.format;
+                                }
+                                if ( typeof urlParams.do !== 'undefined' ) {
+                                    route.do = urlParams.do;
+                                }
+                                if ( typeof urlParams.show !== 'undefined' ) {
+                                    route.show = urlParams.show;
+                                }
+
+                                // TODO: extend querystring with urlParams (url parameters should take precedence over query strings)
+                                // AJAX requests may also contain payloads in JSON format that need to be parsed as well.
+
+                                params = {
+                                    config: config,
+                                    request: request,
+                                    response: response,
+                                    route: route,
+                                    url: urlParams,
+                                    form: {},
+                                    payload: {},
+                                    cookie: helper.parseCookie(request.headers.cookie),
                                     session: {},
-                                    redirect: {}
+                                    set: {
+                                        cookie: {},
+                                        session: {},
+                                        redirect: {}
+                                    }
+                                };
+                                
+                                controller = patterns[route.name].controller;
+
+                                if ( config.sessions && !request.headers.origin ) {
+                                    if ( params.cookie.ctzn_session_id && CTZN.sessions[params.cookie.ctzn_session_id] && CTZN.sessions[params.cookie.ctzn_session_id].expires > date.getTime() ) {
+                                        CTZN.sessions[params.cookie.ctzn_session_id].expires = date.getTime() + config.sessionLength;
+                                        params.session = CTZN.sessions[params.cookie.ctzn_session_id];
+                                    } else {
+                                        sessionID = session.new();
+                                        params.set.cookie.ctzn_session_id = {
+                                            value: sessionID
+                                        };
+                                        params.cookie.ctzn_session_id = {
+                                            value: sessionID
+                                        };
+                                        params.session = CTZN.sessions[sessionID];
+                                    }
                                 }
-                            };
 
-                            controller = require(config.patternPath + '/' + route.name + '/' + route.name + '-controller');
-
-                            if ( config.sessions && !request.headers.origin ) {
-                                if ( params.cookie.ctzn_session_id && CTZN.sessions[params.cookie.ctzn_session_id] && CTZN.sessions[params.cookie.ctzn_session_id].expires > date.getTime() ) {
-                                    CTZN.sessions[params.cookie.ctzn_session_id].expires = date.getTime() + config.sessionLength;
-                                    params.session = CTZN.sessions[params.cookie.ctzn_session_id];
-                                } else {
-                                    sessionID = session.new();
-                                    params.set.cookie.ctzn_session_id = {
-                                        value: sessionID
-                                    };
-                                    params.cookie.ctzn_session_id = {
-                                        value: sessionID
-                                    };
-                                    params.session = CTZN.sessions[sessionID];
-                                }
-                            }
-
-                            // If the Origin header is received, check if it's allowed. If so,
-                            // set the response header to match the request header (per W3C recs).
-                            // If not, end the response.
-                            if ( request.headers.origin ) {
-                                if ( controller.access && controller.access['Access-Control-Allow-Origin'] ) {
-                                    if ( controller.access['Access-Control-Allow-Origin'].search(request.headers.origin) >= 0 || access['Access-Control-Allow-Origin'] === '*' ) {
-                                        if ( request.method === 'OPTIONS' && !request.headers['access-control-request-method'] ) {
+                                // If the Origin header is received, check if it's allowed. If so,
+                                // set the response header to match the request header (per W3C recs).
+                                // If not, end the response.
+                                if ( request.headers.origin ) {
+                                    if ( controller.access && controller.access['Access-Control-Allow-Origin'] ) {
+                                        if ( controller.access['Access-Control-Allow-Origin'].search(request.headers.origin) >= 0 || access['Access-Control-Allow-Origin'] === '*' ) {
+                                            if ( request.method === 'OPTIONS' && !request.headers['access-control-request-method'] ) {
+                                                respond = false;
+                                                response.end();
+                                            } else {
+                                                for ( var property in controller.access ) {
+                                                    response.setHeader(property, controller.access[property]);
+                                                }
+                                                response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
+                                            }
+                                        } else {
                                             respond = false;
                                             response.end();
-                                        } else {
-                                            for ( var property in controller.access ) {
-                                                response.setHeader(property, controller.access[property]);
-                                            }
-                                            response.setHeader('Access-Control-Allow-Origin', request.headers.origin);
                                         }
                                     } else {
                                         respond = false;
                                         response.end();
                                     }
-                                } else {
-                                    respond = false;
-                                    response.end();
                                 }
-                            }
 
-                            if ( respond ) {
-                                switch ( request.method ) {
-                                    case 'GET':
-                                        // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
-                                        methods.private.respond(controller, params);
-                                        break;
-                                    case 'PUT':
-                                        // params.route.action = 'form';
-                                        request.on('data', function (chunk) {
-                                            body += chunk.toString();
-                                        });
-                                        request.on('end', function () {
-                                            params.payload = JSON.parse(body);
-                                            console.log(params.payload);
+                                if ( respond ) {
+                                    switch ( request.method ) {
+                                        case 'GET':
                                             // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
                                             methods.private.respond(controller, params);
-                                        });
-                                        break;
-                                    case 'DELETE':
-                                        // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
-                                        methods.private.respond(controller, params);
-                                        break;
-                                    case 'POST':
-                                        params.route.action = 'form';
-                                        request.on('data', function (chunk) {
-                                            body += chunk.toString();
-                                        });
-                                        request.on('end', function () {
-                                            params.form = querystring.parse(body);
+                                            break;
+                                        case 'PUT':
+                                            // params.route.action = 'form';
+                                            request.on('data', function (chunk) {
+                                                body += chunk.toString();
+                                            });
+                                            request.on('end', function () {
+                                                params.payload = JSON.parse(body);
+                                                // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
+                                                methods.private.respond(controller, params);
+                                            });
+                                            break;
+                                        case 'DELETE':
                                             // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
                                             methods.private.respond(controller, params);
-                                        });
-                                        break;
-                                    case 'HEAD':
-                                    case 'OPTIONS':
-                                        response.end();
-                                        break;
-                                }
-                            }
-                        } else {
-                            staticPath = config.webRoot + route.name;
-                            fs.exists(staticPath, function (exists) {
-                                if ( exists ) {
-                                    fs.readFile(staticPath, function (err, data) {
-                                        if ( err ) {
+                                            break;
+                                        case 'POST':
+                                            params.route.action = 'form';
+                                            request.on('data', function (chunk) {
+                                                body += chunk.toString();
+                                            });
+                                            request.on('end', function () {
+                                                params.form = querystring.parse(body);
+                                                // TODO: call onRequestEnd() method here, use listener, and on completion, call respond()
+                                                methods.private.respond(controller, params);
+                                            });
+                                            break;
+                                        case 'HEAD':
+                                        case 'OPTIONS':
                                             response.end();
-                                            if ( config.mode !== 'production' ) {
-                                                console.log(err);
-                                            }
-                                        } else {
-                                            response.write(data);
-                                            response.end();
-                                            if ( config.mode !== 'production' ) {
-                                                console.log(data);
-                                            }
-                                        }
-                                    });
-                                } else {
-                                    response.statusCode = 404;
-                                    response.end();
-                                    if ( config.mode !== 'production' ) {
-                                        console.log('Missing file requested: ' + staticPath);
+                                            break;
                                     }
                                 }
-                            });
-                        }
+                            } else {
+                                staticPath = config.webRoot + route.name;
+                                fs.exists(staticPath, function (exists) {
+                                    if ( exists ) {
+                                        fs.readFile(staticPath, function (err, data) {
+                                            if ( err ) {
+                                                response.end();
+                                                if ( config.mode !== 'production' ) {
+                                                    console.log(err);
+                                                }
+                                            } else {
+                                                response.write(data);
+                                                response.end();
+                                                if ( config.mode !== 'production' ) {
+                                                    console.log(data);
+                                                }
+                                            }
+                                        });
+                                    } else {
+                                        response.statusCode = 404;
+                                        response.end();
+                                        if ( config.mode !== 'production' ) {
+                                            console.log('Missing file requested: ' + staticPath);
+                                        }
+                                    }
+                                });
+                            }
+                        });
                     }).listen(config.httpPort);
                 }
 
@@ -196,7 +204,7 @@ module.exports = function (config) {
                     }
                 },
 
-                error: function (params, e) {
+                error: function (e, request, response) {
                     switch ( config.mode ) {
                         case 'production':
                             console.log(util.inspect(e, { depth: null }));
@@ -209,17 +217,18 @@ module.exports = function (config) {
                                 //     });
                                 //     break;
                                 default:
-                                    params.response.writeHead(302, {
-                                        'Location': params.request.headers.host + '/error/code/' + e.code
+                                    response.writeHead(302, {
+                                        'Location': request.headers.host + '/error/code/' + e.code
                                     });
                             }
                             params.response.end();
                             break;
                         case 'development':
                         case 'debug':
-                            console.log(util.inspect(e));
-                            params.response.write(e.stack);
-                            params.response.end();
+                            // console.log(util.inspect(e));
+                            console.error('Error:', util.inspect(e));
+                            response.write(e.stack);
+                            response.end();
                             break;
                     }
                 },
@@ -281,7 +290,7 @@ module.exports = function (config) {
                     var responseDomain = domain.create();
 
                     responseDomain.on('error', function (e) {
-                        methods.private.error(params, e);
+                        methods.private.error(e, params.request, params.response);
                     });
 
                     responseDomain.add(controller);
@@ -331,8 +340,6 @@ module.exports = function (config) {
 
                             // TODO: call onResponseEnd method inside here
                             params.response.end();
-
-                            console.log('GET fired, session object: ' + util.inspect(CTZN.sessions));
                         });
                     });
                 }

@@ -25,8 +25,8 @@ module.exports = function (config) {
                                 viewContents = viewContents.replace(/[\n|\t|\r]/g, '');
                                 viewContents = viewContents.replace(/'/g, "\\'");
                                 patterns[patternName] = {
-                                    model: require(config.patternPath + "/" + patternFileName + "/" + patternFileName + "-model"),
-                                    controller: require(config.patternPath + "/" + patternFileName + "/" + patternFileName + "-controller"),
+                                    model: require(config.patternPath + '/' + patternFileName + '/' + patternFileName + '-model'),
+                                    controller: require(config.patternPath + '/' + patternFileName + '/' + patternFileName + '-controller'),
                                     view: {
                                         raw: viewContents,
                                         compiled: handlebars.compile(viewContents)
@@ -34,6 +34,7 @@ module.exports = function (config) {
                                 };
                             } catch (e) {
                                 console.log(util.inspect(e));
+                                throw e;
                             }
                         }
                     });
