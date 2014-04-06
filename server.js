@@ -71,7 +71,7 @@ module.exports = function (config, patterns) {
                                         redirect: {}
                                     }
                                 };
-                                
+
                                 controller = patterns[route.name].controller;
 
                                 if ( config.sessions && !request.headers.origin ) {
@@ -90,10 +90,9 @@ module.exports = function (config, patterns) {
                                     }
                                 }
 
-                                // If the Origin header is received, check if it's allowed. If so,
-                                // set the response header to match the request header (per W3C recs).
-                                // If not, end the response.
-                                if ( request.headers.origin ) {
+                                // If the Origin header exists and it's not the host, check if it's allowed. If so,
+                                // set the response header to match the request header (per W3C recs). If not, end the response.
+                                if ( request.headers.origin && !request.headers.origin.search(request.headers.host) ) {
                                     if ( controller.access && controller.access['Access-Control-Allow-Origin'] ) {
                                         if ( controller.access['Access-Control-Allow-Origin'].search(request.headers.origin) >= 0 || access['Access-Control-Allow-Origin'] === '*' ) {
                                             if ( request.method === 'OPTIONS' && !request.headers['access-control-request-method'] ) {
