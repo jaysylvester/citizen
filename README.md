@@ -402,6 +402,22 @@ Like cookies, session variables you've just assigned aren't available during the
 
 
 
+Redirects
+---------
+
+The `set` object is also used to pass redirect instructions to the server that are to be enacted after the request is complete. Redirects using `set` are not immediate, so everything your controller is asked to do, it will do before the redirect is processed. The user agent won't receive a full response, however. No view content will be sent.
+
+The `redirect` object takes two keys: `statusCode` and `url`.
+
+    var set = {
+            redirect: {
+                statusCode: 302,
+                url: 'http://redirect.com'
+            }
+        };
+
+
+
 HTTP Access Control (CORS)
 --------------------------
 

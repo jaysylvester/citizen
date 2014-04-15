@@ -74,7 +74,7 @@ module.exports = function (config, patterns) {
 
                                 controller = patterns[route.name].controller;
 
-                                if ( config.sessions && !request.headers.origin ) {
+                                if ( config.sessions && ( !request.headers.origin || ( request.headers.origin && request.headers.origin.search(request.headers.host) ) ) ) {
                                     if ( params.cookie.ctzn_session_id && CTZN.sessions[params.cookie.ctzn_session_id] && CTZN.sessions[params.cookie.ctzn_session_id].expires > date.getTime() ) {
                                         CTZN.sessions[params.cookie.ctzn_session_id].expires = date.getTime() + config.sessionLength;
                                         params.session = CTZN.sessions[params.cookie.ctzn_session_id];
@@ -306,7 +306,7 @@ module.exports = function (config, patterns) {
 
                             // If sessions are enabled, there is no Origin header (the request wasn't initiated by another host),
                             // and set.session has properties, merge those properties with the existing session
-                            if ( config.sessions && !params.request.headers.origin && output.pattern.set && output.pattern.set.session ) {
+                            if ( config.sessions && ( !params.request.headers.origin || ( params.request.headers.origin && params.request.headers.origin.search(params.request.headers.host) ) ) && output.pattern.set && output.pattern.set.session ) {
                                 if ( output.pattern.set.session.expires && output.pattern.set.session.expires === 'now' ) {
                                     delete CTZN.sessions[params.session.id];
                                     params.set.cookie = helper.extend(params.set.cookie, { ctzn_session_id: { expires: 'now' }});
