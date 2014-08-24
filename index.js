@@ -4,12 +4,18 @@ module.exports = function (appConfig) {
     var helper = require('./helper')(),
         defaultConfig = {
             mode: 'production',
-            appPath: '/',
-            webRoot: '/',
-            appUrlFolder: '/',
+            directories:    {
+                app:        '/',
+                patterns:   '/patterns',
+                public:     '/public'
+            },
+            urlPaths:    {
+                app:     '/'
+            },
             httpPort: 80,
             sessions: false,
-            sessionLength: 1200000 // 20 minutes
+            sessionLength: 1200000, // 20 minutes
+            staticAssetUrl: ''
         },
         config = helper.extend(defaultConfig, appConfig),
         helper = require('./helper')(config),

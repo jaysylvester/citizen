@@ -32,7 +32,7 @@ module.exports = function (config) {
 
                 generateSessionID: function () {
                     var date = new Date();
-                    return Math.random().toString().replace('0.', '') + date.getTime().toString();
+                    return Math.random().toString().replace('0.', '') + Math.random().toString().replace('0.', '');
                 }
 
             }

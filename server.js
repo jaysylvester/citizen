@@ -63,6 +63,7 @@ module.exports = function (config, patterns) {
                                     url: urlParams,
                                     form: {},
                                     payload: {},
+                                    content: {},
                                     cookie: helper.parseCookie(request.headers.cookie),
                                     session: {},
                                     set: {
@@ -72,7 +73,7 @@ module.exports = function (config, patterns) {
                                     }
                                 };
 
-                                controller = patterns[route.name].controller;
+                                controller = patterns[route.safeName].controller;
 
                                 if ( config.sessions && ( !request.headers.origin || ( request.headers.origin && request.headers.origin.search(request.headers.host) ) ) ) {
                                     if ( params.cookie.ctzn_session_id && CTZN.sessions[params.cookie.ctzn_session_id] && CTZN.sessions[params.cookie.ctzn_session_id].expires > date.getTime() ) {
@@ -153,11 +154,12 @@ module.exports = function (config, patterns) {
                                     }
                                 }
                             } else {
-                                staticPath = config.webRoot + route.name;
+                                staticPath = config.directories.public + route.name;
                                 fs.exists(staticPath, function (exists) {
                                     if ( exists ) {
                                         fs.readFile(staticPath, function (err, data) {
                                             if ( err ) {
+                                                response.statusCode = 500;
                                                 response.end();
                                                 if ( config.mode !== 'production' ) {
                                                     console.log(err);
@@ -208,13 +210,11 @@ module.exports = function (config, patterns) {
                         case 'production':
                             console.log(util.inspect(e, { depth: null }));
                             switch ( e.code ) {
-                                // TODO: This creates a loop if the 404 pattern doesn't exist.
-                                // Add config parameter for the 404 URL
-                                // case 'MODULE_NOT_FOUND':
-                                //     params.response.writeHead(404, {
-                                //         'Location': params.request.headers.host + '/404'
-                                //     });
-                                //     break;
+                                case 'MODULE_NOT_FOUND':
+                                    params.response.writeHead(404, {
+                                        'Location': request.headers.host + config.paths.fileNotFound
+                                    });
+                                    break;
                                 default:
                                     response.writeHead(302, {
                                         'Location': request.headers.host + '/error/code/' + e.code
@@ -224,8 +224,9 @@ module.exports = function (config, patterns) {
                             break;
                         case 'development':
                         case 'debug':
-                            // console.log(util.inspect(e));
-                            console.error('Error:', util.inspect(e));
+                            console.log(util.inspect(e));
+                            // console.error('Error: ' + e.code, util.inspect(e, { depth: null }));
+                            response.statusCode = 500;
                             response.write(e.stack);
                             response.end();
                             break;
@@ -304,9 +305,9 @@ module.exports = function (config, patterns) {
                         }, function (output) {
                             var cookie = [];
 
-                            // If sessions are enabled, there is no Origin header (the request wasn't initiated by another host),
-                            // and set.session has properties, merge those properties with the existing session
-                            if ( config.sessions && ( !params.request.headers.origin || ( params.request.headers.origin && params.request.headers.origin.search(params.request.headers.host) ) ) && output.pattern.set && output.pattern.set.session ) {
+                            // If sessions are enabled, the request is from the local host, and set.session has
+                            // properties, merge those properties with the existing session
+                            if ( config.sessions && ( !params.request.headers.origin || ( params.request.headers.origin && params.request.headers.origin.search(params.request.headers.host) ) ) && output.pattern.set.session ) {
                                 if ( output.pattern.set.session.expires && output.pattern.set.session.expires === 'now' ) {
                                     delete CTZN.sessions[params.session.id];
                                     params.set.cookie = helper.extend(params.set.cookie, { ctzn_session_id: { expires: 'now' }});
@@ -315,7 +316,7 @@ module.exports = function (config, patterns) {
                                 }
                             }
 
-                            if ( output.pattern.set && output.pattern.set.cookie ) {
+                            if ( output.pattern.set.cookie ) {
                                 params.set.cookie = helper.extend(params.set.cookie, output.pattern.set.cookie);
                             }
                             cookie = methods.private.buildCookie(params.set.cookie);
@@ -325,17 +326,17 @@ module.exports = function (config, patterns) {
 
                             // Debug handling
                             if ( config.mode === 'debug' || ( config.mode === 'development' && params.url.debug ) ) {
-                                output.pattern.context.debugOutput = methods.private.debug(output.pattern.context, params);
+                                output.pattern.debugOutput = methods.private.debug(output.pattern.content, params);
                             }
 
                             // If set.redirect has properties, send the redirect
-                            if ( output.pattern.set && output.pattern.set.redirect ) {
+                            if ( output.pattern.set.redirect.statusCode ) {
                                 params.response.writeHead(output.pattern.set.redirect.statusCode, {
                                     'Location': output.pattern.set.redirect.url
                                 });
                             }
 
-                            params.response.write(helper.renderView(params.route.name, params.route.format, helper.extend(output.pattern.context, params)));
+                            params.response.write(helper.renderView(params.route.name, params.route.format, output.pattern));
 
                             // TODO: call onResponseEnd method inside here
                             params.response.end();

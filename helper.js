@@ -11,7 +11,7 @@ module.exports = function (config) {
 
                 cachePatterns: function () {
                     var patterns = {},
-                        patternFiles = fs.readdirSync(config.patternPath),
+                        patternFiles = fs.readdirSync(config.directories.patterns),
                         patternName = '',
                         patternFileName = '',
                         viewContents = '',
@@ -21,12 +21,12 @@ module.exports = function (config) {
                         if ( regex.test(patternFileName) ) {
                             patternName = patternFileName.replace('-', '_');
                             try {
-                                viewContents = fs.readFileSync(config.patternPath + '/' + patternFileName + '/' + patternFileName + '.html', { 'encoding': 'utf8' });
+                                viewContents = fs.readFileSync(config.directories.patterns + '/' + patternFileName + '/' + patternFileName + '.html', { 'encoding': 'utf8' });
                                 viewContents = viewContents.replace(/[\n|\t|\r]/g, '');
                                 viewContents = viewContents.replace(/'/g, "\\'");
                                 patterns[patternName] = {
-                                    model: require(config.patternPath + '/' + patternFileName + '/' + patternFileName + '-model'),
-                                    controller: require(config.patternPath + '/' + patternFileName + '/' + patternFileName + '-controller'),
+                                    model: require(config.directories.patterns + '/' + patternFileName + '/' + patternFileName + '-model'),
+                                    controller: require(config.directories.patterns + '/' + patternFileName + '/' + patternFileName + '-controller'),
                                     view: {
                                         raw: viewContents,
                                         compiled: handlebars.compile(viewContents)
@@ -126,7 +126,7 @@ module.exports = function (config) {
                                     break;
                                 case 'debug':
                                 case 'development':
-                                    viewOutput = fs.readFileSync(config.patternPath + '/' + view + '/' + view + '.html', { 'encoding': 'utf8' });
+                                    viewOutput = fs.readFileSync(config.directories.patterns + '/' + view + '/' + view + '.html', { 'encoding': 'utf8' });
                                     viewOutput = handlebars.compile(viewOutput);
                                     viewOutput = viewOutput(context);
                                     if ( context.debugOutput ) {

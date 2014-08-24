@@ -30,23 +30,42 @@ citizen can accept arguments when it starts, so initializing it is a bit differe
 You can pass arguments to change citizen's startup parameters:
 
     app = require('citizen')({
+
+            mode:           'debug',
+            directories:    {
+                app:        '/media/psf/Sites/forumjs/site/app',
+                patterns:    '/media/psf/Sites/forumjs/site/app/patterns',
+                public:        '/media/psf/Sites/forumjs/site/public'
+            },
+            urlPaths:       {
+                app:            '/'
+            },
+            httpPort:       8080,
+            sessions:       true,
+            sessionLength:  600000, // 10 minutes
+            staticAssetUrl: ''
+
+
         // Mode determines certain framework behaviors such as error handling (dumps vs. friendly
         // errors). Options are 'debug', 'development', or 'production'. Default is 'production'.
         mode: 'debug',
 
-        // Full directory path pointing to this app. Default is '/'.
-        appPath: '/path/to/your/app',
+        directories:    {
+            // Full directory path pointing to this app. Default is '/'.
+            app:         '/path/to/your/app',
 
-        // Path to your MVC patterns
-        patternPath: '/path/to/your/patterns',
+            // Full directory path pointing to your patterns. Default is '/patterns'.
+            patterns:    '/path/to/your/app/patterns',
 
-        // Full directory path pointing to your web root (necessary if citizen will be serving up
-        // your static files as well, but not recommended). Default is '/'.
-        webRoot: '/srv/www/myapp/static',
+            // Full directory path pointing to your static assets if you're using citizen to serve them. Default is '/public'.
+            public:      '/path/to/your/static/assets'
+        },
 
-        // If the full web address is 'http://www.mysite.com/to/myapp', then this setting would be
-        // '/to/myapp'. Default is '/'.
-        appUrlFolder: '/to/myapp',
+        urlPaths:       {
+            // URL path to this app. If your app's URL is http://www.site.com/my/app, then this
+            // should be set to '/my/app'. Default is '/'.
+            app:            '/'
+        },
 
         // Port for the web server. Default is 80.
         httpPort: 8080,
@@ -55,7 +74,10 @@ You can pass arguments to change citizen's startup parameters:
         sessions: true,
 
         // Session length in milliseconds. Default is 1200000 (20 minutes).
-        sessionLength: 600000
+        sessionLength: 600000,
+
+        // If you use a separate URL to serve your static assets, specify the root URL here.
+        staticAssetUrl: '//static.yoursite.com'
     });
 
 Objects returned by citizen:
@@ -124,6 +146,7 @@ Each controller requires at least one public function named `handler()`. The cit
 The `args` object contains the following objects:
 
 - `config` citizen config settings
+- `content` The content object is the view context to which you append your pattern's content
 - `request` The inital request object received by the server
 - `response` The response object sent by the server
 - `route` Details of the route, such as the requested URL and the name of the route (controller)
@@ -132,6 +155,9 @@ The `args` object contains the following objects:
 - `payload` Data collected from a PUT
 - `cookie` An object containing any cookies that were sent with the request
 - `session` An object containing any session variables
+- `set` An object for you to set cookies, session variables, and redirects within your controllers
+
+The server passes `args` to your controller, which you then modify as necessary (to append your view content or set cookies, for example) and then pass back to the server via the emitter.
 
 In addition to having access to these objects within your controller, they are also passed to your view context automatically so you can use them within your Handlebars templates (more details in the Views section).
 
@@ -151,12 +177,10 @@ Using these parameters, I can retrieve the article content from the model, appen
 
     function handler(args, emitter) {
         // Populate your view context
-        var context = {
-            content: app.patterns.article.model.getContent(args.url.id, args.url.page)
-        };
+        args.content = app.patterns.article.model.getContent(args.url.id, args.url.page);
 
-        // Emit the 'ready' event and pass the view context back to the server for rendering
-        emitter.emit('ready', { context: context });
+        // Emit the 'ready' event and pass the args object back to the server for rendering
+        emitter.emit('ready', args);
     };
 
 Here's a simple model:
@@ -243,15 +267,13 @@ Let's say our article model has two methods that need to be called before return
                 method: app.patterns.article.model.getViewers
             }
         }, function (output) {
-            var context = {
-                // The property name you assign to the method above becomes the name of the output
-                // object
-                content: output.getContent,
-                viewers: output.getViewers
-            };
+            // The property name you assign to the method above becomes the name of the output
+            // object
+            args.content: output.getContent;
+            args.viewers: output.getViewers;
 
             // Emit `ready` now that we have the handler output
-            emitter.emit('ready', { context: context });
+            emitter.emit('ready', args);
         });
     }
 
@@ -322,19 +344,14 @@ You set cookies by appending them to `set.cookie`. Cookies can be set one at a t
                 }
             }
         }, function (output) {
-            var context = {
-                    login: output.login
-                },
-                set = {
-                    cookie: {}
-                };
+            args.content.login = output.login;
 
             if ( context.login.success === true ) {
-                set.cookie = {
+                args.set.cookie = {
                     // The cookie gets its name from the property name
                     username: {
                         // The cookie value
-                        value: context.login.username,
+                        value: args.content.login.username,
 
                         // Valid expiration options are:
                         // 'now' - deletes an existing cookie
@@ -344,20 +361,20 @@ You set cookies by appending them to `set.cookie`. Cookies can be set one at a t
                         expires: 'never'
                     },
                     passwordHash: {
-                        value: context.login.passwordHash,
+                        value: args.content.login.passwordHash,
                         expires: 'never'
                     }
                 };
             }
 
-            emitter.emit('ready', { context: context, set: set });
+            emitter.emit('ready', args);
         });
     };
 
 The following code sets the same cookies, but they expire at the end of the browser session:
 
-    set.cookie.username = 'Danny';
-    set.cookie.nickname = 'Doc';
+    args.set.cookie.username = 'Danny';
+    args.set.cookie.nickname = 'Doc';
 
 Other cookie options include `path` (default is `/`), `httpOnly` (default is `true`), and `secure` (default is `false`).
 
@@ -388,15 +405,11 @@ By default, the session has two properties: `id` and `expires`. The session ID i
 
 Setting session variables is the same as setting cookie variables:
 
-    var set = {
-            session: {
-                username: 'Danny'
-            }
-        };
+    args.set.session.username = 'Danny';
 
 To forcibly clear and expire a user's session:
 
-    set.session.expires = 'now';
+    args.set.session.expires = 'now';
 
 Like cookies, session variables you've just assigned aren't available during the same request, so use a local instance if you need to access this data right away.
 
@@ -409,12 +422,10 @@ The `set` object is also used to pass redirect instructions to the server that a
 
 The `redirect` object takes two keys: `statusCode` and `url`.
 
-    var set = {
-            redirect: {
-                statusCode: 302,
-                url: 'http://redirect.com'
-            }
-        };
+    args.set.redirect = {
+        statusCode: 302,
+        url: 'http://redirect.com'
+    };
 
 
 

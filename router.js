@@ -13,6 +13,7 @@ module.exports = function (config) {
                         staticRegex = /^\/.*\.(avi|css|doc|docx|eot|gif|htm|html|ico|jpeg|jpg|js|mkv|mov|mp3|mp4|pdf|png|svg|ttf|txt|wmv|woff|zip).*/,
                         route = {
                             name: 'index',
+                            safeName: 'index',
                             action: 'default',
                             type: 'default',
                             do: 'default',
@@ -28,6 +29,7 @@ module.exports = function (config) {
                     } else {
                         if ( nameRegex.test(pathToParse) ) {
                             route.name = pathToParse.replace(/^\/([A-Za-z0-9-_]+)\/?.*/, '$1');
+                            route.safeName = route.name.replace('-', '_');
                         }
                     }
                     return route;
@@ -40,7 +42,7 @@ module.exports = function (config) {
                         parameterValues = [],
                         assignment = '',
                         urlParams = {};
-                        
+
                     if ( regex.test(pathToParse) ) {
                         for ( var pairExists = 1; pairExists > 0; pairExists = pathToParse.search(/\/[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/) ) {
                             parameterNames.unshift(pathToParse.replace(/.*\/([A-Za-z_]+[A-Za-z0-9_]*)\/[A-Za-z0-9-_\.]+\/?$/, '$1'));
