@@ -30,22 +30,7 @@ citizen can accept arguments when it starts, so initializing it is a bit differe
 You can pass arguments to change citizen's startup parameters:
 
     app = require('citizen')({
-
-            mode:           'debug',
-            directories:    {
-                app:        '/media/psf/Sites/forumjs/site/app',
-                patterns:    '/media/psf/Sites/forumjs/site/app/patterns',
-                public:        '/media/psf/Sites/forumjs/site/public'
-            },
-            urlPaths:       {
-                app:            '/'
-            },
-            httpPort:       8080,
-            sessions:       true,
-            sessionLength:  600000, // 10 minutes
-            staticAssetUrl: ''
-
-
+        
         // Mode determines certain framework behaviors such as error handling (dumps vs. friendly
         // errors). Options are 'debug', 'development', or 'production'. Default is 'production'.
         mode: 'debug',
