@@ -1,22 +1,33 @@
 {
+  "name": "citizen",
+  "version": "0.0.22",
+  "description": "An event-driven MVC framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
     "email": "jay@jaysylvester.com",
     "url": "http://jaysylvester.com/"
   },
-  "name": "citizen",
-  "description": "An event-driven MVC framework for Node.js web applications.",
-  "version": "0.0.22",
   "repository": {
     "type": "git",
     "url": "https://github.com/jaysylvester/citizen"
   },
-  "main": "./index",
-  "engines": {
-    "node": "*"
+  "main": "index",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha -u tdd",
+    "coverage": "./node_modules/.bin/istanbul cover node_modules/.bin/_mocha -- -R spec"
   },
   "dependencies": {
     "handlebars": "1.3",
-    "nodemailer": "1.2.1"
+    "nodemailer": "1.2.1",
+    "commander": "1.0.0"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "mocha-lcov-reporter": "*",
+    "should": "*",
+    "istanbul": "*"
+  },
+  "engines": {
+    "node": ">= 0.10.x"
   }
 }
