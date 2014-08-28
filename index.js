@@ -1,1 +1,1 @@
-exports.citizen = require('./lib/citizen');
+module.exports = require('./lib/citizen');
