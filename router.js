@@ -44,7 +44,7 @@ module.exports = function (config) {
                         urlParams = {};
 
                     if ( regex.test(pathToParse) ) {
-                        for ( var pairExists = 1; pairExists > 0; pairExists = pathToParse.search(/\/[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/) ) {
+                        while ( pathToParse.search(/\/[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/) > 0 ) {
                             parameterNames.unshift(pathToParse.replace(/.*\/([A-Za-z_]+[A-Za-z0-9_]*)\/[A-Za-z0-9-_\.]+\/?$/, '$1'));
                             parameterValues.unshift(pathToParse.replace(/.*\/[A-Za-z_]+[A-Za-z0-9_]*\/([A-Za-z0-9-_\.]+)\/?$/, '$1'));
                             pathToParse = pathToParse.replace(/(.+\/)[A-Za-z_]+[A-Za-z0-9_]*\/[A-Za-z0-9-_\.]+\/?$/, '$1');

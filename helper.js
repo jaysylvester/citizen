@@ -70,7 +70,7 @@ module.exports = function (config) {
                   return !isNaN(parseFloat(n)) && isFinite(n);
                 },
 
-                // TODO: create an optional timer to handle emitters that haven't been called due to error
+                // TODO: create an optional timer to handle emitters that haven't been called
                 listener: function (functions, callback) {
                     var emitter = {},
                         output = {},
@@ -85,7 +85,7 @@ module.exports = function (config) {
                                 }
                             }
 
-                            if ( allReady && typeof callback !== 'undefined' ) {
+                            if ( allReady && typeof callback === 'function' ) {
                                 callback(output);
                             }
                         };
@@ -102,11 +102,12 @@ module.exports = function (config) {
                             output[this.name] = result;
                             groupTracker();
                         });
-                        if ( functions[property].args ) {
-                            functions[property].method(functions[property].args, emitter);
-                        } else {
-                            functions[property].method(emitter);
+                        try {
+                            functions[property](emitter);
+                        } catch ( err ) {
+                            throw err;
                         }
+
                     }
                 },
 
@@ -182,11 +183,18 @@ module.exports = function (config) {
             private: {
 
                 getValue: function (obj) {
-                    var isArray = obj.constructor.toString().indexOf('Array') >= 0,
-                        isObject = obj.constructor.toString().indexOf('Object') >= 0,
+                    var isArray,
+                        isObject,
                         val,
                         i = 0,
                         l;
+
+                    if ( typeof obj !== 'undefined' ) {
+                        isArray = obj.constructor.toString().indexOf('Array') >= 0,
+                        isObject = obj.constructor.toString().indexOf('Object') >= 0;
+                    } else {
+                        obj = 'undefined';
+                    }
 
                     if ( isArray ) {
                         val = Array.prototype.slice.apply(obj);

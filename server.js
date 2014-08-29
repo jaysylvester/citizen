@@ -208,24 +208,26 @@ module.exports = function (config, patterns) {
                 error: function (e, request, response) {
                     switch ( config.mode ) {
                         case 'production':
-                            console.log(util.inspect(e, { depth: null }));
                             switch ( e.code ) {
                                 case 'MODULE_NOT_FOUND':
-                                    params.response.writeHead(404, {
+                                    response.writeHead(404, {
                                         'Location': request.headers.host + config.paths.fileNotFound
                                     });
                                     break;
                                 default:
-                                    response.writeHead(302, {
-                                        'Location': request.headers.host + '/error/code/' + e.code
-                                    });
+                                    // TODO: friendly error page
+                                    // response.writeHead(302, {
+                                    //     'Location': request.headers.host + '/error/code/' + e.code
+                                    // });
+                                    console.log(util.inspect(e));
+                                    response.statusCode = 500;
+                                    response.write(e.stack);
                             }
-                            params.response.end();
+                            response.end();
                             break;
                         case 'development':
                         case 'debug':
                             console.log(util.inspect(e));
-                            // console.error('Error: ' + e.code, util.inspect(e, { depth: null }));
                             response.statusCode = 500;
                             response.write(e.stack);
                             response.end();
@@ -298,9 +300,8 @@ module.exports = function (config, patterns) {
 
                     responseDomain.run( function () {
                         helper.listener({
-                            pattern: {
-                                method: controller.handler,
-                                args: helper.copy(params)
+                            pattern: function (emitter) {
+                                controller.handler(helper.copy(params), emitter);
                             }
                         }, function (output) {
                             var cookie = [];

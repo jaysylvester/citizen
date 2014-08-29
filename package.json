@@ -6,7 +6,7 @@
   },
   "name": "citizen",
   "description": "An event-driven MVC framework for Node.js web applications.",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "repository": {
     "type": "git",
     "url": "https://github.com/jaysylvester/citizen"
@@ -16,7 +16,6 @@
     "node": "*"
   },
   "dependencies": {
-    "handlebars": "1.3",
-    "nodemailer": "1.2.1"
+    "handlebars": "1.3"
   }
 }
