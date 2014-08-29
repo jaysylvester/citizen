@@ -1,0 +1,25 @@
+# Editor files #
+################
+*~
+*.swp
+*.swo
+
+
+# OS Generated Files #
+######################
+.Ds_Store*
+ehtumbs.db
+Icon?
+Thumbs.db
+
+
+
+# Node Files #
+##############
+node_modules/
+npm-debug.log
+
+
+# Dev #
+#######
+coverage/
