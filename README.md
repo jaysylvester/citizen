@@ -44,7 +44,7 @@ Here's the most basic directory structure of a citizen web app:
           index.js
         views/
           index/
-            index.js
+            index.hbs
       start.js // Entry point --> app = require('citizen');
     public/
 
@@ -86,25 +86,25 @@ citizen also parses any other files it finds in this directory and stores the re
 The following represents citizen's default configuration.
 
     {
-      mode: 'production',
-      directories:  {
-        app: process.cwd(),
-        logs: process.cwd() + '/logs',
-        on: process.cwd() + '/on',
-        patterns: process.cwd() + '/patterns',
-        public: path.resolve(process.cwd(), '../public')
+      "mode": "production",
+      "directories":  {
+        "app": "[current working directory]",
+        "logs": "[current working directory]/logs",
+        "on": "[current working directory]/on",
+        "patterns":  "[current working directory]/patterns",
+        "public": "../public"
       },
-      urlPaths:  {
-        app:   '/'
+      "urlPaths":  {
+        "app":   "/"
       },
-      httpPort: 80,
-      sessions: false,
-      sessionTimeout: 1200000, // 20 minutes
-      requestTimeout: 30000, // 30 seconds
-      mimeTypes: JSON.parse(fs.readFileSync(path.join(__dirname, '../config/mimetypes.json'))),
-      debug: {
-        output: 'console',
-        depth: 2
+      "httpPort": 80,
+      "sessions": false,
+      "sessionTimeout": 1200000
+      "requestTimeout": 30000
+      "mimeTypes": [parsed from internal config],
+      "debug": {
+        "output": "console",
+        "depth": 2
       }
     }
 
@@ -349,25 +349,25 @@ And the model:
 
 listen() currently fires all functions asynchronously and returns the results for every function in a single output object after all functions have completed. A waterfall-type execution is being worked on, but in the meantime, you can nest listen() functions to achieve the same effect:
 
-  listen({
-    first: function (emitter) {
-      doSomething(emitter);
-    }
-  }, function (output) {
     listen({
-      second: function (emitter) {
-        doNextThing(output, emitter);
+      first: function (emitter) {
+        doSomething(emitter);
       }
     }, function (output) {
       listen({
-        third: function (emitter) {
-          doOneMoreThing(output, emitter);
+        second: function (emitter) {
+          doNextThing(output, emitter);
         }
       }, function (output) {
-        thisIsExhausting(output);
+        listen({
+          third: function (emitter) {
+            doOneMoreThing(output, emitter);
+          }
+        }, function (output) {
+          thisIsExhausting(output);
+        });
       });
     });
-  });
 
 
 
