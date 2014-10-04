@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.0.23",
+  "version": "0.1.0",
   "description": "An event-driven MVC framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
@@ -17,7 +17,8 @@
     "coverage": "./node_modules/.bin/istanbul cover node_modules/.bin/_mocha -- -R spec"
   },
   "dependencies": {
-    "handlebars": "1.3",
+    "handlebars": "2.0.0",
+    "jade": "1.7.0",
     "commander": "1.0.0"
   },
   "devDependencies": {
