@@ -744,6 +744,8 @@ What if logged in users get a different header? Just tell citizen to use a diffe
 
 Includes can generate content and add it to the view context of your primary controller (article.js in this example) because the primary view is the last to be rendered. However, includes are called and rendered asynchronously, so while your _head controller can generate content and add it to the view context of your article controller, don't assume that your _header controller will have access to that data. (The option of waterfall execution is being worked on, so this is only true for the time being.)
 
+Currently, include controllers can't use any of the directives to set cookies, session variables, redirects, etc., but it's on the feature list.
+
 <!-- ### handoff
 
 citizen allows the requested controller to give another controller the responsibility of handling the request and rendering its own view via a context object called `handoff`. The secondary controller assumes responsibility for the request, adding its own content to the context and rendering its own view. You can implement as many handoffs as you want (controller A can handoff to controller B, who can handoff to controller C, and so on). -->
