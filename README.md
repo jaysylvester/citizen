@@ -545,98 +545,6 @@ Here's an example of a request module that checks for a username cookie at the b
     };
 
 
-
-HTTP Access Control (CORS)
---------------------------
-
-citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
-
-    module.exports = {
-      handler: handler,
-      access: {
-        'Access-Control-Allow-Origin': 'http://www.somesite.com http://anothersite.com',
-        'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
-        'Access-Control-Max-Age': 1728000,
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Allow-Methods': 'OPTIONS, PUT',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Vary': 'Origin'
-      }
-    };
-
-For more details on CORS, check out this writeup on the [Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
-
-
-
-Debugging
----------
-
-**Warning: `debug` and `development` modes are inherently insecure. Don't use them in a production environment.**
-
-If you set `"mode": "debug"` in your config file, citizen dumps the current pattern's output to the console by default. You can also dump it to the view with the `ctzn_dump` URL parameter:
-
-    http://www.cleverna.me/article/id/237/page/2/ctzn_dump/view
-
-By default, the pattern's complete output is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter. You can access globals, `pattern`, and server `params`:
-
-    // Dumps pattern.content to the console
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/pattern.content
-
-    // Dumps the server params object to the console
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params
-
-    // Dumps CTZN.session to the console
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session
-
-    // Dumps CTZN.session to the view
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session/ctzn_dump/view
-
-In `development` mode, you must specify the `ctzn_debug` URL parameter to enable debug output. Debug output is disabled in production mode.
-
-If you always want debug output dumped to the view, set debug output to "view" in your citizen config file.
-
-    {
-      "debug": {
-        "output": "view"
-      }
-    }
-
-
-
-Helpers
--------
-
-In addition to `listen()`, citizen includes a few more basic helper functions that it uses internally, but might be of use to you, so it returns them for public use.
-
-### copy(object)
-
-Creates a deep copy of an object.
-
-    var myCopy = app.helper.copy(myObject);
-
-### extend(object, extension[, boolean])
-
-Extends an object with another object, effectively merging the two objects. By default, extend() creates a copy of the original before extending it, creating a new object. If your intention is to alter the original and create a pointer, pass the optional third argument of `false`.
-
-    var newObject = app.helper.extend(originalObject, extensionObject);
-
-### isNumeric(object)
-
-Returns `true` if the object is a number, `false` if not.
-
-    if ( app.helper.isNumeric(url.id) ) {
-      // pass it to the db
-    } else {
-      return 'Naughty naughty...';
-    }
-
-### dashes(string)
-
-Convert strings into SEO-friendly versions that you can use in your URLs.
-
-    var seoTitle = app.helper.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
-
-
 Views
 -----
 
@@ -646,7 +554,7 @@ You have direct access to each engine's methods via `app.handlebars` and `app.ja
 
 ### JSON Format
 
-You can tell a controller to return its view context as a JSON object by adding the `format` URL parameter:
+You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
 
@@ -664,7 +572,7 @@ Whatever you've added to your `content` object will be returned. The line breaks
 
 ### JSONP
 
-JSONP is pretty much the same, just remember the CORS `access` export from earlier if you want to make it available to third party sites. Use `format` and `callback`:
+JSONP is pretty much the same. Use `format` and `callback`:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo
 
@@ -677,6 +585,10 @@ Returns:
         "text": "Second page content"
       }
     });
+
+If you want to make it available to third party sites, see the CORS section below.
+
+
 
 ### Includes
 
@@ -853,7 +765,7 @@ The layout controller handles the includes and renders its own view:
     function handler(params, context, emitter) {
       emitter.emit('ready', {
         // No need to specify `content` here because citizen keeps track of the
-        // request context throughout this process
+        // article pattern's request context throughout this process
         include: {
           _head: '_head',
           _header: '_header'
@@ -887,4 +799,94 @@ And our layout.hbs file:
     </body>
     </html>
 
-You can implement as many handoffs as you want (controller A can handoff to controller B, which can handoff to controller C, and so on).
+You can implement as many handoffs as you want (controller A can handoff to controller B, which can handoff to controller C, and so on), but the original controller's view will still be the one that ends up in `includes._main`.
+
+
+
+HTTP Access Control (CORS)
+--------------------------
+
+citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
+
+    module.exports = {
+      handler: handler,
+      access: {
+        'Access-Control-Allow-Origin': 'http://www.somesite.com http://anothersite.com',
+        'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
+        'Access-Control-Max-Age': 1728000,
+        'Access-Control-Allow-Credentials': 'true',
+        'Access-Control-Allow-Methods': 'OPTIONS, PUT',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Vary': 'Origin'
+      }
+    };
+
+For more details on CORS, check out this writeup on the [Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
+
+
+Helpers
+-------
+
+In addition to `listen()`, citizen includes a few more basic helper functions that it uses internally, but might be of use to you, so it returns them for public use.
+
+### copy(object)
+
+Creates a deep copy of an object.
+
+    var myCopy = app.helper.copy(myObject);
+
+### extend(object, extension[, boolean])
+
+Extends an object with another object, effectively merging the two objects. By default, extend() creates a copy of the original before extending it, creating a new object. If your intention is to alter the original and create a pointer, pass the optional third argument of `false`.
+
+    var newObject = app.helper.extend(originalObject, extensionObject);
+
+### isNumeric(object)
+
+Returns `true` if the object is a number, `false` if not.
+
+    if ( app.helper.isNumeric(url.id) ) {
+      // pass it to the db
+    } else {
+      return 'Naughty naughty...';
+    }
+
+### dashes(string)
+
+Convert strings into SEO-friendly versions that you can use in your URLs.
+
+    var seoTitle = app.helper.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
+
+
+Debugging
+---------
+
+**Warning: `debug` and `development` modes are inherently insecure. Don't use them in a production environment.**
+
+If you set `"mode": "debug"` in your config file, citizen dumps the current pattern's output to the console by default. You can also dump it to the view with the `ctzn_dump` URL parameter:
+
+    http://www.cleverna.me/article/id/237/page/2/ctzn_dump/view
+
+By default, the pattern's complete output is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter. You can access globals, `pattern`, and server `params`:
+
+    // Dumps pattern.content to the console
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/pattern.content
+
+    // Dumps the server params object to the console
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params
+
+    // Dumps CTZN.session to the console
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session
+
+    // Dumps CTZN.session to the view
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN.session/ctzn_dump/view
+
+In `development` mode, you must specify the `ctzn_debug` URL parameter to enable debug output. Debug output is disabled in production mode.
+
+If you always want debug output dumped to the view, set debug output to "view" in your citizen config file.
+
+    {
+      "debug": {
+        "output": "view"
+      }
+    }
