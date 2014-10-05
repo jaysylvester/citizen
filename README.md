@@ -52,7 +52,8 @@ Here's a more complex app example (more about `config` and `on` directories belo
 
     app/
       config/
-        citizen.json
+        citizen-local.json
+        citizen-production.json
         db.json
       logs/
       on/
@@ -75,9 +76,9 @@ Here's a more complex app example (more about `config` and `on` directories belo
 
 ### Configuration
 
-The `config` directory is optional and is used to store your app's configuration files in JSON format. You can have multiple JSON files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
+The `config` directory is optional and is used to store your app's configuration files in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
-1. citizen parses each JSON file looking for a "hostname" key that matches the machine's hostname. If it finds one, it loads that configuration.
+1. citizen parses each JSON file that starts with "citizen" looking for a "hostname" key that matches the machine's hostname. If it finds one, it loads that configuration.
 2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
 3. If it can't find citizen.json, it runs under its default configuration.
 
@@ -157,7 +158,7 @@ Valid parameter names must start with a letter or underscore and may contain num
 
 citizen also lets you optionally insert relevant content into your URLs, like so:
 
-    http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
 This SEO content must always follow the pattern name and precede any name/value pairs. You can access it via a URL parameter called `descriptor`, which means you can use it as a unique identifier (more on URL parameters below).
 
@@ -166,7 +167,7 @@ This SEO content must always follow the pattern name and precede any name/value 
 MVC Patterns
 ------------
 
-citizen relies on a predefined model-view-controller pattern that has a few strict requirements. The article pattern mentioned above would require the following structure:
+citizen relies on a predefined model-view-controller convention. The article pattern mentioned above might use the following structure:
 
     app/
       patterns/
@@ -177,6 +178,13 @@ citizen relies on a predefined model-view-controller pattern that has a few stri
         views/
           article/
             article.hbs
+            edit.hbs // Secondary view for editing an article
+
+Controllers are required. Models and views are optional. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the `handoff` directive below.)
+
+Patterns can have multiple views. You could create a secondary article view for editing an article, and request that view using the `view` URL parameter:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/view/edit
 
 ### handler(params, context, emitter)
 
@@ -193,21 +201,20 @@ The `params` object contains the following objects:
 - `cookie` An object containing any cookies that were sent with the request
 - `session` An object containing any session variables, if sessions are enabled
 
-In addition to having access to these objects within your controller, they are also passed to your view context automatically so you can use them within your view templates (more details in the Views section).
+In addition to having access to these objects within your controller, they are also included in your view context automatically so you can use them within your view templates (more details in the Views section).
 
 Based on the previous example URL...
 
-    http://www.cleverna.me/article/My-clever-article-title/id/237/page/2
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
 ...you'll have the following `params.url` object passed to your controller:
 
     {
-      id: 237,
       page: 2,
-      descriptor: 'My-clever-article-title'
+      descriptor: 'My-Clever-Article-Title'
     }
 
-Using these parameters, I can retrieve the article content from the model, append it to the view context, and pass the context back to the server:
+Using these parameters, I can retrieve the article content from the model, add it to the view context, and pass the context back to the server:
 
     // article controller
 
@@ -216,7 +223,7 @@ Using these parameters, I can retrieve the article content from the model, appen
     function handler(params, context, emitter) {
       // Get the article content
       var content = {
-        article: app.patterns.models.article.getArticle(params.url.id, params.url.page)
+        article: app.patterns.models.article.getArticle(params.url.descriptor, params.url.page)
       };
 
       // Emit the 'ready' event and pass the view context back to the server for rendering.
@@ -225,11 +232,11 @@ Using these parameters, I can retrieve the article content from the model, appen
       });
     };
 
-The emitter should emit a "ready" event when the controller has accomplished its task. This lets the server know it's time to send the response.
+The emitter should emit a "ready" event when the controller has accomplished its task. This lets the server know it's okay to proceed.
 
-The second argument in the emitter is an object containing any data you want to pass back to citizen, including the view context. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to perform other functions, which are described later in this document.
+The second argument in the emitter is an object containing any data you want to pass back to citizen, including the view context. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to perform other directives, which are described later in this document.
 
-We haven't discussed the `context` argument yet. This argument contains any output that's been generated by the request up to this point. There are various events that can populate this argument, which is then passed to your controller so you can access it. More on this later.
+We haven't discussed the `context` argument yet. This argument contains any output that's been generated by the request up to this point. There are various events that can populate this argument with content and directives, which is then passed to your controller so you can access that content. More on this later.
 
 Here's a simple model:
 
@@ -237,40 +244,40 @@ Here's a simple model:
 
     exports.getArticle = getArticle;
 
-    function getArticle(id, page) {
+    function getArticle(descriptor, page) {
       var articles = {
-        '236': {
-          title: 'I <3 Node.js',
-          summary: 'Things I love about Node',
+        'My-Clever-Article-Title': {
+          title: 'My Clever Article Title',
+          summary: 'Am I not terribly clever?',
           pages: {
             '1': 'First page content',
             '2': 'Second page content'
           }
         },
-        '237': {
-          title: 'What\'s in room 237?',
-          summary: 'Nothin\'. There\'s nothin\' in room 237.',
+        'Clever-Part-II-The-Sequel': {
+          title: 'Clever Part II: The Sequel',
+          summary: 'Too clever for just one article.',
           pages: {
-            '1': 'Nothing to see here.',
-            '2': 'Actually, yeah, there is.'
+            '1': 'First page content',
+            '2': 'Second page content'
           }
         }
       };
 
       return {
-        title: articles[id]['title'],
-        summary: articles[id]['summary'],
-        text: articles[id]['pages'][page]
+        title: articles[descriptor]['title'],
+        summary: articles[descriptor]['summary'],
+        text: articles[descriptor]['pages'][page]
       };
     };
 
-In `article.hbs`, you can now reference objects you placed within the `content` object passed by the emitter:
+In `article.hbs`, you can now reference objects you placed within the `content` object passed by the emitter, as well as objects such as the `url` scope:
 
     <!DOCTYPE html>
     <html>
     <body>
       <h1>
-        {{article.title}}
+        {{article.title}} - Page {{url.page}}
       </h1>
       <p id="summary">
         {{article.summary}}
@@ -288,9 +295,9 @@ listen()
 
 The previous example has simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
-`listen()` takes two arguments: an object containing one or more methods you want to call, and a callback to handle the output. `listen()` requires that your functions be written to accept an `emitter` argument, which is how your function notifies listen() that it's ready.
+`listen()` takes two arguments: an object containing one or more methods you want to call, and a callback to handle the output. `listen()` requires that your functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
 
-Let's say our article model has two methods that need to be called before returning the results to the controller. One is called getArticle() and the other is getViewers(). Assume that both methods make an asynchronous call to a database and won't be able to return their output immediately, so we have to listen for when they're ready and then react.
+Let's say our article model has two methods that need to be called before returning the results to the controller. One is called `getArticle()` and the other is `getViewers()`. Assume that both methods make an asynchronous call to a database and won't be able to return their output immediately, so we have to listen for when they're ready and then react.
 
     // article controller
 
@@ -332,7 +339,7 @@ And the model:
     };
 
     function getArticle(args, emitter) {
-      app.db.article(args.id, function (data) {
+      app.db.article(args, function (data) {
         // When the database returns the data, emit `ready` and pass the
         // data back to listen()
         emitter.emit('ready', data);
@@ -347,7 +354,7 @@ And the model:
       });
     };
 
-listen() currently fires all functions asynchronously and returns the results for every function in a single output object after all functions have completed. A waterfall-type execution is being worked on, but in the meantime, you can nest listen() functions to achieve the same effect:
+`listen()` currently fires all functions asynchronously and returns the results for every function in a single output object after all functions have completed. A waterfall-type execution is being worked on, but in the meantime, you can nest `listen()` functions to achieve the same effect:
 
     listen({
       first: function (emitter) {
@@ -356,15 +363,15 @@ listen() currently fires all functions asynchronously and returns the results fo
     }, function (output) {
       listen({
         second: function (emitter) {
-          doNextThing(output, emitter);
+          doNextThing(output.first, emitter);
         }
       }, function (output) {
         listen({
           third: function (emitter) {
-            doOneMoreThing(output, emitter);
+            doOneMoreThing(output.second, emitter);
           }
         }, function (output) {
-          thisIsExhausting(output);
+          thisIsExhausting(output.third);
         });
       });
     });
@@ -457,7 +464,7 @@ Cookie variables you set within your controller aren't immediately available wit
 
 ### Session Variables
 
-If sessions are enabled, citizen creates an object called `CTZN.sessions` to store session information. You should avoid accessing this object directly and use `params.session` instead (or simply `session` within the view), which automatically references the current user's session.
+If sessions are enabled, citizen creates an object called `CTZN.sessions` to store session information. Don't access this object directly; use `params.session` instead (or simply `session` within the view). These local scopes reference the current user's session.
 
 By default, the session has two properties: `id` and `expires`. The session ID is also sent to the client as a cookie called `ctzn_session_id`.
 
@@ -474,6 +481,8 @@ Setting session variables is the same as setting cookie variables:
 To forcibly clear and expire the current user's session:
 
     session.expires = 'now';
+
+This won't end the session immediately. citizen has to receive your controller's response before it can act on this directive.
 
 Like cookies, session variables you've just assigned aren't available during the same request within the `params.session` scope, so use a local instance if you need to access this data right away.
 
@@ -500,7 +509,7 @@ The `redirect` object takes two keys: `statusCode` and `url`. If you don't provi
 Application Events and the Context Argument
 -------------------------------------------
 
-Certain events will occur throughout the life of your citizen application. You can intercept these application events, execute functions, and pass the results to the next event, where they'll eventually be passed to your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
+Certain events will occur throughout the life of your citizen application. You can act on these application events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
 
 To take advantage of these events, include a directory called "on" in your app with the following modules and exports:
 
@@ -511,9 +520,11 @@ To take advantage of these events, include a directory called "on" in your app w
         response.js    // exports start() and end()
         session.js     // exports start() and end()
 
-All files and exports are optional. citizen only calls them if they exist. For example, you could have only a session.js module that exports end().
+The application `start()` and request `start()` and `end()` events are triggered before your controller is fired, so the output from those events are passed to your controller via the `context` argument.
 
-_Note: As of this update, session end() and application end() aren't functional. They'll be in a future version._
+All files and exports are optional. citizen only calls them if they exist. For example, you could have only a session.js module that exports `end()`.
+
+_Note: As of this version, session end() and application end() aren't functional. They'll be in a future version._
 
 Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to a login page if it's not there, unless the requested pattern is the login page:
 
@@ -538,7 +549,7 @@ Here's an example of a request module that checks for a username cookie at the b
 HTTP Access Control (CORS)
 --------------------------
 
-citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. To enable cross-domain access, simply add an `access` object with the necessary headers to your controller's exports:
+citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
 
     module.exports = {
       handler: handler,
@@ -560,7 +571,7 @@ For more details on CORS, check out this writeup on the [Mozilla Developer Netwo
 Debugging
 ---------
 
-*** `debug` and `development` modes are inherently insecure. Do not use them in a production environment. ***
+**Warning: `debug` and `development` modes are inherently insecure. Don't use them in a production environment.**
 
 If you set `"mode": "debug"` in your config file, citizen dumps the current pattern's output to the console by default. You can also dump it to the view with the `ctzn_dump` URL parameter:
 
@@ -583,6 +594,12 @@ By default, the pattern's complete output is dumped. You can specify the exact o
 In `development` mode, you must specify the `ctzn_debug` URL parameter to enable debug output. Debug output is disabled in production mode.
 
 If you always want debug output dumped to the view, set debug output to "view" in your citizen config file.
+
+    {
+      "debug": {
+        "output": "view"
+      }
+    }
 
 
 
@@ -607,6 +624,17 @@ Extends an object with another object, effectively merging the two objects. By d
 
 Returns `true` if the object is a number, `false` if not.
 
+    if ( app.helper.isNumeric(url.id) ) {
+      // pass it to the db
+    } else {
+      return 'Naughty naughty...';
+    }
+
+### dashes(string)
+
+Convert strings into SEO-friendly versions that you can use in your URLs.
+
+    var seoTitle = app.helper.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
 
 
 Views
@@ -614,7 +642,41 @@ Views
 
 citizen supports [Handlebars](https://npmjs.org/package/handlebars) and [Jade](https://www.npmjs.org/package/jade) templates, as well as good old HTML. You can even mix and match Handlebars, Jade, and HTML templates as you see fit; just use the appropriate file extensions (.hbs, .jade, or .html) and citizen will compile and render each view with the appropriate engine.
 
-You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper` to create global helpers. Just keep in mind that you're extending the global Handlebars and Jade objects and could potentially affect citizen's view rendering if you do anything wacky because citizen relies on these same objects.
+You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
+
+### JSON Format
+
+You can tell a controller to return its view context as a JSON object by adding the `format` URL parameter:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
+
+Returns...
+
+    {
+      "My-Clever-Article-Title": {
+        "title": "My Clever Article Title",
+        "summary": "Am I not terribly clever?",
+        "text": "Second page content"
+      }
+    }
+
+Whatever you've added to your `content` object will be returned. The line breaks are just for readability. The actual output is compressed.
+
+### JSONP
+
+JSONP is pretty much the same, just remember the CORS `access` export from earlier if you want to make it available to third party sites. Use `format` and `callback`:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo
+
+Returns:
+
+    foo({
+      "My-Clever-Article-Title": {
+        "title": "My Clever Article Title",
+        "summary": "Am I not terribly clever?",
+        "text": "Second page content"
+      }
+    });
 
 ### Includes
 
@@ -746,6 +808,83 @@ Includes can generate content and add it to the view context of your primary con
 
 Currently, include controllers can't use any of the directives to set cookies, session variables, redirects, etc., but it's on the feature list.
 
-<!-- ### handoff
+### handoff
 
-citizen allows the requested controller to give another controller the responsibility of handling the request and rendering its own view via a context object called `handoff`. The secondary controller assumes responsibility for the request, adding its own content to the context and rendering its own view. You can implement as many handoffs as you want (controller A can handoff to controller B, who can handoff to controller C, and so on). -->
+citizen allows the requested controller to give another controller the responsibility of handling the request and rendering its own view via a directive called `handoff`. The requested controller passes its content to the secondary controller, which assumes responsibility for the request, adding its own content to the context and rendering its own view.
+
+A common use case for `handoff` would be to create a layout controller that serves as a template for every page on your site, rendering all the includes necessary and leaving only the core content and markup to the requested controller. Let's modify the article controller and view so it hands off rendering responsibility to a separate layout controller:
+
+    // article controller
+
+    exports.handler = handler;
+
+    function handler(params, context, emitter) {
+      app.listen({
+        article: function (emitter) {
+            app.patterns.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+        },
+        viewers: function (emitter) {
+          app.patterns.models.article.getViewers(params.url.id, emitter);
+        }
+      }, function (output) {
+        var content = {
+              article: output.article,
+              viewers: output.viewers
+            };
+
+        emitter.emit('ready', {
+          content: content,
+          handoff: {
+            controller: 'layout',
+            // Specifying the view is optional. The layout controller will use
+            // its default view unless you tell it to use a different one.
+            view: 'layout'
+          }
+        });
+      });
+    }
+
+The layout controller handles the includes and renders its own view:
+
+    // layout controller
+
+    exports.handler = handler;
+
+    function handler(params, context, emitter) {
+      emitter.emit('ready', {
+        // No need to specify `content` here because citizen keeps track of the
+        // request context throughout this process
+        include: {
+          _head: '_head',
+          _header: '_header'
+        }
+      });
+    }
+
+When you use the `handoff` directive, the originally requested view (article in this case) is rendered as an include called `_main`:
+
+    <!-- article.hbs, which is saved into include._main -->
+    <h1>
+      {{article.title}}
+    </h1>
+    <p id="summary">
+      {{article.summary}}
+    </p>
+    <div id="text">
+      {{article.text}}
+    </div>
+
+And our layout.hbs file:
+
+    <!DOCTYPE html>
+    <html>
+    {{{include._head}}}
+    <body>
+      {{{include._header}}}
+      <main>
+        {{{include._main}}}
+      </main>
+    </body>
+    </html>
+
+You can implement as many handoffs as you want (controller A can handoff to controller B, which can handoff to controller C, and so on).
