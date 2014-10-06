@@ -18,10 +18,6 @@ Installing citizen
 
     npm install citizen
 
-I had some issues because of the Handlebars dependency, but installing with the `--no-bin-links` flag worked:
-
-    npm install citizen --no-bin-links
-
 
 
 Configuring and Initializing citizen
@@ -109,18 +105,73 @@ The following represents citizen's default configuration.
       }
     }
 
-Objects returned by citizen:
-
-- `app.config`      Includes the configuration settings you supplied at startup
-- `app.helper`      Functions citizen uses internally that you might find helpful in your own app
-- `app.patterns`    Controllers, models, and views (both raw and compiled) from your supplied patterns, which you can use instead of `require`
-- `app.start()`     The function used to start the web server
-- `app.listen()`    citizen's event listener for one or many asynchronous functions
-- `app.handlebars`  A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as registerHelper
-- `app.jade`        A pointer to the citizen Jade global
-- `CTZN`            A global namespace used by citizen for session storage, among other things
-
-You should not access or modify the `CTZN` namespace directly; anything you might need in your application will be exposed by the server to your controllers through local scopes.
+<table>
+  <thead>
+    <tr>
+      <th colspan="2">Objects returned by citizen</th>
+    </tr>
+  </thead>
+  <tr>
+    <th>`app.controllers`</th>
+    <td>
+      Contains controllers from your supplied patterns, which you can use instead of `require`
+    </td>
+  </tr>
+  <tr>
+    <th>`app.models`</th>
+    <td>
+       Contains models from your supplied patterns, which you can use instead of `require`
+    </td>
+  </tr>
+  <tr>
+    <th>`app.views`</th>
+    <td>
+      Contains views (both raw and compiled) from your supplied patterns
+    </td>
+  </tr>
+  <tr>
+    <th>`app.start()`</th>
+    <td>
+      Starts the web server
+    </td>
+  </tr>
+  <tr>
+    <th>`app.listen()`</th>
+    <td>
+      Your app's event listener for one or many asynchronous functions (see the **listen()** section)
+    </td>
+  </tr>
+  <tr>
+    <th>`app.helpers`</th>
+    <td>
+      Functions citizen uses internally that you might find helpful in your own app
+    </td>
+  </tr>
+  <tr>
+    <th>`app.handlebars`</th>
+    <td>
+      A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as `app.handlebars.registerHelper()`
+    </td>
+  </tr>
+  <tr>
+    <th>`app.jade`</th>
+    <td>
+      A pointer to the citizen Jade global
+    </td>
+  </tr>
+  <tr>
+    <th>`app.config`</th>
+    <td>
+      The configuration settings you supplied at startup, which you can use within your application
+    </td>
+  </tr>
+  <tr>
+    <th>`CTZN`</th>
+    <td>
+      The global namespace used by citizen for session storage, among other things. You should not access or modify this namespace directly; anything you might need in your application will be exposed by the server to your controllers through local scopes.
+    </td>
+  </tr>
+</table>
 
 
 
@@ -167,7 +218,7 @@ This SEO content must always follow the pattern name and precede any name/value 
 MVC Patterns
 ------------
 
-citizen relies on a predefined model-view-controller convention. The article pattern mentioned above might use the following structure:
+citizen relies on a simple model-view-controller convention. The article pattern mentioned above might use the following structure:
 
     app/
       patterns/
@@ -176,30 +227,61 @@ citizen relies on a predefined model-view-controller convention. The article pat
         models/
           article.js
         views/
-          article/
-            article.hbs
-            edit.hbs // Secondary view for editing an article
+          article/        // Matches the controller name
+            article.hbs   // Matches the controller name, making it the default view
+            edit.hbs      // Secondary view for editing an article
 
-Controllers are required. Models and views are optional. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the `handoff` directive below.)
-
-Patterns can have multiple views. You could create a secondary article view for editing an article, and request that view using the `view` URL parameter:
+At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory and are accessible via the `view` URL parameter:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/view/edit
 
-### handler(params, context, emitter)
+Models and views are optional and don't necessarily need to be associated with a particular controller. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the `handoff` directive later in this document.)
+
+
+
+### controller.handler(params, context, emitter)
 
 Each controller requires at least one public function named `handler()`. The citizen server calls `handler()` after it processes the initial request and passes it 3 arguments: an object containing the parameters of the request, the current request's context generated by the app up to this point, and an emitter for the controller to emit when it's done.
 
-The `params` object contains the following objects:
-
-- `request` The request object generated by the server
-- `response` The response object generated by the server
-- `route` Details of the route, such as the requested URL and the name of the route (controller)
-- `url` Any URL parameters that were passed including the descriptor, if provided
-- `form` Data collected from a POST
-- `payload` Data collected from a PUT
-- `cookie` An object containing any cookies that were sent with the request
-- `session` An object containing any session variables, if sessions are enabled
+<table>
+  <thead>
+    <tr>
+      <th colspan="2">Contents of the `params` object</th>
+    </tr>
+  </thead>
+  <tr>
+    <th>`request`</th>
+    <td>The request object generated by the server</td>
+  </tr>
+  <tr>
+    <th>`response`</th>
+    <td>The response object generated by the server</td>
+  </tr>
+  <tr>
+    <th>`route`</th>
+    <td>Details of the route, such as the requested URL and the name of the route (controller)</td>
+  </tr>
+  <tr>
+    <th>`url`</th>
+    <td>Any URL parameters that were passed including the descriptor, if provided</td>
+  </tr>
+  <tr>
+    <th>`form`</th>
+    <td>Data collected from a POST</td>
+  </tr>
+  <tr>
+    <th>`payload`</th>
+    <td>Data collected from a PUT</td>
+  </tr>
+  <tr>
+    <th>`cookie`</th>
+    <td>An object containing any cookies that were sent with the request</td>
+  </tr>
+  <tr>
+    <th>`session`</th>
+    <td>An object containing any session variables, if sessions are enabled</td>
+  </tr>
+</table>
 
 In addition to having access to these objects within your controller, they are also included in your view context automatically so you can use them within your view templates (more details in the Views section).
 
@@ -872,19 +954,19 @@ In addition to `listen()`, citizen includes a few more basic helper functions th
 
 Creates a deep copy of an object.
 
-    var myCopy = app.helper.copy(myObject);
+    var myCopy = app.helpers.copy(myObject);
 
 ### extend(object, extension[, boolean])
 
 Extends an object with another object, effectively merging the two objects. By default, extend() creates a copy of the original before extending it, creating a new object. If your intention is to alter the original and create a pointer, pass the optional third argument of `false`.
 
-    var newObject = app.helper.extend(originalObject, extensionObject);
+    var newObject = app.helpers.extend(originalObject, extensionObject);
 
 ### isNumeric(object)
 
 Returns `true` if the object is a number, `false` if not.
 
-    if ( app.helper.isNumeric(url.id) ) {
+    if ( app.helpers.isNumeric(url.id) ) {
       // pass it to the db
     } else {
       return 'Naughty naughty...';
@@ -894,7 +976,7 @@ Returns `true` if the object is a number, `false` if not.
 
 Convert strings into SEO-friendly versions that you can use in your URLs.
 
-    var seoTitle = app.helper.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
+    var seoTitle = app.helpers.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
 
 
 Debugging
