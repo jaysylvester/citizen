@@ -78,7 +78,7 @@ Here's a more complex app example (more about `config` and `on` directories belo
 
 The `config` directory is optional and is used to store your app's configuration files in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
-1. citizen parses each JSON file that starts with "citizen" looking for a "hostname" key that matches the machine's hostname. If it finds one, it loads that configuration.
+1. citizen parses each JSON file whose name starts with "citizen" looking for a "hostname" key that matches the machine's hostname. If it finds one, it loads that configuration.
 2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
 3. If it can't find citizen.json, it runs under its default configuration.
 
@@ -554,7 +554,7 @@ You have direct access to each engine's methods via `app.handlebars` and `app.ja
 
 ### JSON Format
 
-You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter:
+You don't need a custom view just for JSON. You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter.
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
 
@@ -718,7 +718,46 @@ What if logged in users get a different header? Just tell citizen to use a diffe
 
 Includes can generate content and add it to the view context of your primary controller (article.js in this example) because the primary view is the last to be rendered. However, includes are called and rendered asynchronously, so while your _head controller can generate content and add it to the view context of your article controller, don't assume that your _header controller will have access to that data. (The option of waterfall execution is being worked on, so this is only true for the time being.)
 
-Currently, include controllers can't use any of the directives to set cookies, session variables, redirects, etc., but it's on the feature list.
+Currently, if a controller is requested as an include, any of the directives to set cookies, session variables, redirects, etc. are ignored, but it's on the feature list to get these working.
+
+**A pattern meant to be used as an include can be accessed via URL just like any other controller.** You could request the `_head` controller like so:
+
+    http://cleverna.me/_head
+
+Perhaps you'd have it return meta data as JSON for the article pattern:
+
+    http://cleverna.me/_head/for/article/title/My-Clever-Article-Title/format/json
+
+Here's an example of the `_head` controller written as both an include and a handler of direct requests:
+
+    // _head.js controller
+
+    exports.handler = handler;
+
+    function handler(params, context, emitter) {
+      var metaData,
+          // If the "for" URL param exists, use that. Otherwise, assume _head is being used
+          // as an include and use the requested route name.
+          getMetaDataFor = params.url.for || params.route.name;
+
+      // If it's for the article pattern, call getMetaData() and pass it the title
+      if ( getMetaDataFor === 'article' && params.url.title ) {
+        metaData = app.patterns.models.article.getMetaData(params.url.title);
+      // Otherwise, check if the requested controller's model has getMetaData()
+      } else if ( app.patterns.models[getMetaDataFor] && app.patterns.models[getMetaDataFor].getMetaData ) {
+        metaData = app.patterns.models[getMetaDataFor].getMetaData();
+      }
+
+      emitter.emit('ready', {
+        content: {
+          metaData: metaData
+        }
+      });
+    }
+
+Of course, if you don't write it in a manner to accept such requests and return content, it'll return nothing (or throw an error).
+
+_Note: A convention is being worked on to let you make controllers private, so even if they're requested, they'll return a 404. You'll have to do this manually for now._
 
 ### handoff
 
