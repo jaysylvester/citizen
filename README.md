@@ -305,7 +305,7 @@ Using these parameters, I can retrieve the article content from the model, add i
     function handler(params, context, emitter) {
       // Get the article content
       var content = {
-        article: app.patterns.models.article.getArticle(params.url.descriptor, params.url.page)
+        article: app.models.article.getArticle(params.url.descriptor, params.url.page)
       };
 
       // Emit the 'ready' event and pass the view context back to the server for rendering.
@@ -353,7 +353,7 @@ Here's a simple model:
       };
     };
 
-In `article.hbs`, you can now reference objects you placed within the `content` object passed by the emitter, as well as objects such as the `url` scope:
+In `article.hbs`, you can now reference objects you placed within the `content` object passed by the emitter, as well as objects within `params` such as the `url` scope:
 
     <!DOCTYPE html>
     <html>
@@ -370,10 +370,10 @@ In `article.hbs`, you can now reference objects you placed within the `content` 
     </body>
     </html>
 
+The view context is extended with `params` before the view is rendered, so you can reference anything within it as if it's local.
 
-
-listen()
-----------
+listen({ functions }, callback)
+-------------------------------
 
 The previous example has simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
@@ -390,14 +390,14 @@ Let's say our article model has two methods that need to be called before return
         // The property contains the action you want to listen for, which is
         // wrapped in an anonymous function in order to pass the emitter
         article: function (emitter) {
-            app.patterns.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
         },
         viewers: function (emitter) {
-          app.patterns.models.article.getViewers(params.url.id, emitter);
+          app.models.article.getViewers(params.url.id, emitter);
         }
       }, function (output) {
-        // The property name you assign to the methods above becomes the
-        // name of the output object
+        // The property names you assign to the methods above become the names
+        // of the output objects
         var content = {
               article: output.article,
               viewers: output.viewers
@@ -468,7 +468,7 @@ In addition to the view context, the server's `ready` emitter also accepts objec
 
 ### Cookies
 
-You set cookies by appending a `cookie` object to the return context. Cookies can be set one at a time or in groups. The following code tells the server to set `username` and `passwordHash` cookies that never expire:
+You set cookies by appending a `cookie` object to the emitter context. Cookies can be set one at a time or in groups. The following code tells the server to set `username` and `passwordHash` cookies that never expire:
 
     // login controller
 
@@ -477,7 +477,7 @@ You set cookies by appending a `cookie` object to the return context. Cookies ca
     function handler(params, context, emitter) {
       app.listen({
         login: function (emitter) {
-          app.patterns.models.login.authenticate({
+          app.models.login.authenticate({
             // Form values, just like URL parameters, are passed via the params
             // argument
             username: params.form.username,
@@ -490,7 +490,7 @@ You set cookies by appending a `cookie` object to the return context. Cookies ca
             },
             cookie;
 
-        if ( content.login.success === true ) {
+        if ( content.login.success ) {
           cookie = {
             // The cookie gets its name from the property name
             username: {
@@ -572,9 +572,9 @@ Like cookies, session variables you've just assigned aren't available during the
 
 ### Redirects
 
-You can pass redirect instructions to the server that are to be enacted after the request is complete. Redirects using this method are not immediate, so everything your controller is asked to do, it will do before the redirect is processed. The user agent won't receive a full response, however. No view content will be sent, but cookies and session variables will be set if specified.
+You can pass redirect instructions to the server that are to be enacted after the request is complete. Redirects using this method are not immediate, so the controller will do everything it's been asked to do before the redirect is processed. The user agent won't receive a full response, however. No view content will be sent, but cookies and session variables will be set if specified.
 
-The `redirect` object takes two keys: `statusCode` and `url`. If you don't provide a status code, citizen uses 302 (temporary redirect).
+The `redirect` object takes two properties: `statusCode` and `url`. If you don't provide a status code, citizen uses 302 (temporary redirect).
 
     redirect = {
       statusCode: 301,
@@ -602,7 +602,7 @@ To take advantage of these events, include a directory called "on" in your app w
         response.js    // exports start() and end()
         session.js     // exports start() and end()
 
-The application `start()` and request `start()` and `end()` events are triggered before your controller is fired, so the output from those events are passed to your controller via the `context` argument.
+The application `start()` and request `start()` and `end()` events are triggered before your controller is fired, so the output from those events is passed to your controller via the `context` argument.
 
 All files and exports are optional. citizen only calls them if they exist. For example, you could have only a session.js module that exports `end()`.
 
@@ -632,9 +632,11 @@ Views
 
 citizen supports [Handlebars](https://npmjs.org/package/handlebars) and [Jade](https://www.npmjs.org/package/jade) templates, as well as good old HTML. You can even mix and match Handlebars, Jade, and HTML templates as you see fit; just use the appropriate file extensions (.hbs, .jade, or .html) and citizen will compile and render each view with the appropriate engine.
 
-You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
+You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
 
-### JSON Format
+The default view format is HTML, but you can also return JSON and JSONP with no extra work on your part.
+
+### JSON
 
 You don't need a custom view just for JSON. You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter.
 
@@ -650,11 +652,11 @@ Returns...
       }
     }
 
-Whatever you've added to your `content` object will be returned. The line breaks are just for readability. The actual output is compressed.
+Whatever you've added to the controller's emitter `content` object will be returned. The line breaks are just for readability. The actual output is compressed.
 
 ### JSONP
 
-JSONP is pretty much the same. Use `format` and `callback`:
+JSONP is pretty much the same. Use `format` and `callback` in the URL:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo
 
@@ -711,22 +713,27 @@ Let's say our article pattern's Handlebars template has the following contents:
           {{article.text}}
         </div>
       </main>
+      <footer>
+        Copyright &copy; 2014 cleverna.me
+      </footer>
     </body>
     </html>
 
-It probably makes sense to use includes for the head section and header because you'll use that code everywhere. Let's create patterns for the head and header. I like to follow the convention of starting partials with an underscore, but that's up to you:
+It probably makes sense to use includes for the head section, header, and footer because you'll use that code everywhere. Let's create patterns for these includes. I like to follow the convention of starting partials with an underscore, but that's up to you:
 
     app/
       patterns/
         controllers/
+          _footer.js
           _head.js
           _header.js
           article.js
         models/
-          _head.js
-          _header.js
+          _head.js   // The _header and _footer are just static HTML, so they need no models
           article.js
         views/
+          _footer/
+            _footer.hbs
           _head/
             _head.hbs
           _header/
@@ -744,10 +751,10 @@ When the article controller is fired, it needs to tell citizen which includes it
     function handler(params, context, emitter) {
       app.listen({
         article: function (emitter) {
-            app.patterns.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
         },
         viewers: function (emitter) {
-          app.patterns.models.article.getViewers(params.url.id, emitter);
+          app.models.article.getViewers(params.url.id, emitter);
         }
       }, function (output) {
         var content = {
@@ -761,19 +768,20 @@ When the article controller is fired, it needs to tell citizen which includes it
             // The property name is the name of the include's controller.
             // The property value is the name of the view.
             _head: '_head',
-            _header: '_header'
+            _header: '_header',
+            _footer: '_footer'
           }
         });
       });
     }
 
-This tells citizen to call the _head controller and render the _head view, and the _header controller and the _header view, then add both to the view context. In article.hbs, we now reference the includes using the `include` object:
+This tells citizen to call the _head, _header, and _footer controllers, render their respective views, and add them to the view context. In article.hbs, we now reference the includes using the `include` object. The `include` object contains rendered HTML views, so use triple-stache in Handlebars to skip escaping:
 
     <!DOCTYPE html>
     <html>
-    {{include._head}}
+    {{{include._head}}}
     <body>
-      {{include._header}}
+      {{{include._header}}}
       <main>
         <h1>
           {{article.title}}
@@ -785,6 +793,7 @@ This tells citizen to call the _head controller and render the _head view, and t
           {{article.text}}
         </div>
       </main>
+      {{{include._footer}}}
     </body>
     </html>
 
@@ -794,11 +803,12 @@ What if logged in users get a different header? Just tell citizen to use a diffe
       content: content,
       include: {
         _head: '_head',
-        _header: '_header-authenticated'
+        _header: '_header-authenticated',
+        _footer: '_footer'
       }
     });
 
-Includes can generate content and add it to the view context of your primary controller (article.js in this example) because the primary view is the last to be rendered. However, includes are called and rendered asynchronously, so while your _head controller can generate content and add it to the view context of your article controller, don't assume that your _header controller will have access to that data. (The option of waterfall execution is being worked on, so this is only true for the time being.)
+Includes can generate content and add it to the view context of your primary controller (article.js in this example) because the primary view is the last to be rendered. However, includes are called and rendered asynchronously, so while your _header controller can generate content and add it to the view context of your article controller, don't assume that your _footer controller will have access to that data. (The option of waterfall execution is being worked on, so this is only true for the time being.)
 
 Currently, if a controller is requested as an include, any of the directives to set cookies, session variables, redirects, etc. are ignored, but it's on the feature list to get these working.
 
@@ -824,10 +834,10 @@ Here's an example of the `_head` controller written as both an include and a han
 
       // If it's for the article pattern, call getMetaData() and pass it the title
       if ( getMetaDataFor === 'article' && params.url.title ) {
-        metaData = app.patterns.models.article.getMetaData(params.url.title);
+        metaData = app.models.article.getMetaData(params.url.title);
       // Otherwise, check if the requested controller's model has getMetaData()
-      } else if ( app.patterns.models[getMetaDataFor] && app.patterns.models[getMetaDataFor].getMetaData ) {
-        metaData = app.patterns.models[getMetaDataFor].getMetaData();
+      } else if ( app.models[getMetaDataFor] && app.models[getMetaDataFor].getMetaData ) {
+        metaData = app.models[getMetaDataFor].getMetaData();
       }
 
       emitter.emit('ready', {
@@ -837,7 +847,7 @@ Here's an example of the `_head` controller written as both an include and a han
       });
     }
 
-Of course, if you don't write it in a manner to accept such requests and return content, it'll return nothing (or throw an error).
+Of course, if you don't write the controller in a manner to accept direct requests and return content, it'll return nothing (or throw an error).
 
 _Note: A convention is being worked on to let you make controllers private, so even if they're requested, they'll return a 404. You'll have to do this manually for now._
 
@@ -854,10 +864,10 @@ A common use case for `handoff` would be to create a layout controller that serv
     function handler(params, context, emitter) {
       app.listen({
         article: function (emitter) {
-            app.patterns.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
         },
         viewers: function (emitter) {
-          app.patterns.models.article.getViewers(params.url.id, emitter);
+          app.models.article.getViewers(params.url.id, emitter);
         }
       }, function (output) {
         var content = {
@@ -886,10 +896,11 @@ The layout controller handles the includes and renders its own view:
     function handler(params, context, emitter) {
       emitter.emit('ready', {
         // No need to specify `content` here because citizen keeps track of the
-        // article pattern's request context throughout this process
+        // article pattern's request context throughout the handoff process
         include: {
           _head: '_head',
-          _header: '_header'
+          _header: '_header',
+          _footer: '_footer'
         }
       });
     }
@@ -917,6 +928,7 @@ And our layout.hbs file:
       <main>
         {{{include._main}}}
       </main>
+      {{{include._footer}}}
     </body>
     </html>
 
