@@ -1,5 +1,4 @@
-citizen
-=======
+# citizen
 
 citizen is an event-driven MVC framework for Node.js web applications. Its goal is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way. The nuts and bolts of your application are up to you, but citizen's helpers are designed to work with certain patterns and conventions, which are covered throughout this guide.
 
@@ -7,25 +6,15 @@ citizen is in beta. Your comments, criticisms, and requests are welcome.
 
 citizen's static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
 
-### Windows compatibility
-
-I developed citizen using Mac and Linux environments. Windows support is first on my list of testing/fixes.
+** A note on Windows compatibility: ** I developed citizen using Mac and Linux environments. Windows support is first on my list of testing/fixes.
 
 
+## Getting Started with citizen
 
-Installing citizen
-------------------
+### Installing citizen
 
-    npm install citizen
+    $ npm install citizen
 
-
-
-Configuring and Initializing citizen
-------------------------------------
-
-The following assignment will initialize your citizen app:
-
-    app = require('citizen');
 
 
 ### Application Directory Structure
@@ -40,8 +29,8 @@ Here's the most basic directory structure of a citizen web app:
           index.js
         views/
           index/
-            index.hbs
-      start.js // Entry point --> app = require('citizen');
+            index.hbs // You can use Handlebars (.hbs), Jade (.jade), or HTML files
+      start.js
     public/
 
 Here's a more complex app example (more about `config` and `on` directories below):
@@ -72,7 +61,9 @@ Here's a more complex app example (more about `config` and `on` directories belo
 
 ### Configuration
 
-The `config` directory is optional and is used to store your app's configuration files in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
+citizen tries to follow convention over configuration whenever possible, but some things are best handled by a config file.
+
+The `config` directory is optional and contains configuration files for both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
 1. citizen parses each JSON file whose name starts with "citizen" looking for a "hostname" key that matches the machine's hostname. If it finds one, it loads that configuration.
 2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
@@ -85,14 +76,19 @@ The following represents citizen's default configuration.
     {
       "mode": "production",
       "directories":  {
-        "app": "[current working directory]",
-        "logs": "[current working directory]/logs",
-        "on": "[current working directory]/on",
-        "patterns":  "[current working directory]/patterns",
-        "public": "../public"
+        "app": "[absolute path to start.js]",
+        "logs": "[directories.app]/logs",
+        "on": "[directories.app]/on",
+        "patterns":  "[directories.app]/patterns",
+        "public": "[directories.app]../public"
       },
       "urlPaths":  {
-        "app":   "/"
+        "app":   "/",
+        "fileNotFound": "/404.html"
+      },
+      "logs": {
+        "console": true,
+        "file": false
       },
       "httpPort": 80,
       "sessions": false,
@@ -105,6 +101,22 @@ The following represents citizen's default configuration.
       }
     }
 
+
+### Initializing citizen and starting the web server
+
+The start.js file in your app directory can be as simple as this:
+
+    // start.js
+
+    app = require('citizen');
+
+    app.start();
+
+From the command line:
+
+    $ node start.js
+
+
 <table>
   <thead>
     <tr>
@@ -112,61 +124,61 @@ The following represents citizen's default configuration.
     </tr>
   </thead>
   <tr>
-    <th>`app.controllers`</th>
-    <td>
-      Contains controllers from your supplied patterns, which you can use instead of `require`
-    </td>
-  </tr>
-  <tr>
-    <th>`app.models`</th>
-    <td>
-       Contains models from your supplied patterns, which you can use instead of `require`
-    </td>
-  </tr>
-  <tr>
-    <th>`app.views`</th>
-    <td>
-      Contains views (both raw and compiled) from your supplied patterns
-    </td>
-  </tr>
-  <tr>
-    <th>`app.start()`</th>
+    <th><code>app.start()</code></th>
     <td>
       Starts the web server
     </td>
   </tr>
   <tr>
-    <th>`app.listen()`</th>
+    <th><code>app.listen()</code></th>
     <td>
-      Your app's event listener for one or many asynchronous functions (see the **listen()** section)
+      Your app's event listener for one or many asynchronous functions (see the <a href="#app-listen-functions--callback">listen()</a> section)
     </td>
   </tr>
   <tr>
-    <th>`app.helpers`</th>
+    <th><code>app.controllers</code></th>
+    <td>
+      Contains controllers from your supplied patterns, which you can use instead of `require`
+    </td>
+  </tr>
+  <tr>
+    <th><code>app.models</code></th>
+    <td>
+       Contains models from your supplied patterns, which you can use instead of `require`
+    </td>
+  </tr>
+  <tr>
+    <th><code>app.views</code></th>
+    <td>
+      Contains views (both raw and compiled) from your supplied patterns
+    </td>
+  </tr>
+  <tr>
+    <th><code>app.helpers</code></th>
     <td>
       Functions citizen uses internally that you might find helpful in your own app
     </td>
   </tr>
   <tr>
-    <th>`app.handlebars`</th>
+    <th><code>app.handlebars</code></th>
     <td>
       A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as `app.handlebars.registerHelper()`
     </td>
   </tr>
   <tr>
-    <th>`app.jade`</th>
+    <th><code>app.jade</code></th>
     <td>
       A pointer to the citizen Jade global
     </td>
   </tr>
   <tr>
-    <th>`app.config`</th>
+    <th><code>app.config</code></th>
     <td>
       The configuration settings you supplied at startup, which you can use within your application
     </td>
   </tr>
   <tr>
-    <th>`CTZN`</th>
+    <th><code>CTZN</code></th>
     <td>
       The global namespace used by citizen for session storage, among other things. You should not access or modify this namespace directly; anything you might need in your application will be exposed by the server to your controllers through local scopes.
     </td>
@@ -175,15 +187,7 @@ The following represents citizen's default configuration.
 
 
 
-Starting the web server
------------------------
-
-    app.start();
-
-
-
-Routing and URLs
-----------------
+## Routing and URLs
 
 Apps using citizen have a simple URL structure that determines which controller to fire, passes URL parameters, and makes a bit of room for SEO-friendly content. The structure looks like this:
 
@@ -215,8 +219,7 @@ This SEO content must always follow the pattern name and precede any name/value 
 
 
 
-MVC Patterns
-------------
+## MVC Patterns
 
 citizen relies on a simple model-view-controller convention. The article pattern mentioned above might use the following structure:
 
@@ -235,57 +238,74 @@ At least one controller is required for a given URL, and a controller's default 
 
     http://www.cleverna.me/article/My-Clever-Article-Title/view/edit
 
-Models and views are optional and don't necessarily need to be associated with a particular controller. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the `handoff` directive later in this document.)
+More on views in the <a href="#views">Views section</a>.
+
+Models and views are optional and don't necessarily need to be associated with a particular controller. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the <a href="#controller-handoff">Controller Handoff</a> directive.)
 
 
 
-### controller.handler(params, context, emitter)
+## Controllers
 
-Each controller requires at least one public function named `handler()`. The citizen server calls `handler()` after it processes the initial request and passes it 3 arguments: an object containing the parameters of the request, the current request's context generated by the app up to this point, and an emitter for the controller to emit when it's done.
+Each controller requires at least one public function named `handler()`:
+
+    // article controller
+
+    exports.handler = handler;
+
+    function handler(params, context, emitter) {
+
+      // do some stuff
+
+      emitter.emit('ready', {
+        // content and directives for the server
+      });
+    }
+
+The citizen server calls `handler()` after it processes the initial request and passes it 3 arguments: an object containing the parameters of the request, the current request's context generated by the app up to this point, and an emitter for the controller to emit when it's ready to pass the results to the server.
 
 <table>
   <thead>
     <tr>
-      <th colspan="2">Contents of the `params` object</th>
+      <th colspan="2">Contents of the <code>params</code> object</th>
     </tr>
   </thead>
   <tr>
-    <th>`request`</th>
-    <td>The request object generated by the server</td>
+    <th><code>request</code></th>
+    <td>The request object generated by the server, just in case you need direct access</td>
   </tr>
   <tr>
-    <th>`response`</th>
+    <th><code>response</code></th>
     <td>The response object generated by the server</td>
   </tr>
   <tr>
-    <th>`route`</th>
+    <th><code>route</code></th>
     <td>Details of the route, such as the requested URL and the name of the route (controller)</td>
   </tr>
   <tr>
-    <th>`url`</th>
+    <th><code>url</code></th>
     <td>Any URL parameters that were passed including the descriptor, if provided</td>
   </tr>
   <tr>
-    <th>`form`</th>
+    <th><code>form</code></th>
     <td>Data collected from a POST</td>
   </tr>
   <tr>
-    <th>`payload`</th>
+    <th><code>payload</code></th>
     <td>Data collected from a PUT</td>
   </tr>
   <tr>
-    <th>`cookie`</th>
+    <th><code>cookie</code></th>
     <td>An object containing any cookies that were sent with the request</td>
   </tr>
   <tr>
-    <th>`session`</th>
+    <th><code>session</code></th>
     <td>An object containing any session variables, if sessions are enabled</td>
   </tr>
 </table>
 
-In addition to having access to these objects within your controller, they are also included in your view context automatically so you can use them within your view templates (more details in the Views section).
+In addition to having access to these objects within your controller, they are also included in your view context automatically so you can use them within your view templates (more details in the <a href="#views">Views section</a>).
 
-Based on the previous example URL...
+For example, based on the previous article URL...
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
@@ -296,7 +316,11 @@ Based on the previous example URL...
       descriptor: 'My-Clever-Article-Title'
     }
 
-Using these parameters, I can retrieve the article content from the model, add it to the view context, and pass the context back to the server:
+The `context` argument contains any output that's been generated by the request up to this point. There are various events that can populate this argument with content and directives, which are then passed to your controller so you can access that content or see what directives have been set by previous events. More on this later.
+
+The `emitter` argument is the method by which the controller lets the server know that it's done with its tasks and ready to render the result. The emitter should emit a "ready" event when the controller has accomplished its task. This lets the server know it's okay to proceed.
+
+Using the above URL parameters, I can retrieve the article content from the model and pass it back to the server:
 
     // article controller
 
@@ -308,19 +332,19 @@ Using these parameters, I can retrieve the article content from the model, add i
         article: app.models.article.getArticle(params.url.descriptor, params.url.page)
       };
 
-      // Emit the 'ready' event and pass the view context back to the server for rendering.
+      // Emit the 'ready' event and pass the view context back to the server for rendering via the content object
       emitter.emit('ready', {
         content: content
       });
     };
 
-The emitter should emit a "ready" event when the controller has accomplished its task. This lets the server know it's okay to proceed.
+The second argument in `emitter.emit` is an object containing any data you want to pass back to citizen. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to perform other directives (explained later in the <a href="#emitter-directives">Emitter Directives</a> section).
 
-The second argument in the emitter is an object containing any data you want to pass back to citizen, including the view context. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to perform other directives, which are described later in this document.
+## Models
 
-We haven't discussed the `context` argument yet. This argument contains any output that's been generated by the request up to this point. There are various events that can populate this argument with content and directives, which is then passed to your controller so you can access that content. More on this later.
+Models are optional and their structure is completely up to you. citizen doesn't talk to your models directly; it only stores them in `app.models` for your convenience.
 
-Here's a simple model:
+Here's a simple static model for the article pattern:
 
     // article model
 
@@ -353,6 +377,13 @@ Here's a simple model:
       };
     };
 
+
+## Views
+
+citizen supports [Handlebars](https://npmjs.org/package/handlebars) and [Jade](https://www.npmjs.org/package/jade) templates, as well as good old HTML. You can even mix and match Handlebars, Jade, and HTML templates as you see fit; just use the appropriate file extensions (.hbs, .jade, or .html) and citizen will compile and render each view with the appropriate engine.
+
+You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
+
 In `article.hbs`, you can now reference objects you placed within the `content` object passed by the emitter, as well as objects within `params` such as the `url` scope:
 
     <!DOCTYPE html>
@@ -372,10 +403,48 @@ In `article.hbs`, you can now reference objects you placed within the `content` 
 
 The view context is extended with `params` before the view is rendered, so you can reference anything within it as if it's local.
 
-listen({ functions }, callback)
--------------------------------
+citizen sends HTML to the client by default, but you can also return JSON and JSONP with no extra work on your part.
 
-The previous example has simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
+### JSON
+
+You don't need a custom view just for JSON. You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter.
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
+
+Returns...
+
+    {
+      "My-Clever-Article-Title": {
+        "title": "My Clever Article Title",
+        "summary": "Am I not terribly clever?",
+        "text": "Second page content"
+      }
+    }
+
+Whatever you've added to the controller's emitter `content` object will be returned. The line breaks are just for readability. The actual output is compressed.
+
+### JSONP
+
+JSONP is pretty much the same. Use `format` and `callback` in the URL:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo
+
+Returns:
+
+    foo({
+      "My-Clever-Article-Title": {
+        "title": "My Clever Article Title",
+        "summary": "Am I not terribly clever?",
+        "text": "Second page content"
+      }
+    });
+
+If you want to make it available to third party sites, see the <a href="#http-access-control-cors">CORS section</a> below.
+
+
+## app.listen({ functions }, callback)
+
+The article example we've been using has only simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
 `listen()` takes two arguments: an object containing one or more methods you want to call, and a callback to handle the output. `listen()` requires that your functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
 
@@ -390,7 +459,7 @@ Let's say our article model has two methods that need to be called before return
         // The property contains the action you want to listen for, which is
         // wrapped in an anonymous function in order to pass the emitter
         article: function (emitter) {
-            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+          app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
         },
         viewers: function (emitter) {
           app.models.article.getViewers(params.url.id, emitter);
@@ -460,10 +529,9 @@ And the model:
 
 
 
-Setting Cookies, Session Variables, and Redirects
--------------------------------------------------
+## Emitter Directives
 
-In addition to the view context, the server's `ready` emitter also accepts objects used for setting cookies, session variables, and redirects.
+In addition to the view content, the controller's `ready` emitter can also pass directives used for setting cookies and session variables, requesting redirects, calling and rendering includes, and handing off the request to another controller for further processing.
 
 
 ### Cookies
@@ -586,94 +654,6 @@ The `redirect` object takes two properties: `statusCode` and `url`. If you don't
       redirect: redirect
     });
 
-
-
-Application Events and the Context Argument
--------------------------------------------
-
-Certain events will occur throughout the life of your citizen application. You can act on these application events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
-
-To take advantage of these events, include a directory called "on" in your app with the following modules and exports:
-
-    app/
-      on/
-        application.js // exports start(), end(), and error()
-        request.js     // exports start() and end()
-        response.js    // exports start() and end()
-        session.js     // exports start() and end()
-
-The application `start()` and request `start()` and `end()` events are triggered before your controller is fired, so the output from those events is passed to your controller via the `context` argument.
-
-All files and exports are optional. citizen only calls them if they exist. For example, you could have only a session.js module that exports `end()`.
-
-_Note: As of this version, session end() and application end() aren't functional. They'll be in a future version._
-
-Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to a login page if it's not there, unless the requested pattern is the login page:
-
-    // app/on/request.js
-
-    exports.start = start;
-
-    function start(params, context, emitter) {
-      var redirect = {};
-
-      if ( !params.cookie.username && params.route.name !== 'login' ) {
-        redirect.url = 'http://' + params.request.headers.host + '/login';
-      }
-
-      emitter.emit('ready', {
-        redirect: redirect
-      });
-    };
-
-
-Views
------
-
-citizen supports [Handlebars](https://npmjs.org/package/handlebars) and [Jade](https://www.npmjs.org/package/jade) templates, as well as good old HTML. You can even mix and match Handlebars, Jade, and HTML templates as you see fit; just use the appropriate file extensions (.hbs, .jade, or .html) and citizen will compile and render each view with the appropriate engine.
-
-You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
-
-The default view format is HTML, but you can also return JSON and JSONP with no extra work on your part.
-
-### JSON
-
-You don't need a custom view just for JSON. You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter.
-
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
-
-Returns...
-
-    {
-      "My-Clever-Article-Title": {
-        "title": "My Clever Article Title",
-        "summary": "Am I not terribly clever?",
-        "text": "Second page content"
-      }
-    }
-
-Whatever you've added to the controller's emitter `content` object will be returned. The line breaks are just for readability. The actual output is compressed.
-
-### JSONP
-
-JSONP is pretty much the same. Use `format` and `callback` in the URL:
-
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo
-
-Returns:
-
-    foo({
-      "My-Clever-Article-Title": {
-        "title": "My Clever Article Title",
-        "summary": "Am I not terribly clever?",
-        "text": "Second page content"
-      }
-    });
-
-If you want to make it available to third party sites, see the CORS section below.
-
-
-
 ### Includes
 
 citizen has a standardized way of handling includes that works in both Handlebars and Jade templates. In citizen, includes are more than just chunks of code that you can reuse. citizen includes are full patterns, each having its own controller, model, and view(s).
@@ -729,16 +709,16 @@ It probably makes sense to use includes for the head section, header, and footer
           _header.js
           article.js
         models/
-          _head.js   // The _header and _footer are just static HTML, so they need no models
+          _head.js   // The header and footer are just static HTML, so they need no models
           article.js
         views/
           _footer/
-            _footer.hbs
+            _footer.html
           _head/
             _head.hbs
           _header/
-            _header.hbs
-            _header-authenticated.hbs // A different header for logged in users
+            _header.html
+            _header-authenticated.html // A different header for logged in users
           article/
             article.hbs
 
@@ -822,7 +802,7 @@ Perhaps you'd have it return meta data as JSON for the article pattern:
 
 Here's an example of the `_head` controller written as both an include and a handler of direct requests:
 
-    // _head.js controller
+    // _head controller
 
     exports.handler = handler;
 
@@ -851,9 +831,9 @@ Of course, if you don't write the controller in a manner to accept direct reques
 
 _Note: A convention is being worked on to let you make controllers private, so even if they're requested, they'll return a 404. You'll have to do this manually for now._
 
-### handoff
+### Controller Handoff
 
-citizen allows the requested controller to give another controller the responsibility of handling the request and rendering its own view via a directive called `handoff`. The requested controller passes its content to the secondary controller, which assumes responsibility for the request, adding its own content to the context and rendering its own view.
+citizen allows the requested controller to give another controller the responsibility of handling the request and rendering its own view via a directive called `handoff`. The requested controller passes its content and directives to a secondary controller, which assumes responsibility for the request, adding its own content and directives, and rendering its own view.
 
 A common use case for `handoff` would be to create a layout controller that serves as a template for every page on your site, rendering all the includes necessary and leaving only the core content and markup to the requested controller. Let's modify the article controller and view so it hands off rendering responsibility to a separate layout controller:
 
@@ -864,7 +844,7 @@ A common use case for `handoff` would be to create a layout controller that serv
     function handler(params, context, emitter) {
       app.listen({
         article: function (emitter) {
-            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+          app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
         },
         viewers: function (emitter) {
           app.models.article.getViewers(params.url.id, emitter);
@@ -935,9 +915,46 @@ And our layout.hbs file:
 You can implement as many handoffs as you want (controller A can handoff to controller B, which can handoff to controller C, and so on), but the original controller's view will still be the one that ends up in `includes._main`.
 
 
+# Application Events and the Context Argument
 
-HTTP Access Control (CORS)
---------------------------
+Certain events will occur throughout the life of your citizen application. You can act on these application events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
+
+To take advantage of these events, include a directory called "on" in your app with the following modules and exports:
+
+    app/
+      on/
+        application.js // exports start(), end(), and error()
+        request.js     // exports start() and end()
+        response.js    // exports start() and end()
+        session.js     // exports start() and end()
+
+The application `start()` and request `start()` and `end()` events are triggered before your controller is fired, so the output from those events is passed to your controller via the `context` argument.
+
+All files and exports are optional. citizen only calls them if they exist. For example, you could have only a session.js module that exports `end()`.
+
+_Note: As of this version, session end() and application end() aren't functional. They'll be in a future version._
+
+Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to a login page if it's not there, unless the requested pattern is the login page:
+
+    // app/on/request.js
+
+    exports.start = start;
+
+    function start(params, context, emitter) {
+      var redirect = {};
+
+      if ( !params.cookie.username && params.route.name !== 'login' ) {
+        redirect.url = 'http://' + params.request.headers.host + '/login';
+      }
+
+      emitter.emit('ready', {
+        redirect: redirect
+      });
+    };
+
+
+
+## HTTP Access Control (CORS)
 
 citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
 
@@ -957,8 +974,7 @@ citizen supports cross-domain HTTP requests via access control headers. By defau
 For more details on CORS, check out this writeup on the [Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
 
 
-Helpers
--------
+## Helpers
 
 In addition to `listen()`, citizen includes a few more basic helper functions that it uses internally, but might be of use to you, so it returns them for public use.
 
@@ -991,8 +1007,7 @@ Convert strings into SEO-friendly versions that you can use in your URLs.
     var seoTitle = app.helpers.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
 
 
-Debugging
----------
+## Debugging
 
 **Warning: `debug` and `development` modes are inherently insecure. Don't use them in a production environment.**
 
