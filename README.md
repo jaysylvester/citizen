@@ -1,6 +1,6 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. Its goal is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way. The nuts and bolts of your application are up to you, but citizen's helpers are designed to work with certain patterns and conventions, which are covered throughout this guide.
+citizen is an event-driven MVC framework for Node.js web applications. Its purpose is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way. The nuts and bolts of your application are up to you, but citizen favors convention over configuration; those conventions are covered throughout this guide.
 
 citizen is in beta. Your comments, criticisms, and requests are welcome.
 
@@ -132,7 +132,7 @@ From the command line:
   <tr>
     <th><code>app.listen()</code></th>
     <td>
-      Your app's event listener for one or many asynchronous functions (see the <a href="#app-listen-functions--callback">listen()</a> section)
+      Your app's event listener for one or many asynchronous functions (see the <a href="#applisten-functions--callback">listen()</a> section)
     </td>
   </tr>
   <tr>
@@ -234,13 +234,9 @@ citizen relies on a simple model-view-controller convention. The article pattern
             article.hbs   // Matches the controller name, making it the default view
             edit.hbs      // Secondary view for editing an article
 
-At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory and are accessible via the `view` URL parameter:
+At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory. More on views in the [Views section](#views).
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/view/edit
-
-More on views in the <a href="#views">Views section</a>.
-
-Models and views are optional and don't necessarily need to be associated with a particular controller. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the <a href="#controller-handoff">Controller Handoff</a> directive.)
+Models and views are optional and don't necessarily need to be associated with a particular controller. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the [controller handoff directive](#controller-handoff).)
 
 
 
@@ -384,7 +380,7 @@ citizen supports [Handlebars](https://npmjs.org/package/handlebars) and [Jade](h
 
 You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
 
-In `article.hbs`, you can now reference objects you placed within the `content` object passed by the emitter, as well as objects within `params` such as the `url` scope:
+In `article.hbs`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
     <!DOCTYPE html>
     <html>
@@ -400,8 +396,6 @@ In `article.hbs`, you can now reference objects you placed within the `content` 
       </div>
     </body>
     </html>
-
-The view context is extended with `params` before the view is rendered, so you can reference anything within it as if it's local.
 
 citizen sends HTML to the client by default, but you can also return JSON and JSONP with no extra work on your part.
 
@@ -439,7 +433,11 @@ Returns:
       }
     });
 
-If you want to make it available to third party sites, see the <a href="#http-access-control-cors">CORS section</a> below.
+If you want to make it available to third party sites, see the [CORS section](#http-access-control-cors).
+
+### Rendering alternate views
+
+By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your emitter](#emitter-directives).
 
 
 ## app.listen({ functions }, callback)
@@ -531,7 +529,34 @@ And the model:
 
 ## Emitter Directives
 
-In addition to the view content, the controller's `ready` emitter can also pass directives used for setting cookies and session variables, requesting redirects, calling and rendering includes, and handing off the request to another controller for further processing.
+In addition to the view content, the controller's `ready` emitter can also pass directives to render alternate views, set cookies and session variables, initiate redirects, call and render includes, and hand off the request to another controller for further processing.
+
+
+### Views
+
+By default, the server renders the view whose name matches that of the controller. To render a different view, use the `view` directive in your emitter:
+
+    // article controller
+
+    exports.handler = handler;
+
+    function handler(params, context, emitter) {
+      app.listen({
+        article: function (emitter) {
+            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+        }
+      }, function (output) {
+        var content = {
+              article: output.article
+            };
+
+        emitter.emit('ready', {
+          content: content,
+          // This tells the server to render app/patterns/views/article/edit.hbs
+          view: 'edit'
+        });
+      });
+    }
 
 
 ### Cookies
@@ -640,7 +665,7 @@ Like cookies, session variables you've just assigned aren't available during the
 
 ### Redirects
 
-You can pass redirect instructions to the server that are to be enacted after the request is complete. Redirects using this method are not immediate, so the controller will do everything it's been asked to do before the redirect is processed. The user agent won't receive a full response, however. No view content will be sent, but cookies and session variables will be set if specified.
+You can pass redirect instructions to the server that will be initiated after the request is complete. Redirects using this method are not immediate, so the controller will do everything it's been asked to do before the redirect is processed. The user agent won't receive a full response, however. No view content will be sent, but cookies and session variables will be set if specified.
 
 The `redirect` object takes two properties: `statusCode` and `url`. If you don't provide a status code, citizen uses 302 (temporary redirect).
 
