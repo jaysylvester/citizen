@@ -6,8 +6,6 @@ citizen is in beta. Your comments, criticisms, and requests are welcome.
 
 citizen's static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
 
-** A note on Windows compatibility: ** I developed citizen using Mac and Linux environments. Windows support is first on my list of testing/fixes.
-
 
 ## Getting Started with citizen
 
