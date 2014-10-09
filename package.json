@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "An event-driven MVC framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
