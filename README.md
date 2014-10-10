@@ -99,6 +99,12 @@ The following represents citizen's default configuration.
       }
     }
 
+`urlPaths.app` is the folder path in your app's web address. If your app's URL is:
+
+    http://www.website.com/path/my-app
+
+`urlPaths.app` should be "/path/my-app". This is necessary for the router to work.
+
 
 ### Initializing citizen and starting the web server
 
@@ -136,13 +142,13 @@ From the command line:
   <tr>
     <th><code>app.controllers</code></th>
     <td>
-      Contains controllers from your supplied patterns, which you can use instead of `require`
+      Contains controllers from your supplied patterns, which you can use instead of <code>require</code>
     </td>
   </tr>
   <tr>
     <th><code>app.models</code></th>
     <td>
-       Contains models from your supplied patterns, which you can use instead of `require`
+       Contains models from your supplied patterns, which you can use instead of <code>require</code>
     </td>
   </tr>
   <tr>
@@ -160,7 +166,7 @@ From the command line:
   <tr>
     <th><code>app.handlebars</code></th>
     <td>
-      A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as `app.handlebars.registerHelper()`
+      A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as <code>app.handlebars.registerHelper()</code>
     </td>
   </tr>
   <tr>
@@ -195,11 +201,11 @@ For example, let's say your site's base URL is:
 
     http://www.cleverna.me
 
-Requesting that URL will cause the `index` controller to fire, because the index pattern is the default pattern. The following URL will also cause the index controller to fire:
+Requesting that URL will cause the `index` controller to fire, because the index controller is the default. The following URL will also cause the index controller to fire:
 
     http://www.cleverna.me/index
 
-If you have an `article` pattern, you'd request it like this:
+If you have an `article` controller, you'd request it like this:
 
     http://www.cleverna.me/article
 
@@ -260,7 +266,7 @@ The citizen server calls `handler()` after it processes the initial request and 
 <table>
   <thead>
     <tr>
-      <th colspan="2">Contents of the <code>params</code> object</th>
+      <th colspan="2">Contents of the <code>params</code> argument</th>
     </tr>
   </thead>
   <tr>
@@ -297,7 +303,7 @@ The citizen server calls `handler()` after it processes the initial request and 
   </tr>
 </table>
 
-In addition to having access to these objects within your controller, they are also included in your view context automatically so you can use them within your view templates (more details in the <a href="#views">Views section</a>).
+In addition to having access to these objects within your controller, they are also included in your view context automatically so you can reference them within your view templates as local variables (more details in the <a href="#views">Views section</a>).
 
 For example, based on the previous article URL...
 
@@ -326,7 +332,8 @@ Using the above URL parameters, I can retrieve the article content from the mode
         article: app.models.article.getArticle(params.url.descriptor, params.url.page)
       };
 
-      // Emit the 'ready' event and pass the view context back to the server for rendering via the content object
+      // Emit the 'ready' event and pass the view context back to the server for
+      // rendering via the content object
       emitter.emit('ready', {
         content: content
       });
