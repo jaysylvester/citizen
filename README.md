@@ -81,7 +81,7 @@ The following represents citizen's default configuration.
         "public": "[directories.app]../public"
       },
       "urlPaths":  {
-        "app":   "/",
+        "app":   "",
         "fileNotFound": "/404.html"
       },
       "logs": {
@@ -510,17 +510,17 @@ And the model:
 
 `listen()` currently fires all functions asynchronously and returns the results for every function in a single output object after all functions have completed. A waterfall-type execution is being worked on, but in the meantime, you can nest `listen()` functions to achieve the same effect:
 
-    listen({
+    app.listen({
       first: function (emitter) {
         doSomething(emitter);
       }
     }, function (output) {
-      listen({
+      app.listen({
         second: function (emitter) {
           doNextThing(output.first, emitter);
         }
       }, function (output) {
-        listen({
+        app.listen({
           third: function (emitter) {
             doOneMoreThing(output.second, emitter);
           }
@@ -537,7 +537,7 @@ And the model:
 In addition to the view content, the controller's `ready` emitter can also pass directives to render alternate views, set cookies and session variables, initiate redirects, call and render includes, and hand off the request to another controller for further processing.
 
 
-### Views
+### Alternate Views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, use the `view` directive in your emitter:
 
@@ -785,13 +785,13 @@ When the article controller is fired, it needs to tell citizen which includes it
       });
     }
 
-This tells citizen to call the _head, _header, and _footer controllers, render their respective views, and add them to the view context. In article.hbs, we now reference the includes using the `include` object. The `include` object contains rendered HTML views, so use triple-stache in Handlebars to skip escaping:
+This tells citizen to call the _head, _header, and _footer controllers, render their respective views, and add them to the view context under the controller names. In article.hbs, we now reference the includes using the `include` helper. The `include` helper returns rendered HTML views, so use triple-stache in Handlebars to skip escaping:
 
     <!DOCTYPE html>
     <html>
-    {{{include._head}}}
+    {{{include '_head'}}}
     <body>
-      {{{include._header}}}
+      {{{include '_header'}}}
       <main>
         <h1>
           {{article.title}}
@@ -803,7 +803,7 @@ This tells citizen to call the _head, _header, and _footer controllers, render t
           {{article.text}}
         </div>
       </main>
-      {{{include._footer}}}
+      {{{include '_footer'}}}
     </body>
     </html>
 
@@ -860,6 +860,16 @@ Here's an example of the `_head` controller written as both an include and a han
 Of course, if you don't write the controller in a manner to accept direct requests and return content, it'll return nothing (or throw an error).
 
 _Note: A convention is being worked on to let you make controllers private, so even if they're requested, they'll return a 404. You'll have to do this manually for now._
+
+#### Should I use a citizen include or a Handlebars partial/Jade include?
+
+citizen includes provide rich functionality, but they do have limitations and can be overkill in certain situations.
+
+* **Do you only need to share a chunk of markup across different views?** Use a standard Handlebars partial, Jade template, or HTML document. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
+* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML, not compiled templates. You can't loop over them and inject data like you can with Handlebars partials or Jade includes.
+* **Do you need to retrieve additional content that isn't in the parent view's context?** A citizen include can do anything that a standard MVC pattern can do except set directives (which is on its way). If you want to retrieve additional data and add it to the view context, a citizen include is the way to go.
+* **Do you need the ability to render different includes based on business logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can place logic in the include's controller and request different views based on that logic. Using Handlebars partials or Jade includes would require registering multiple partials and using conditionals in the view template.
+* **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests.
 
 ### Controller Handoff
 
