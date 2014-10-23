@@ -1,6 +1,6 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. Its purpose is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way. The nuts and bolts of your application are up to you, but citizen favors convention over configuration; those conventions are covered throughout this guide.
+citizen is an event-driven MVC framework for Node.js web applications. Its purpose is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way; the nuts and bolts of your application are up to you. citizen favors convention over configuration, and those conventions are covered throughout this guide.
 
 citizen is in beta. Your comments, criticisms, and requests are welcome.
 
@@ -24,7 +24,7 @@ Here's the most basic directory structure of a citizen web app:
         controllers/
           index.js
         models/
-          index.js
+          index.js // Optional
         views/
           index/
             index.hbs // You can use Handlebars (.hbs), Jade (.jade), or HTML files
@@ -63,7 +63,7 @@ citizen tries to follow convention over configuration whenever possible, but som
 
 The `config` directory is optional and contains configuration files for both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
-1. citizen parses each JSON file whose name starts with "citizen" looking for a "hostname" key that matches the machine's hostname. If it finds one, it loads that configuration.
+1. citizen parses each JSON file whose name starts with "citizen" looking for a `hostname` key that matches the machine's hostname. If it finds one, it loads that configuration.
 2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
 3. If it can't find citizen.json, it runs under its default configuration.
 
@@ -101,9 +101,9 @@ The following represents citizen's default configuration.
 
 `urlPaths.app` is the folder path in your app's web address. If your app's URL is:
 
-    http://www.website.com/path/my-app
+    http://www.website.com/to/my-app
 
-`urlPaths.app` should be "/path/my-app". This is necessary for the router to work.
+`urlPaths.app` should be "/to/my-app". This is necessary for the router to work.
 
 
 ### Initializing citizen and starting the web server
@@ -136,7 +136,7 @@ From the command line:
   <tr>
     <th><code>app.listen()</code></th>
     <td>
-      Your app's event listener for one or many asynchronous functions (see the <a href="#applisten-functions--callback">listen()</a> section)
+      Your app's event listener for one or more asynchronous functions (see the <a href="#applisten-functions--callback">listen()</a> section)
     </td>
   </tr>
   <tr>
@@ -193,7 +193,7 @@ From the command line:
 
 ## Routing and URLs
 
-Apps using citizen have a simple URL structure that determines which controller to fire, passes URL parameters, and makes a bit of room for SEO-friendly content. The structure looks like this:
+Apps using citizen have a simple URL structure that determines which controller to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that can double as a unique identifier. The structure looks like this:
 
     http://www.site.com/controller-name/SEO-content-here/parameter/value/parameter2/value2
 
@@ -213,13 +213,13 @@ Instead of query strings, citizen uses an SEO-friendly method of passing URL par
 
     http://www.cleverna.me/article/id/237/page/2
 
-Valid parameter names must start with a letter or underscore and may contain numbers.
+Valid parameter names must start with a letter or underscore and may contain numbers and dashes (-).
 
 citizen also lets you optionally insert relevant content into your URLs, like so:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
-This SEO content must always follow the pattern name and precede any name/value pairs. You can access it via a URL parameter called `descriptor`, which means you can use it as a unique identifier (more on URL parameters below).
+This SEO content must always follow the pattern name and precede any name/value pairs. You can access it via the `url` scope, which means you can use it as a unique identifier (more on URL parameters below).
 
 
 
@@ -312,9 +312,11 @@ For example, based on the previous article URL...
 ...you'll have the following `params.url` object passed to your controller:
 
     {
-      page: 2,
-      descriptor: 'My-Clever-Article-Title'
+      article: 'My-Clever-Article-Title',
+      page: 2
     }
+
+The controller name becomes a property in the URL scope that contains the SEO content, which makes it well-suited for use as a unique identifier. This content is also available in the `route` object as `route.descriptor`.
 
 The `context` argument contains any output that's been generated by the request up to this point. There are various events that can populate this argument with content and directives, which are then passed to your controller so you can access that content or see what directives have been set by previous events. More on this later.
 
@@ -413,10 +415,12 @@ You don't need a custom view just for JSON. You can tell a controller to return 
 Returns...
 
     {
-      "My-Clever-Article-Title": {
-        "title": "My Clever Article Title",
-        "summary": "Am I not terribly clever?",
-        "text": "Second page content"
+      "article": {
+        "My-Clever-Article-Title": {
+          "title": "My Clever Article Title",
+          "summary": "Am I not terribly clever?",
+          "text": "Second page content"
+        }
       }
     }
 
@@ -431,14 +435,16 @@ JSONP is pretty much the same. Use `format` and `callback` in the URL:
 Returns:
 
     foo({
-      "My-Clever-Article-Title": {
-        "title": "My Clever Article Title",
-        "summary": "Am I not terribly clever?",
-        "text": "Second page content"
+      "article": {
+        "My-Clever-Article-Title": {
+          "title": "My Clever Article Title",
+          "summary": "Am I not terribly clever?",
+          "text": "Second page content"
+        }
       }
     });
 
-If you want to make it available to third party sites, see the [CORS section](#http-access-control-cors).
+If you want to make a controller available to third party sites, see the [CORS section](#cross-origin-resource-sharing-cors).
 
 ### Rendering alternate views
 
@@ -566,7 +572,7 @@ By default, the server renders the view whose name matches that of the controlle
 
 ### Cookies
 
-You set cookies by appending a `cookie` object to the emitter context. Cookies can be set one at a time or in groups. The following code tells the server to set `username` and `passwordHash` cookies that never expire:
+You set cookies by appending a `cookie` object to the emitter context. The following code tells the server to set `username` and `passwordHash` cookies that never expire:
 
     // login controller
 
@@ -644,9 +650,9 @@ Cookie variables you set within your controller aren't immediately available wit
 
 ### Session Variables
 
-If sessions are enabled, citizen creates an object called `CTZN.sessions` to store session information. Don't access this object directly; use `params.session` instead (or simply `session` within the view). These local scopes reference the current user's session.
+If sessions are enabled, citizen creates an object called `CTZN.sessions` to store session information. Don't access this object directly; use `params.session` in your controller or simply `session` within views. These local scopes reference the current user's session.
 
-By default, the session has two properties: `id` and `expires`. The session ID is also sent to the client as a cookie called `ctzn_session_id`.
+By default, the session has four properties: `id`, `started`, `expires`, and `timer`. The session ID is also sent to the client as a cookie called `ctzn_session_id`.
 
 Setting session variables is the same as setting cookie variables:
 
@@ -657,6 +663,8 @@ Setting session variables is the same as setting cookie variables:
       content: content,
       session: session
     });
+
+Sessions expire based on the `sessionTimeout` config property, which represents the length of a session in milliseconds. The default is 20 minutes. The `timer` is reset with each request. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client. Any other cookies you've set are untouched.
 
 To forcibly clear and expire the current user's session:
 
@@ -670,7 +678,7 @@ Like cookies, session variables you've just assigned aren't available during the
 
 ### Redirects
 
-You can pass redirect instructions to the server that will be initiated after the request is complete. Redirects using this method are not immediate, so the controller will do everything it's been asked to do before the redirect is processed. The user agent won't receive a full response, however. No view content will be sent, but cookies and session variables will be set if specified.
+You can pass redirect instructions to the server that will be initiated after the request is complete. Redirects using this method are not immediate, so the controller will do everything it's been asked to do before the redirect is processed. The user agent won't receive a full response, however. No view content will be rendered or sent, but cookies and session variables will be set if specified.
 
 The `redirect` object takes two properties: `statusCode` and `url`. If you don't provide a status code, citizen uses 302 (temporary redirect).
 
@@ -684,11 +692,11 @@ The `redirect` object takes two properties: `statusCode` and `url`. If you don't
       redirect: redirect
     });
 
-### Includes
+### Include Patterns
 
-citizen has a standardized way of handling includes that works in both Handlebars and Jade templates. In citizen, includes are more than just chunks of code that you can reuse. citizen includes are full patterns, each having its own controller, model, and view(s).
+citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse, each having its own controller, model, and view(s).
 
-Let's say our article pattern's Handlebars template has the following contents:
+Let's say our article pattern's Handlebars template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
 
     <!DOCTYPE html>
     <html>
@@ -701,6 +709,9 @@ Let's say our article pattern's Handlebars template has the following contents:
     <body>
       <header>
         <a id="logo">Home page</a>
+        {{#if cookie.username}}
+          Welcome, {{cookie.username}}.
+        {{/if}}
         <nav>
           <ul>
             <li>
@@ -709,6 +720,11 @@ Let's say our article pattern's Handlebars template has the following contents:
             <li>
               <a href="/articles">Settings</a>
             </li>
+            {{#if cookie.username}}
+              <li>
+                <a href="/admin">Site Administration</a>
+              </li>
+            {{/if}}
           </ul>
         </nav>
       </header>
@@ -723,36 +739,30 @@ Let's say our article pattern's Handlebars template has the following contents:
           {{article.text}}
         </div>
       </main>
-      <footer>
-        Copyright &copy; 2014 cleverna.me
-      </footer>
     </body>
     </html>
 
-It probably makes sense to use includes for the head section, header, and footer because you'll use that code everywhere. Let's create patterns for these includes. I like to follow the convention of starting partials with an underscore, but that's up to you:
+It probably makes sense to use includes for the head section and header because you'll use that code everywhere, but rather than simple partials, let's create citizen includes. The head section can use its own model for populating the meta data, and since the header is different for authenticated users, let's pull that logic out of the template and set up different header views in our controller. I like to follow the convention of starting partials with an underscore, but that's up to you:
 
     app/
       patterns/
         controllers/
-          _footer.js
           _head.js
           _header.js
           article.js
         models/
-          _head.js   // The header and footer are just static HTML, so they need no models
+          _head.js   // The header generates no data of its own, so it needs no model
           article.js
         views/
-          _footer/
-            _footer.html
           _head/
             _head.hbs
           _header/
-            _header.html
-            _header-authenticated.html // A different header for logged in users
+            _header.hbs
+            _header-authenticated.hbs // A different header for logged in users
           article/
             article.hbs
 
-When the article controller is fired, it needs to tell citizen which includes it needs. We do that with the `include` directive, which we pass via the context in the emitter:
+When the article controller is fired, it has to tell citizen which includes it needs. We do that with the `include` directive, which we pass via the context in the emitter:
 
     // article controller
 
@@ -761,7 +771,7 @@ When the article controller is fired, it needs to tell citizen which includes it
     function handler(params, context, emitter) {
       app.listen({
         article: function (emitter) {
-            app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
+          app.models.article.getArticle({ id: params.url.id, page: params.url.page }, emitter);
         },
         viewers: function (emitter) {
           app.models.article.getViewers(params.url.id, emitter);
@@ -770,7 +780,14 @@ When the article controller is fired, it needs to tell citizen which includes it
         var content = {
               article: output.article,
               viewers: output.viewers
-            };
+            },
+            // We'll use the standard header by default, _header.hbs
+            headerView = '_header';
+
+        // If the user is logged in, use _header-authenticated.hbs
+        if ( cookie.username ) {
+          headerView = '_header-authenticated';
+        }
 
         emitter.emit('ready', {
           content: content,
@@ -778,14 +795,15 @@ When the article controller is fired, it needs to tell citizen which includes it
             // The property name is the name of the include's controller.
             // The property value is the name of the view.
             _head: '_head',
-            _header: '_header',
-            _footer: '_footer'
+            _header: headerView
           }
         });
       });
     }
 
-This tells citizen to call the _head, _header, and _footer controllers, render their respective views, and add them to the view context under the controller names. In article.hbs, we now reference the includes using the `include` helper. The `include` helper returns rendered HTML views, so use triple-stache in Handlebars to skip escaping:
+This tells citizen to call the _head and _header controllers, render their respective views, and add them to the view context in the `include` scope under the controller names. citizen include patterns have the same requirements as regular patterns, including a controller with a `handler()` function.
+
+The rendered includes are stored in the `include` scope. In article.hbs, we now reference the includes using the `include` Handlebars helper that's included with citizen (more on why in the [Controller Handoff section](#handlebars-include-helper)). In Jade templates, you can reference the `include` object directly, as seen below. The `include` object contains rendered HTML views, so you need to skip escaping (triple-stache in Handlebars, != in Jade):
 
     <!DOCTYPE html>
     <html>
@@ -803,22 +821,22 @@ This tells citizen to call the _head, _header, and _footer controllers, render t
           {{article.text}}
         </div>
       </main>
-      {{{include '_footer'}}}
     </body>
     </html>
 
-What if logged in users get a different header? Just tell citizen to use a different view:
+Or article.jade:
 
-    emitter.emit('ready', {
-      content: content,
-      include: {
-        _head: '_head',
-        _header: '_header-authenticated',
-        _footer: '_footer'
-      }
-    });
+    doctype html
+    html
+      != include._head
+      body
+        != include._header
+        main
+          h1 #{article.title}
+          p#summary #{article.summary}
+          #text #{article.text}
 
-Includes can generate content and add it to the view context of your primary controller (article.js in this example) because the primary view is the last to be rendered. However, includes are called and rendered asynchronously, so while your _header controller can generate content and add it to the view context of your article controller, don't assume that your _footer controller will have access to that data. (The option of waterfall execution is being worked on, so this is only true for the time being.)
+Includes can generate content and add it to the view context of your primary controller (article.js in this example) because the primary view is the last to be rendered. However, includes are called and rendered asynchronously, so while your _header controller can generate content and add it to the view context of your article controller, don't assume that the other includes' controllers will have access to that data. (The option of waterfall execution is being worked on, so this is only true for the time being.)
 
 Currently, if a controller is requested as an include, any of the directives to set cookies, session variables, redirects, etc. are ignored, but it's on the feature list to get these working.
 
@@ -828,7 +846,15 @@ Currently, if a controller is requested as an include, any of the directives to 
 
 Perhaps you'd have it return meta data as JSON for the article pattern:
 
-    http://cleverna.me/_head/for/article/title/My-Clever-Article-Title/format/json
+    // http://cleverna.me/_head/for/article/title/My-Clever-Article-Title/format/json
+
+    {
+      "metaData": {
+        "title": "My Clever Article Title",
+        "description": "My article's description.",
+        "keywords": "clever, article, keywords"
+      }
+    }
 
 Here's an example of the `_head` controller written as both an include and a handler of direct requests:
 
@@ -839,8 +865,8 @@ Here's an example of the `_head` controller written as both an include and a han
     function handler(params, context, emitter) {
       var metaData,
           // If the "for" URL param exists, use that. Otherwise, assume _head is being used
-          // as an include and use the requested route name.
-          getMetaDataFor = params.url.for || params.route.name;
+          // as an include and use the requested route.
+          getMetaDataFor = params.url.for || params.route.controller;
 
       // If it's for the article pattern, call getMetaData() and pass it the title
       if ( getMetaDataFor === 'article' && params.url.title ) {
@@ -868,8 +894,8 @@ citizen includes provide rich functionality, but they do have limitations and ca
 * **Do you only need to share a chunk of markup across different views?** Use a standard Handlebars partial, Jade template, or HTML document. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
 * **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML, not compiled templates. You can't loop over them and inject data like you can with Handlebars partials or Jade includes.
 * **Do you need to retrieve additional content that isn't in the parent view's context?** A citizen include can do anything that a standard MVC pattern can do except set directives (which is on its way). If you want to retrieve additional data and add it to the view context, a citizen include is the way to go.
-* **Do you need the ability to render different includes based on business logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can place logic in the include's controller and request different views based on that logic. Using Handlebars partials or Jade includes would require registering multiple partials and using conditionals in the view template.
-* **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests.
+* **Do you need the ability to render different includes based on business logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can place logic in the include's controller and request different views based on that logic. Using Handlebars partials or Jade includes would require registering multiple partials and putting the logic in the view template.
+* **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
 
 ### Controller Handoff
 
@@ -914,20 +940,27 @@ The layout controller handles the includes and renders its own view:
     exports.handler = handler;
 
     function handler(params, context, emitter) {
+      // We'll use the standard header by default
+      var headerView = '_header';
+
+      // If the user is logged in, use a different header view
+      if ( cookie.username ) {
+        headerView = '_header-authenticated';
+      }
+
       emitter.emit('ready', {
         // No need to specify `content` here because citizen keeps track of the
         // article pattern's request context throughout the handoff process
         include: {
           _head: '_head',
-          _header: '_header',
-          _footer: '_footer'
+          _header: headerView
         }
       });
     }
 
-When you use the `handoff` directive, the originally requested view (article in this case) is rendered as an include called `_main`:
+When you use the `handoff` directive, the originally requested view (article in this case) is rendered as an include whose name matches its controller:
 
-    <!-- article.hbs, which is saved into include._main -->
+    <!-- article.hbs, which is saved into its own include called "article" -->
     <h1>
       {{article.title}}
     </h1>
@@ -942,17 +975,34 @@ And our layout.hbs file:
 
     <!DOCTYPE html>
     <html>
-    {{{include._head}}}
+    {{{include '_head'}}}
     <body>
-      {{{include._header}}}
+      {{{include '_header'}}}
       <main>
-        {{{include._main}}}
+        <!--
+          You could use {{{include 'article'}}} here, but remember the route object?
+          It contains useful details about the route, like the original controller's name.
+          Now you can use this layout for any pattern.
+        -->
+        {{{include route.controller}}}
       </main>
-      {{{include._footer}}}
     </body>
     </html>
 
+#### Handlebars `include` helper
+
+So why does citizen have the `include` Handlebars helper? Because you can't do this in Handlebars:
+
+    {{!-- Doesn't work --}}
+    {{{include[route.controller]}}}
+
+But you can in Jade:
+
+    != include[route.controller]
+
 You can implement as many handoffs as you want (controller A can handoff to controller B, which can handoff to controller C, and so on), but the original controller's view will still be the one that ends up in `includes._main`.
+
+Redirect directives take priority over handoffs. If you specify a redirect and a handoff in the same emitter, the handoff will be ignored.
 
 
 # Application Events and the Context Argument
@@ -994,24 +1044,27 @@ Here's an example of a request module that checks for a username cookie at the b
 
 
 
-## HTTP Access Control (CORS)
+## Cross-Origin Resource Sharing (CORS)
 
-citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
+citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. This includes POST requests, which makes any controller that accepts form input safe from cross-site form submissions.
+
+To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
 
     module.exports = {
       handler: handler,
       access: {
-        'Access-Control-Allow-Origin': 'http://www.somesite.com http://anothersite.com',
-        'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
-        'Access-Control-Max-Age': 1728000,
-        'Access-Control-Allow-Credentials': 'true',
-        'Access-Control-Allow-Methods': 'OPTIONS, PUT',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Vary': 'Origin'
+        // citizen expects header names in lowercase (per the spec, HTTP headers are case-insensitive)
+        'access-control-allow-origin': 'http://www.somesite.com http://anothersite.com',
+        'access-control-expose-headers': 'X-My-Custom-Header, X-Another-Custom-Header',
+        'access-control-max-age': 1728000,
+        'access-control-allow-credentials': 'true',
+        'access-control-allow-methods': 'OPTIONS, PUT',
+        'access-control-allow-headers': 'Content-Type',
+        'vary': 'Origin'
       }
     };
 
-For more details on CORS, check out this writeup on the [Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
+For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) and [the Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
 
 
 ## Helpers
