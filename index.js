@@ -1,6 +1,4 @@
 'use strict';
-/* jshint node: true */
-/* global CTZN: false */
 
 console.log('Initializing citizen...');
 
