@@ -30,7 +30,7 @@ Here's the most basic directory structure of a citizen web app:
           index/
             index.jade // You can use Jade (.jade), Handlebars (.hbs), or HTML files
       start.js
-    public/
+    web/
 
 Here's a more complex app example (more about `config` and `on` directories later):
 
@@ -55,7 +55,7 @@ Here's a more complex app example (more about `config` and `on` directories late
             index.jade
             index-alt.jade
       start.js
-    public/
+    web/
 
 
 
@@ -82,18 +82,6 @@ Run start.js from the command line:
     </tr>
   </thead>
   <tr>
-    <th><code>app.start()</code></th>
-    <td>
-      Starts the web server
-    </td>
-  </tr>
-  <tr>
-    <th><code>app.listen()</code></th>
-    <td>
-      Your app's event listener for one or more asynchronous functions (see the <a href="#applisten-functions--callback">listen()</a> section)
-    </td>
-  </tr>
-  <tr>
     <th><code>app.controllers</code></th>
     <td>
       Contains controllers from your supplied patterns, which you can use instead of <code>require</code>
@@ -112,9 +100,21 @@ Run start.js from the command line:
     </td>
   </tr>
   <tr>
-    <th><code>app.helpers</code></th>
+    <th><code>app.start()</code></th>
     <td>
-      Functions citizen uses internally that you might find helpful in your own app
+      Starts the web server
+    </td>
+  </tr>
+  <tr>
+    <th>
+      <code>app.listen()</code>
+      <code>app.copy()</code>
+      <code>app.extend()</code>
+      <code>app.isNumeric()</code>
+      <code>app.dashes()</code>
+    </th>
+    <td>
+      <a href="#helpers">Helpers</a> used internally by citizen that you might find useful in your own app
     </td>
   </tr>
   <tr>
@@ -612,7 +612,7 @@ Let's say our article pattern's Jade template has the following contents. The he
     html
       head
         title #{metaData.title}
-        meta(name="description" content="{{metaData.description}}")
+        meta(name="description" content="#{metaData.description}")
         meta(name="keywords" content="#{metaData.keywords}")
         link(rel="stylesheet" type="text/css" href="app.css")
       body
@@ -804,6 +804,14 @@ A common use case for `handoff` would be to create a layout controller that serv
       });
     }
 
+When you use the `handoff` directive and specify the `includeView` like we did above, the originally requested view (article.jade in this case) is rendered as an include whose name matches its controller:
+
+    // article.jade, which is stored in the include scope as include.article
+
+    h1 #{article.title}
+    p#summary #{article.summary}
+    #text #{article.text}
+
 The layout controller handles the includes, follows your custom directive, and renders its own view:
 
     // layout controller
@@ -842,14 +850,6 @@ The layout controller handles the includes, follows your custom directive, and r
     function doSomething() {
       // do something
     }
-
-When you use the `handoff` directive and specify the `includeView`, the originally requested view (article.jade in this case) is rendered as an include whose name matches its controller:
-
-    // article.jade, which is stored in the include scope as include.article
-
-    h1 #{article.title}
-    p#summary #{article.summary}
-    #text #{article.text}
 
 And our layout.jade file:
 
@@ -893,7 +893,7 @@ To take advantage of these events, include a directory called "on" in your app w
         response.js    // exports start() and end()
         session.js     // exports start() and end()
 
-`request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed to your controller via the `context` argument. Exactly what they output--content, citizen directives, custom directives--is up to you.
+`request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what they output--content, citizen directives, custom directives--is up to you.
 
 All files and exports are optional. citizen only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
 
@@ -969,7 +969,7 @@ Let's say our article model has two methods that need to be called before return
           app.models.article.getViewers(params.url.article, emitter);
         }
       }, function (output) {
-        // Emit `ready` now that we have the handler output and pass the
+        // Emit `ready` now that we have the output from article and viewers and pass the
         // context back to the server
         emitter.emit('ready', {
           content: {
@@ -1044,7 +1044,7 @@ Extends an object with another object, effectively merging the two objects. exte
 
 Returns `true` if the object is a number, `false` if not.
 
-    if ( app.isNumeric(url.id) ) {
+    if ( app.isNumeric(params.url.id) ) {
       // pass it to the db
     } else {
       return 'Naughty naughty...';
