@@ -31,6 +31,7 @@ Here's the most basic directory structure of a citizen web app:
             index.jade // You can use Jade (.jade), Handlebars (.hbs), or HTML files
       start.js
     web/
+      // public static assets
 
 Here's a more complex app example (more about `config` and `on` directories later):
 
@@ -202,9 +203,9 @@ The following represents citizen's default configuration, which is extended by y
 
 ## Routing and URLs
 
-Apps using citizen have a simple URL structure that determines which controller to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that doubles as a unique identifier. The structure looks like this:
+Apps using citizen have a simple URL structure that determines which controller to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that can double as a unique identifier. The structure looks like this:
 
-    http://www.site.com/controller-name/SEO-content-here/parameter/value/parameter2/value2
+    http://www.site.com/controller/content-description/param/val/param2/val2
 
 For example, let's say your site's base URL is:
 
@@ -228,7 +229,7 @@ citizen also lets you optionally insert relevant content into your URLs, like so
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
-This SEO content must always follow the pattern name and precede any name/value pairs. You can access it via both the `route` and `url` scopes, which means you can use it as a unique identifier (more on URL parameters in the [Controllers section](#controllers)).
+This SEO content must always follow the pattern name and precede any name/value pairs. You can access it generically via `route.descriptor` or specifically via the  `url` scope (`url.article` in this case), which means you can use it as a unique identifier (more on URL parameters in the [Controllers section](#controllers)).
 
 
 
@@ -352,6 +353,19 @@ Using the above URL parameters, I can retrieve the article content from the mode
 
 The second argument in `emitter.emit` is an object containing any data you want to pass back to citizen. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the <a href="#emitter-directives">Emitter Directives</a> section). You can even add your own objects to the request context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
 
+### Private controllers
+
+To make a controller private--inaccessible via HTTP, but accessible within your app--add a plus sign (`+`) to the beginning of the file name:
+
+    app/
+      patterns/
+        controllers/
+          _head.js     // Partial, accessible via www.cleverna.me/_head
+          +_header.js  // Partial, only accessible internally
+          article.js   // Accessible via www.cleverna.me/article
+
+
+
 ## Models
 
 Models are optional and their structure is completely up to you. citizen doesn't talk to your models directly; it only stores them in `app.models` for your convenience.
@@ -434,7 +448,7 @@ Whatever you've added to the controller's emitter `content` object will be retur
 
 JSONP is pretty much the same. Use `format` and `callback` in the URL:
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo
+    http://www.cleverna.me/article/My-Clever-Article-Title/format/jsonp/callback/foo
 
 Returns:
 
@@ -640,10 +654,10 @@ It probably makes sense to use includes for the head section and header because 
       patterns/
         controllers/
           _head.js
-          _header.js
+          _header.js   // Doesn't generate data, so it doesn't need a model
           article.js
         models/
-          _head.js   // The header generates no data of its own, so it needs no model
+          _head.js
           article.js
         views/
           _head/
@@ -727,8 +741,8 @@ Here's an example of the `_head` controller written as both an include and a han
 
     function handler(params, context, emitter) {
       var metaData,
-          // If the article URL param exists, use that. Otherwise, assume _head is being used
-          // as an include and use the requested route.
+          // If the article URL param exists, use that. Otherwise, assume _head is
+          // being used as an include and use the requested route.
           getMetaDataFor = params.url.article || params.route.controller;
 
       if ( app.models[getMetaDataFor] && app.models[getMetaDataFor].getMetaData ) {
@@ -744,7 +758,7 @@ Here's an example of the `_head` controller written as both an include and a han
 
 Of course, if you don't write the controller in a manner to accept direct requests and return content, it'll return nothing (or throw an error).
 
-To make a controller private--inaccessible via HTTP, but accessible within your app--add a plus sign (`+`) to the beginning of the file name:
+**Reminder:** To make a controller private--inaccessible via HTTP, but accessible within your app--add a plus sign (`+`) to the beginning of the file name:
 
     app/
       patterns/
@@ -784,19 +798,19 @@ A common use case for `handoff` would be to create a layout controller that serv
           // Pass this request to app/patterns/controller/layout.js
           controller: 'layout',
 
-          // Specifying the view is optional. The layout controller will use
-          // its default view unless you tell it to use a different one.
+          // Specifying the view is optional. The layout controller will use its
+          // default view unless you tell it to use a different one.
           view: 'layout',
 
           // Rendering the requested controller's view is optional.
-          // Using includeView tells citizen to render the article.jade view and store it in the
-          // include scope. If you don't specify the includeView, the article controller's
-          // view won't be rendered.
+          // Using includeView tells citizen to render the article.jade view and
+          // store it in the include scope. If you don't specify the includeView,
+          // the article controller's view won't be rendered.
           includeView: 'article'
         },
 
         // A custom directive to drive some logic in the layout controller.
-        // You could even pass a function here if you wanted for layout to call.
+        // You could even pass a function here for layout to call.
         // Just don't use any reserved citizen directive names!
         myDirective: {
           doSomething: true
@@ -853,6 +867,8 @@ The layout controller handles the includes, follows your custom directive, and r
 
 And our layout.jade file:
 
+    // layout.jade
+
     doctype html
     html
       != include._head
@@ -860,13 +876,16 @@ And our layout.jade file:
         != include._header
         main
           // You could use include.article here, but remember the route object?
-          // It contains useful details about the route, like the original controller's name.
-          // Now you can use this layout for any pattern.
+          // It contains useful details about the route, like the original
+          // controller's name. Now you can use this layout for any pattern.
           != include[route.controller]
+
 
 #### Chaining controllers
 
-You can use `handoff` to chain requests across as many controllers as you want, with each controller's directives added to the request context and each controller's view optionally added to the include scope. The initially requested controller and all following handoff controllers are stored in the `route` object as an array called `route.chain`. You can loop over this object to render all the included views:
+You can use `handoff` to chain requests across as many controllers as you want, with each controller's directives added to the request context and each controller's view optionally added to the include scope. The initially requested controller's name and all following handoff controllers' names are stored in the `route` object as an array called `route.chain`. You can loop over this object to render all the included views:
+
+    // layout.jade
 
     doctype html
     html
@@ -928,8 +947,9 @@ To enable cross-domain access, add an `access` object with the necessary headers
     module.exports = {
       handler: handler,
       access: {
-        // citizen expects header names in lowercase (per the spec, HTTP headers are case-insensitive)
-        'access-control-allow-origin': 'http://www.somesite.com http://anothersite.com',
+        // citizen expects header names in lowercase (per the spec, HTTP headers are
+        // case-insensitive)
+        'access-control-allow-origin': 'http://www.foreignhost.com',
         'access-control-expose-headers': 'X-My-Custom-Header, X-Another-Custom-Header',
         'access-control-max-age': 1728000,
         'access-control-allow-credentials': 'true',
@@ -969,8 +989,8 @@ Let's say our article model has two methods that need to be called before return
           app.models.article.getViewers(params.url.article, emitter);
         }
       }, function (output) {
-        // Emit `ready` now that we have the output from article and viewers and pass the
-        // context back to the server
+        // Emit `ready` now that we have the output from article and viewers and
+        // pass the context back to the server
         emitter.emit('ready', {
           content: {
             // The property names you assign to the methods above become the names
