@@ -11,8 +11,7 @@
   "undef":          true,
   "unused":         "vars",
   "strict":         true,
-  "globals":
-    {
-      "CTZN":       false
-    }
+  "globals": {
+    "CTZN":       false
+  }
 }
