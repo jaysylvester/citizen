@@ -2,6 +2,8 @@
 
 citizen is an event-driven MVC framework for Node.js web applications. Its purpose is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way; the nuts and bolts of your application are up to you. citizen favors convention over configuration, and those conventions are covered throughout this guide.
 
+[![NPM](https://nodei.co/npm/citizen.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/citizen/)
+
 citizen is in beta. Your comments, criticisms, and requests are appreciated.
 
 citizen's static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
