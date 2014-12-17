@@ -97,6 +97,7 @@ Run start.js from the command line:
   <tr>
     <th>
       <code>app.cache()</code><br />
+      <code>app.exists()</code><br />
       <code>app.retrieve()</code><br />
       <code>app.clear()</code><br />
       <code>app.listen()</code><br />
@@ -385,7 +386,7 @@ The second argument in `emitter.emit` is an object containing any data you want 
 
 ### Private controllers
 
-To make a controller private--inaccessible via HTTP, but accessible within your app--add a plus sign (`+`) to the beginning of the file name:
+To make a controller private—inaccessible via HTTP, but accessible within your app—add a plus sign (`+`) to the beginning of the file name:
 
     app/
       patterns/
@@ -777,7 +778,7 @@ Here's an example of the `_head` controller written as both an include and a han
     };
 
     function handler(params, context, emitter) {
-      var metaData,
+      var metaData = {},
           // If the article URL param exists, use that. Otherwise, assume _head is
           // being used as an include and use the requested route.
           getMetaDataFor = params.url.article || params.route.controller;
@@ -975,7 +976,7 @@ The `scope` property determines how the controller and its resulting view are ca
   <thead>
     <tr>
       <th colspan="2">
-        Values for `cache.scope`
+        Values for <code>cache.scope</code>
       </th>
     </tr>
   </thead>
@@ -1127,7 +1128,7 @@ To take advantage of these events, include a directory called "on" in your app w
         response.js    // exports start() and end()
         session.js     // exports start() and end()
 
-`request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what they output--content, citizen directives, custom directives--is up to you.
+`request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what they output—content, citizen directives, custom directives—is up to you.
 
 All files and exports are optional. citizen only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
 
