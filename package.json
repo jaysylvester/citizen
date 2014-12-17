@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.1.21",
+  "version": "0.2.0",
   "description": "An event-driven MVC framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
@@ -11,6 +11,7 @@
     "type": "git",
     "url": "https://github.com/jaysylvester/citizen"
   },
+  "license": "MIT",
   "main": "index",
   "scripts": {
     "test": "./node_modules/.bin/mocha -u tdd",
