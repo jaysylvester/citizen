@@ -1233,7 +1233,7 @@ This is a way to check for the existence of a given key in the cache without res
 
 ### retrieve(key)
 
-Retrieve a cached object using the key name. If `resetOnAccess` was true when the item was cached, using retrieve() will reset the cache clock and extend the life of the cached item.
+Retrieve a cached object using the key name. Returns `false` if the requested key doesn't exist. If `resetOnAccess` was true when the item was cached, using retrieve() will reset the cache clock and extend the life of the cached item.
 
     app.retrieve('welcomeMessage')
     app.retrieve('/path/to/articles.txt')
