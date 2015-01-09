@@ -714,7 +714,7 @@ citizen include patterns have the same requirements as regular patterns, includi
           headerView = '_header';
 
       // If the user is logged in, use _header-authenticated.jade
-      if ( cookie.username ) {
+      if ( params.cookie.username ) {
         headerView = '_header-authenticated';
       }
 
@@ -879,7 +879,7 @@ The layout controller handles the includes, follows your custom directive, and r
       var headerView = '_header';
 
       // If the user is logged in, use a different header view
-      if ( cookie.username ) {
+      if ( params.cookie.username ) {
         headerView = '_header-authenticated';
       }
 
