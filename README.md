@@ -283,7 +283,7 @@ Models and views are optional and don't necessarily need to be associated with a
 
 ## Controllers
 
-Each controller requires at least one public function named `handler()`:
+Each controller requires at least one public function. The default action is named `handler()`, which is called by citizen when no action is specified in the URL.
 
     // article controller
 
@@ -382,7 +382,46 @@ Using the above URL parameters, I can retrieve the article content from the mode
       });
     };
 
-The second argument in `emitter.emit` is an object containing any data you want to pass back to citizen. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the <a href="#emitter-directives">Emitter Directives</a> section). You can even add your own objects to the request context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
+Alternate actions can be requested using the `action` URL parameter. For example, maybe we want a different action and view to edit an article:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/action/edit
+
+    // article controller
+
+    module.exports = {
+      handler: handler,
+      edit: edit
+    };
+
+    function handler(params, context, emitter) {
+      // Get the article content
+      var article = app.models.article.getArticle(params.url.article, params.url.page);
+
+      // Emit the 'ready' event and pass any objects you want added to the view
+      // context via the content object
+      emitter.emit('ready', {
+        content: {
+          article: article
+        }
+      });
+    };
+
+    function edit(params, context, emitter) {
+      // Get the article content
+      var article = app.models.article.getArticle(params.url.article, params.url.page);
+
+      // Emit the 'ready' event and pass any objects you want added to the view
+      // context via the content object. Use the /patterns/views/article/edit.jade
+      // view for this action (more on alternate views in later sections).
+      emitter.emit('ready', {
+        content: {
+          article: article
+        },
+        view: 'edit'
+      });
+    };
+
+The second argument in `emitter.emit` is an object containing any data you want to pass back to citizen. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the [Emitter Directives](#emitter-directives) section). You can even add your own objects to the request context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
 
 ### Private controllers
 
@@ -711,10 +750,12 @@ citizen include patterns have the same requirements as regular patterns, includi
     function handler(params, context, emitter) {
       var article = app.models.article.getArticle(params.url.article, params.url.page),
           // We'll use the standard header by default, _header.jade
+          headerAction = 'handler',
           headerView = '_header';
 
       // If the user is logged in, use _header-authenticated.jade
       if ( params.cookie.username ) {
+        headerAction = 'authenticated';
         headerView = '_header-authenticated';
       }
 
@@ -724,11 +765,13 @@ citizen include patterns have the same requirements as regular patterns, includi
         },
         include: {
           _head: {
-            // The default view is rendered if no view is specified
+            // If only the controller is specified, the default action handler() is
+            // called and the default view is rendered (_head.jade in this case).
             controller: '_head'
           },
           _header: {
             controller: '_header',
+            action: headerAction,
             view: headerView
           }
         }
@@ -837,6 +880,10 @@ A common use case for `handoff` would be to create a layout controller that serv
         handoff: {
           // Pass this request to app/patterns/controller/layout.js
           controller: 'layout',
+
+          // Specifying the action is optional. The layout controller will use the
+          // default action, handler(), unless you specify a different action here.
+          action: 'handler',
 
           // Specifying the view is optional. The layout controller will use its
           // default view unless you tell it to use a different one.
