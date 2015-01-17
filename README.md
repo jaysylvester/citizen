@@ -105,6 +105,7 @@ Run start.js from the command line:
       <code>app.extend()</code><br />
       <code>app.isNumeric()</code><br />
       <code>app.dashes()</code><br />
+      <code>app.size()</code>
     </th>
     <td>
       <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful
@@ -1405,6 +1406,18 @@ Returns `true` if the object is a number, `false` if not.
 Convert strings into SEO-friendly versions that you can use in your URLs.
 
     var seoTitle = app.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
+
+### size(object)
+
+Returns the number of objects contained within an object literal. Uses `hasOwnProperty()` to return a valid count.
+
+    var cars = {
+          first: 'Volkswagen',
+          second: 'Ford',
+          third: 'BMW'
+        },
+        count = app.size(cars); // count equals 3
+
 
 
 ## Debugging
