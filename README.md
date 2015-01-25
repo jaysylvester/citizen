@@ -677,16 +677,30 @@ Like cookies, session variables you've just assigned aren't available during the
 
 ### Redirects
 
-You can pass redirect instructions to the server that will be initiated after the request is complete. Redirects using this method within the controller are not immediate, so the controller will do everything it's been asked to do before the redirect is processed. The user agent won't receive a full response, however. No view content will be rendered or sent, but cookies and session variables will be set if specified.
+You can pass redirect instructions to the server that will be initiated after the request is complete. Redirects using this method within the controller are not immediate, so the controller will do everything it's been asked to do before the redirect is processed.
 
-The `redirect` object takes two properties: `statusCode` and `url`. If you don't provide a status code, citizen uses 302 (temporary redirect).
+The `redirect` object takes three properties: `statusCode`, `url`, and `refresh`. If you don't provide a status code, citizen uses 302 (temporary redirect). The `refresh` option determines whether the redirect uses a [Location header](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.30) or the non-standard [Refresh header](https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Refresh).
 
+    // Initiate a temporary redirect using the Location header
+    emitter.emit('ready', {
+      redirect: {
+        url: 'http://cleverna.me/login'
+      }
+    });
+
+    // Initiate a permanent redirect using the Refresh header, delaying the redirect
+    // by 5 seconds
     emitter.emit('ready', {
       redirect: {
         statusCode: 301,
-        url: 'http://redirect.com'
+        url: 'http://cleverna.me/new-url',
+        refresh: 5
       }
     });
+
+Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctznReferer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctznReferer` so you can send them there instead of the page containing the link to the secure page.
+
+
 
 ### Include Patterns
 
