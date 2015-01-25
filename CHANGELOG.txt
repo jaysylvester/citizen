@@ -1,0 +1,5 @@
+[0.2.13]
+  This is the beginning of the change log. I think citizen is "complete" enough to warrant it.
+
+  * BREAKING CHANGE: Changed params.route.pathName to params.route.pathname
+  * Enhanced redirect functionality

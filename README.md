@@ -4,11 +4,7 @@ citizen is an event-driven MVC framework for Node.js web applications. Its purpo
 
 [![NPM](https://nodei.co/npm/citizen.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/citizen/)
 
-**Version 0.2.0 contains many breaking changes and new features.** For example, configuration files are parsed differently and I've added caching capabilities. If you've built an app based on citizen, you'll want to read this documentation thoroughly before upgrading.
-
-citizen is in beta. Your comments, criticisms, and requests are appreciated.
-
-citizen's static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
+citizen is in beta. Your comments, criticisms, and requests are appreciated. **Please see CHANGELOG.txt before updating.** It describes any breaking changes.
 
 
 
@@ -78,7 +74,7 @@ Run start.js from the command line:
 
     $ node start.js
 
-
+citizen is designed to handle dynamic requests. Its static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
 
 <table>
   <thead>
