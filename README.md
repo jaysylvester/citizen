@@ -381,7 +381,7 @@ Using the above URL parameters, I can retrieve the article content from the mode
 
 Alternate actions can be requested using the `action` URL parameter. For example, maybe we want a different action and view to edit an article:
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/action/edit
+    // http://www.cleverna.me/article/My-Clever-Article-Title/page/2/action/edit
 
     // article controller
 
