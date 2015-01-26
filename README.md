@@ -2,9 +2,9 @@
 
 citizen is an event-driven MVC framework for Node.js web applications. Its purpose is to handle serving, routing, and event emitter creation, while providing some useful helpers to get you on your way; the nuts and bolts of your application are up to you. citizen favors convention over configuration, and those conventions are covered throughout this guide.
 
-[![NPM](https://nodei.co/npm/citizen.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/citizen/)
+citizen is in beta. Your comments, criticisms, and requests are appreciated. **Please see [CHANGELOG.txt](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before updating.** It describes any breaking changes.
 
-citizen is in beta. Your comments, criticisms, and requests are appreciated. **Please see CHANGELOG.txt before updating.** It describes any breaking changes.
+[![NPM](https://nodei.co/npm/citizen.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/citizen/)
 
 
 
@@ -695,6 +695,8 @@ The `redirect` object takes three properties: `statusCode`, `url`, and `refresh`
     });
 
 Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctznReferer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctznReferer` so you can send them there instead of the page containing the link to the secure page.
+
+If you haven't enabled sessions, citizen falls back to creating a cookie named `ctznReferer` instead.
 
 
 

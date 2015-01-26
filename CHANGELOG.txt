@@ -1,3 +1,6 @@
+[0.2.14]
+  * The ctznRedirect session variable now has a cookie fallback if sessions aren't enabled
+
 [0.2.13]
   This is the beginning of the change log. I think citizen is "complete" enough to warrant it.
 
