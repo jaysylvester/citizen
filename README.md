@@ -190,6 +190,7 @@ The following represents citizen's default configuration, which is extended by y
         "sessionTimeout":     1200000, // In ms (20 minutes)
         "requestTimeout":     30000, // In ms (30 seconds)
         "mimetypes":          [parsed from internal config],
+        "prettyHTML":         true,
         "debug": {
           "output":           "console",
           "depth":            2,

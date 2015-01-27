@@ -1,4 +1,5 @@
 [0.2.15]
+  * Added prettyHTML config setting for production mode
   * Fixed the default action in params.route.chain
 
 [0.2.14]
