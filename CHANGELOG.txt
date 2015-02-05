@@ -1,3 +1,6 @@
+[0.3.1]
+  * Readme fixes
+
 [0.3.0]
   * BREAKING CHANGE: citizen includes are now self-contained and only play in their own sandbox. They no longer receive updated context from the calling controller, and they no longer pass their own content and directives into the request context. This just makes more sense and avoids a lot of pitfalls I was experiencing in my own projects.
   * BREAKING CHANGE: Completely rewrote caching, fixing bugs and making additions such as a custom scope option, allowing for easy deletion of groups of cached items. Please see the readme for changes to app.cache(), app.exists(), app.retrieve(), and app.clear(), which now all take options objects instead of a list of arguments.
