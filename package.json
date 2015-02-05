@@ -1,7 +1,7 @@
 {
   "name": "citizen",
-  "version": "0.2.15",
-  "description": "An event-driven MVC framework for Node.js web applications.",
+  "version": "0.3.0",
+  "description": "An event-driven MVC and caching framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
     "email": "jay@jaysylvester.com",

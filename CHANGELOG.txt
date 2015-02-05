@@ -1,6 +1,12 @@
-[0.2.15]
-  * Added prettyHTML config setting for production mode
-  * Fixed the default action in params.route.chain
+[0.3.0]
+  * BREAKING CHANGE: citizen includes are now self-contained and only play in their own sandbox. They no longer receive updated context from the calling controller, and they no longer pass their own content and directives into the request context. This just makes more sense and avoids a lot of pitfalls I was experiencing in my own projects.
+  * BREAKING CHANGE: Completely rewrote caching, fixing bugs and making additions such as a custom scope option, allowing for easy deletion of groups of cached items. Please see the readme for changes to app.cache(), app.exists(), app.retrieve(), and app.clear(), which now all take options objects instead of a list of arguments.
+  * BREAKING CHANGE: app.size() now throws an error if the provided argument isn't an object literal
+  * Fixed several bugs in server.js that broke controller caching, route cache expiration, and cache URL params validation
+  * Added app.log() helper to make it easier to log application events to the console or files based on application mode (production, debug, etc.)
+  * Added prettyHTML config setting for Jade templates in production mode (default is true, setting it to false removes all whitespace between tags)
+  * Fixed the default action in params.route.chain ('handler')
+  * Rewrote app.dashes(), fixing a few bugs and adding a fallback option that gets returned if the parsed string ends up being empty
 
 [0.2.14]
   * The ctznRedirect session variable now has a cookie fallback if sessions aren't enabled
