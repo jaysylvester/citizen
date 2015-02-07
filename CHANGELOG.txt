@@ -1,3 +1,6 @@
+[0.3.2]
+  * Added a util directory with a scaffolding CLI. You can now create an app skeleton and generate MVC patterns automagically. See the readme for instructions.
+
 [0.3.1]
   * Readme fixes
 

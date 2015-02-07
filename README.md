@@ -1,49 +1,46 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. Favoring convention over configuration, citizen's purpose is to handle serving, routing, view rendering, and caching, while providing some useful helpers to get you on your way. It takes some of the complexities out of building a Node web app, but still exposes enough of the internals to let you get a bit dirty if you need to.
+citizen is an event-driven MVC framework for Node.js web applications. Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes some of the pain out of building a Node web app, but still exposes enough of the internals to let you get a bit dirty if you need to.
 
-citizen is in beta. Your comments, criticisms, and requests are appreciated. **Please see [CHANGELOG.txt](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before updating.** It describes any breaking changes.
-
-[![NPM](https://nodei.co/npm/citizen.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/citizen/)
+citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated. **Please see [CHANGELOG.txt](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before updating.** It describes any breaking changes.
 
 
+## Benefits
 
-## Getting Started with citizen
+- Zero-configuration routing with a simple URL structure
+- Built-in configurable caching at both the route and controller level
+- Serve HTML, JSON, or JSONP from the same controller with a single URL flag
+- Easily chain controllers or include controllers within other controllers
+- Support for Jade and Handlebars templates with more on the way
 
-### Installing citizen
 
+## Quick Start
+
+These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start the web server on port 80:
+
+    $ mkdir mywebapp
+    $ cd mywebapp
     $ npm install citizen
+    $ node node_modules/citizen/util/scaffold skeleton
+    $ node start.js
+
+You'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser and you'll see citizen's welcome page. If port 80 is already taken, you'll receive an error when you try to start citizen. To configure a custom port, see [Configuration](#configuration).
+
+For more utilities, see [Utilities](#utilities).
 
 
 
-### Application Directory Structure
-
-Here's the most basic directory structure of a citizen web app:
-
-    app/
-      patterns/
-        controllers/
-          index.js
-        models/
-          index.js      // Optional
-        views/
-          index/
-            index.jade  // You can use Jade (.jade), Handlebars (.hbs), or HTML files
-      start.js
-    web/
-      // public static assets
-
-Here's a more complex app example (more about `config` and `on` directories later):
+### App Directory Structure
 
     app/
-      config/
+      config/               // Optional configs for different environments
         local.json
         qa.json
         production.json
-      logs/
+      logs/                 // Log files created by citizen and your app
         app.txt
         citizen.txt
-      on/
+      on/                   // Optional application events
         application.js
         request.js
         response.js
@@ -52,13 +49,94 @@ Here's a more complex app example (more about `config` and `on` directories late
         controllers/
           index.js
         models/
-          index.js
+          index.js          // Optional for each controller
         views/
           index/
-            index.jade
-            index-alt.jade
+            index.jade      // You can use Jade (.jade), Handlebars (.hbs), or HTML files
+            index-alt.jade  // Optional alternate view
       start.js
-    web/
+    web/                    // public static assets
+
+
+
+### Configuration
+
+citizen follows convention over configuration, but some things are best handled by a config file.
+
+The `config` directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
+
+1. citizen parses each JSON file looking for a `hostname` key that matches the machine's hostname. If it finds one, it loads that configuration.
+2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
+3. If it can't find citizen.json or you don't have a `config` directory, it runs under its default configuration.
+
+The following represents citizen's default configuration, which is extended by your configuration file:
+
+    {
+      "citizen": {
+        "mode":               "production",
+        "directories": {
+          "app":              "[absolute path to start.js]",
+          "logs":             "[directories.app]/logs",
+          "on":               "[directories.app]/on",
+          "controllers":      "[directories.app]/patterns/controllers",
+          "models":           "[directories.app]/patterns/models",
+          "views":            "[directories.app]/patterns/views",
+          "web":              "[directories.app]../web"
+        },
+        "urlPaths": {
+          "app":              "",
+          '404':              "/404.html",
+          '50x':              "/50x.html"
+        },
+        "httpPort":           80,
+        "hostname":           undefined,
+        "connectionQueue":    undefined,
+        "sessions":           false,
+        "sessionTimeout":     1200000,
+        "requestTimeout":     30000,
+        "mimetypes":          [parsed from internal config],
+        "prettyHTML":         true,
+        "log": {
+          "toConsole":        false,
+          "toFile":           false,
+          "defaultFile":      "citizen.txt"
+        },
+        "debug": {
+          "output":           "view",
+          "depth":            2,
+          "disableCache":     true,
+          "jade":             false
+        }
+      }
+    }
+
+These settings are exposed publicly via `app.config.citizen`.
+
+**Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
+
+If you wanted to add a database configuration for your local dev environment, you could create a config file called local.json (or myconfig.json, whatever you want) with the following:
+
+    {
+      "hostname":             "My-MacBook-Pro.local",
+      "citizen": {
+        "mode":               "development",
+        "httpPort":           8080,
+      },
+      "db": {
+        "server":             "127.0.0.1",
+        "username":           "dbuser",
+        "password":           "dbpassword"
+      }
+    }
+
+This config file would extend the default configuration when running on your local machine. The database settings would be accessible within your app via `app.config.db`.
+
+
+`urlPaths.app` is the path name in your app's web address. If your app's URL is:
+
+    http://www.website.com/path/to/my-app
+
+`urlPaths.app` should be "/path/to/my-app". This is necessary for citizen's router to work.
 
 
 
@@ -154,83 +232,6 @@ citizen is designed to handle dynamic requests. Its static file serving is just 
 
 
 
-### Configuration
-
-citizen follows convention over configuration, but some things are best handled by a config file.
-
-The `config` directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
-
-1. citizen parses each JSON file looking for a `hostname` key that matches the machine's hostname. If it finds one, it loads that configuration.
-2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
-3. If it can't find citizen.json or you don't have a `config` directory, it runs under its default configuration.
-
-The following represents citizen's default configuration, which is extended by your citizen configuration file:
-
-    {
-      "citizen": {
-        "mode":               "production",
-        "directories": {
-          "app":              "[absolute path to start.js]",
-          "logs":             "[directories.app]/logs",
-          "on":               "[directories.app]/on",
-          "controllers":      "[directories.app]/patterns/controllers",
-          "models":           "[directories.app]/patterns/models",
-          "views":            "[directories.app]/patterns/views",
-          "web":              "[directories.app]../web"
-        },
-        "urlPaths": {
-          "app":              "",
-          '404':              '/404.html',
-          '50x':              '/50x.html'
-        },
-        "httpPort":           80,
-        "hostname":           undefined,
-        "connectionQueue":    undefined,
-        sessions: false,
-        sessionTimeout: 1200000,
-        requestTimeout: 30000,
-        mimetypes: [parsed from internal config],
-        prettyHTML: true,
-        log: {
-          console: false,
-          file: false
-        },
-        debug: {
-          output: 'view',
-          depth: 2,
-          disableCache: true,
-          jade: false
-        }
-      }
-    }
-
-These settings are exposed publicly via `app.config.citizen`.
-
-If you want to add a database configuration for your local dev environment, you could do it like this:
-
-    {
-      "hostname":             "My-MacBook-Pro",
-      "citizen": {
-        "mode":               "development"
-      },
-      "db": {
-        "server":             "127.0.0.1",
-        "username":           "dbuser",
-        "password":           "dbpassword"
-      }
-    }
-
-This config file would extend the default configuration when running on your local machine. The database settings would be accessible within your app via `app.config.db`.
-
-
-`urlPaths.app` is the path name in your app's web address. If your app's URL is:
-
-    http://www.website.com/path/to/my-app
-
-`urlPaths.app` should be "/path/to/my-app". This is necessary for citizen's router to work.
-
-
-
 ## Routing and URLs
 
 Apps using citizen have a simple URL structure that determines which controller and action to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that can double as a unique identifier. The structure looks like this:
@@ -257,7 +258,7 @@ Valid parameter names may contain letters, numbers, underscores, and dashes, but
 
 The default controller action is `handler()`, but you can specify alternate actions with the `action` parameter (more on this later):
 
-http://www.cleverna.me/article/action/edit
+    http://www.cleverna.me/article/action/edit
 
 citizen also lets you optionally insert relevant content into your URLs, like so:
 
@@ -1733,3 +1734,74 @@ By default, the pattern's complete output is dumped. You can specify the exact o
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params.session/ctzn_dump/view
 
 In `development` mode, you must specify the `ctzn_debug` URL parameter to enable debug output. Debug output is disabled in production mode.
+
+
+## Utilities
+
+The util directory within the citizen package has some helpful CLI utilities.
+
+### scaffold
+
+#### skeleton
+
+Creates a complete skeleton of a citizen app with a functional index pattern.
+
+    $ node scaffold skeleton
+
+Resulting file structure:
+
+    app/
+      config/
+        citizen.json
+      logs/
+      on/
+        application.js
+        request.js
+        response.js
+        session.js
+      patterns/
+        controllers/
+          index.js
+        models/
+          index.js
+        views/
+          index/
+            index.jade
+      start.js
+    web/
+
+Run `node scaffold skeleton -h` for options.
+
+
+#### pattern
+
+Creates a complete citizen MVC pattern. The pattern command takes a pattern name and options:
+
+    $ node scaffold pattern [options] [pattern]
+
+For example, `node scaffold pattern -f hbs article` will create the following pattern with a view file in Handlebars format:
+
+    app/
+      patterns/
+        controllers/
+          article.js
+        models/
+          article.js
+        views/
+          article/
+            article.hbs
+
+Use `node scaffold pattern -h` to see all available options for customizing your patterns.
+
+
+## License
+
+(The MIT License)
+
+Copyright (c) 2014 Jason Sylvester <jay@jaysylvester.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

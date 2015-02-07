@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "An event-driven MVC and caching framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
@@ -13,20 +13,10 @@
   },
   "license": "MIT",
   "main": "index",
-  "scripts": {
-    "test": "./node_modules/.bin/mocha -u tdd",
-    "coverage": "./node_modules/.bin/istanbul cover node_modules/.bin/_mocha -- -R spec"
-  },
   "dependencies": {
     "handlebars": "2.0.0",
-    "jade": "1.7.0",
-    "commander": "1.0.0"
-  },
-  "devDependencies": {
-    "mocha": "*",
-    "mocha-lcov-reporter": "*",
-    "should": "*",
-    "istanbul": "*"
+    "jade": "1.9.1",
+    "commander": "2.6.0"
   },
   "engines": {
     "node": ">= 0.10.x"
