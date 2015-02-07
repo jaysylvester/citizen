@@ -16,15 +16,16 @@ citizen is in beta. Your comments, criticisms, and (pull) requests are appreciat
 
 ## Quick Start
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start the web server on port 80:
+These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton with the web server set to port 80, and start the web server. Change the port if 80 is already taken.
 
     $ mkdir mywebapp
     $ cd mywebapp
     $ npm install citizen
-    $ node node_modules/citizen/util/scaffold skeleton
+    $ node node_modules/citizen/util/scaffold skeleton -n 80
+    $ cd app
     $ node start.js
 
-You'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser and you'll see citizen's welcome page. If port 80 is already taken, you'll receive an error when you try to start citizen. To configure a custom port, see [Configuration](#configuration).
+You'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser and you'll see citizen's welcome page. For additional configuration options, see [Configuration](#configuration).
 
 For more utilities, see [Utilities](#utilities).
 
