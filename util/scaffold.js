@@ -15,7 +15,7 @@ program
   .command('skeleton')
   .option('-n, --network-port [port number]', 'Default HTTP port is 80, but if that\'s taken, use this option to set your config')
   .option('-f, --format [format]', 'Set the view template format (jade, hbs, or html)')
-  .option('-m, --mode [mode]', 'Set the config mode to debug (default), development, or production')
+  .option('-m, --mode [mode]', 'Set the config mode to debug, development, or production (default)')
   .option('-U, --no-use-strict', 'Don\'t include the \'use strict\'; statement in any of the modules')
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
@@ -64,7 +64,14 @@ program
     fs.writeFileSync(appPath + '/patterns/views/' + view.directory + '/' + view.name, view.contents);
     fs.mkdirSync(webPath);
 
-    console.log('app skeleton created in ' + path.resolve(appPath, '../'));
+    console.log('');
+    console.log('Your app\'s skeleton was successfully created in ' + path.resolve(appPath, '../'));
+    console.log('');
+    console.log('To start your app:');
+    console.log('');
+    console.log('  $ cd ' + appPath);
+    console.log('  $ node start.js');
+    console.log('');
   })
   .on('--help', function(){
       console.log('  The skeleton command creates files and folders for a functional citizen web app.');
@@ -237,7 +244,7 @@ function buildView(options) {
 
 function buildConfig(options) {
   var port = options.port === 80 || !options.port ? '' : ',\n    "httpPort":         ' + options.port,
-      mode = options.mode || 'debug',
+      mode = options.mode || 'production',
       name = options.name || 'citizen';
 
   return {

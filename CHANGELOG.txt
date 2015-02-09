@@ -1,3 +1,9 @@
+[0.3.4]
+  * Fixed a major bug in app.log() that pretty much broke logging entirely
+  * Added a timestamp option to app.log() that lets you disable the timestamp in the log output
+  * Added error handling for some common server startup problems and friendly messaging to aid in troubleshooting
+  * Improved formatting for startup logs
+
 [0.3.3]
   * Readme fixes
 

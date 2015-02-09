@@ -1,5 +1,5 @@
 'use strict';
 
-console.log('Initializing citizen...');
+console.log('\nInitializing citizen...\n');
 
 module.exports = require('./lib/citizen');

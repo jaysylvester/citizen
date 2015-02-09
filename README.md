@@ -16,16 +16,20 @@ citizen is in beta. Your comments, criticisms, and (pull) requests are appreciat
 
 ## Quick Start
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton with the web server set to port 80, and start the web server. Change the port if 80 is already taken.
+These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen in production mode with the web server listening on port 80:
 
     $ mkdir mywebapp
     $ cd mywebapp
     $ npm install citizen
-    $ node node_modules/citizen/util/scaffold skeleton -n 80
+    $ node node_modules/citizen/util/scaffold skeleton
     $ cd app
     $ node start.js
 
-You'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser and you'll see citizen's welcome page. For additional configuration options, see [Configuration](#configuration).
+If port 80 is already taken, swap this line for the line above, providing whatever port you want to use (8080 in this example):
+
+    $ node node_modules/citizen/util/scaffold skeleton -n 8080
+
+If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser (with the alternate port number appended if necessary) and you'll see a bare index template. For configuration options, see [Configuration](#configuration).
 
 For more utilities, see [Utilities](#utilities).
 
@@ -1697,7 +1701,10 @@ When citizen is in production or development mode, log() does nothing by default
       // Optional. By default, log() uses "app.txt" as the file name for your logs.
       // Use the config.citizen.log.defaultFile setting to change the default.
       // Use this option to override the default inline.
-      file: 'my-log-file.txt'
+      file: 'my-log-file.txt',
+
+      // Optional. Disables the timestamp that normally appears in front of the log
+      timestamp: false
     });
 
 When file logging is enabled, citizen writes its logs to citizen.txt. Log files appear in the folder you specify in `config.citizen.directories.logs`.
