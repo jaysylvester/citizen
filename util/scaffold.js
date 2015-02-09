@@ -243,12 +243,12 @@ function buildView(options) {
 
 
 function buildConfig(options) {
-  var port = options.port === 80 || !options.port ? '' : ',\n    "httpPort":         ' + options.port,
+  var port = options.port || 80,
       mode = options.mode || 'production',
       name = options.name || 'citizen';
 
   return {
     name: name + '.json',
-    contents: '{\n  "citizen": {\n    "mode":             "' + mode + '"' + port + '\n  }\n}\n'
+    contents: '{\n  "citizen": {\n    "mode":             "' + mode + '",\n    "httpPort":         ' + port + '\n  }\n}\n'
   };
 }
