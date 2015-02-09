@@ -1,5 +1,9 @@
 [0.3.7]
-  * Added application mode descriptions to readme
+  * Fixed a bug in log()
+  * app.config.hostname can be set to an empty string, allowing responses from any host
+  * Switched object "deletions" to use null instead of undefined
+  * Added config descriptions to readme
+  * Removed index entry point (redundant)
 
 [0.3.6]
   * Added another error scenario for HTTP port availability

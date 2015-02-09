@@ -2,12 +2,14 @@
 
 citizen is an event-driven MVC framework for Node.js web applications. Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes some of the pain out of building a Node web app, but still exposes enough of the internals to let you get a bit dirty if you need to.
 
-citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated. **Please see [CHANGELOG.txt](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before updating.** It describes any breaking changes.
+citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated.
+
+Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npm truncates it.
 
 
 ## Benefits
 
-- Zero-configuration routing with a simple URL structure
+- Zero-configuration dynamic routing with a simple URL structure
 - Built-in configurable caching at both the route and controller level
 - Serve HTML, JSON, or JSONP from the same controller with a single URL flag
 - Easily chain controllers or include controllers within other controllers
@@ -77,29 +79,15 @@ The `config` directory is optional and contains configuration files that drive b
 The following represents citizen's default configuration, which is extended by your configuration file:
 
     {
+      "hostname":             "",
       "citizen": {
         "mode":               "production",
-        "directories": {
-          "app":              "[absolute path to start.js]",
-          "logs":             "[directories.app]/logs",
-          "on":               "[directories.app]/on",
-          "controllers":      "[directories.app]/patterns/controllers",
-          "models":           "[directories.app]/patterns/models",
-          "views":            "[directories.app]/patterns/views",
-          "web":              "[directories.app]../web"
-        },
-        "urlPaths": {
-          "app":              "",
-          '404':              "/404.html",
-          '50x':              "/50x.html"
-        },
         "httpPort":           80,
-        "hostname":           undefined,
+        "hostname":           "127.0.0.1",
         "connectionQueue":    undefined,
         "sessions":           false,
         "sessionTimeout":     1200000,
         "requestTimeout":     30000,
-        "mimetypes":          [parsed from internal config],
         "prettyHTML":         true,
         "log": {
           "toConsole":        false,
@@ -111,15 +99,20 @@ The following represents citizen's default configuration, which is extended by y
           "depth":            2,
           "disableCache":     true,
           "jade":             false
+        },
+        "urlPaths": {
+          "app":              "",
+          "404":              "404.html",
+          "50x":              "50x.html"
         }
       }
     }
 
-These settings are exposed publicly via `app.config.citizen`.
+These settings are exposed publicly via `app.config.hostname` and `app.config.citizen`.
 
 **Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
 
-If you wanted to add a database configuration for your local dev environment, you could create a config file called local.json (or myconfig.json, whatever you want) with the following:
+Let's say you want to run an app on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
 
     {
       "hostname":             "My-MacBook-Pro.local",
@@ -128,20 +121,366 @@ If you wanted to add a database configuration for your local dev environment, yo
         "httpPort":           8080,
       },
       "db": {
-        "server":             "127.0.0.1",
+        "server":             "localhost",
         "username":           "dbuser",
         "password":           "dbpassword"
       }
     }
 
-This config file would extend the default configuration when running on your local machine. The database settings would be accessible within your app via `app.config.db`.
+This config would extend the default configuration only when running on your local machine. The database settings would be accessible within your app via `app.config.db`. **The citizen and hostname nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
 
+Here's a complete rundown of citizen's settings and what they mean:
 
-`urlPaths.app` is the path name in your app's web address. If your app's URL is:
-
-    http://www.website.com/path/to/my-app
-
-`urlPaths.app` should be "/path/to/my-app". This is necessary for citizen's router to work.
+<table>
+  <caption>citizen config options</caption>
+  <thead>
+    <tr>
+      <th>
+        Setting
+      </th>
+      <th>
+        Values
+      </th>
+      <th>
+        Description
+      </th>
+    </tr>
+  </thead>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+      <p>
+        The operating system's hostname
+      </p>
+    </td>
+    <td>
+      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>hostname</code> key that matches the server's hostname, it chooses that config file. This is different from the HTTP hostname setting under the <code>citizen</code> node (see below).
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>mode</code>
+    </td>
+    <td>
+      <ul>
+        <li>
+          <code>production</code>
+        </li>
+        <li>
+          <code>development</code>
+        </li>
+        <li>
+          <code>debug</code>
+        </li>
+      </ul>
+      <p>
+        Default: <code>production</code>
+      </p>
+    </td>
+    <td>
+      The application mode determines certain runtime behaviors. Production mode silences most logging and enables all application features. Development mode also silences most logs, but allows you to edit view templates on the fly without restarting the app. In addition to on-the-fly view editing, debug mode enables verbose logging and disables caching.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>httpPort</code>
+    </td>
+    <td>
+      <p>
+        A valid port number
+      </p>
+      <p>
+        Default: <code>80</code>
+      </p>
+    </td>
+    <td>
+      The port number on which citizen's web server should listen for requests.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+      <p>
+        A valid hostname
+      </p>
+      <p>
+        Default: <code>127.0.0.1</code>
+      </p>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. Don't confuse this with the host machine's <code>hostname</code> setting above, which is different.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>connectionQueue</code>
+    </td>
+    <td>
+      <p>
+        A positive integer
+      </p>
+      <p>
+        Default: <code>null</code>
+      </p>
+    </td>
+    <td>
+      The maximum number of incoming requests to queue. If left unspecified, the operating system determines the queue limit.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>sessions</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID on the server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>sessionTimeout</code>
+    </td>
+    <td>
+      <p>
+        Positive integer
+      </p>
+      <p>
+        Default: <code>1200000</code>
+      </p>
+    </td>
+    <td>
+      If sessions are enabled, this number represents the length of a user's session in milliseconds. Sessions automatically expire once this time limit is reached.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>requestTimeout</code>
+    </td>
+    <td>
+      <p>
+        Positive integer
+      </p>
+      <p>
+        Default: <code>30000</code>
+      </p>
+    </td>
+    <td>
+      Determines how long the server will wait for a response from your controllers before timing out, in milliseconds.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>prettyHTML</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      By default, rendered HTML sourced from Jade templates includes the original whitespace and line breaks. Change this setting to <code>false</code> to remove whitespace and minimize file size.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.log
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>toConsole</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      citizen only writes to the console when in debug mode. To override this behavior, set this to <code>true</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>toFile</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      citizen only writes to a log file when in debug mode. To override this behavior, set this to <code>true</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>defaultFile</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>citizen.txt</code>
+      </p>
+    </td>
+    <td>
+      When file logging is enabled, citizen will write a file to the logs directory using this name. Change this setting to write your app logs to a different file. citizen will continue to write framework logs to citizen.txt, however.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.debug
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>output</code>
+    </td>
+    <td>
+      <ul>
+        <li>
+          <code>view</code>
+        </li>
+        <li>
+          <code>console</code>
+        </li>
+      </ul>
+      <p>
+        Default: <code>view</code>
+      </p>
+    </td>
+    <td>
+      In debug mode, citizen dumps debug info to the view so you can see it in your browser. Change this setting to dump to the console instead.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>depth</code>
+    </td>
+    <td>
+      <p>
+        Positive integer
+      </p>
+      <p>
+        Default: <code>2</code>
+      </p>
+    </td>
+    <td>
+      When citizen dumps an object in the debug content, it inspects it using Node's util.inspect. This setting determines the depth of the inspection, meaning the number of nodes that will be inspected and displayed.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>disableCache</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      Debug mode disables the cache. Change this setting to <code>false</code> to enable the cache in debug mode.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>jade</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Jade's template debugging is quite verbose, so it's disabled by default, but you can enable it with this setting if citizen is failing to start due to template parsing errors and you need additional info.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.urlPaths
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>app</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: empty
+      </p>
+    </td>
+    <td>
+      Denotes the URL path leading to your app. If you want your app to be located at http://yoursite.com/my/app, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>404</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>/404.html</code>
+      </p>
+    </td>
+    <td>
+      The path pointing to a 404 error handler. By default, it's a static file in your /web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>50x</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>/50x.html</code>
+      </p>
+    </td>
+    <td>
+      The path pointing to a 50x error handler. By default, it's a static file in your /web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
+    </td>
+  </tr>
+</table>
 
 
 
@@ -162,21 +501,17 @@ Run start.js from the command line:
 citizen is designed to handle dynamic requests. Its static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
 
 <table>
-  <thead>
-    <tr>
-      <th colspan="2">Objects created by citizen</th>
-    </tr>
-  </thead>
+  <caption>Objects created by citizen</caption>
   <tr>
-    <th>
+    <td>
       <code>app.start()</code>
-    </th>
+    </td>
     <td>
       Starts the web server
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       <code>app.cache()</code><br />
       <code>app.exists()</code><br />
       <code>app.retrieve()</code><br />
@@ -188,47 +523,47 @@ citizen is designed to handle dynamic requests. Its static file serving is just 
       <code>app.size()</code>
       <code>app.log()</code><br />
       <code>app.dashes()</code><br />
-    </th>
+    </td>
     <td>
       <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       <code>app.models</code>
-    </th>
+    </td>
     <td>
       Contains models from your supplied patterns, which you can use instead of <code>require</code>. Controllers and views aren't exposed this way because you don't need to access them directly.
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       <code>app.handlebars</code>
-    </th>
+    </td>
     <td>
       A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as <code>app.handlebars.registerHelper()</code>
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       <code>app.jade</code>
-    </th>
+    </td>
     <td>
       A pointer to the citizen Jade global
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       <code>app.config</code>
-    </th>
+    </td>
     <td>
       The configuration settings you supplied at startup
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       <code>CTZN</code>
-    </th>
+    </td>
     <td>
       The global namespace used by citizen for internal objects, user sessions, and cache. You should not access or modify this namespace directly; anything you might need in your application will be exposed by the server to your controllers through local scopes.
     </td>
@@ -316,41 +651,37 @@ Each controller requires at least one public function. The default action is nam
 The citizen server calls `handler()` after it processes the initial request and passes it 3 arguments: an object containing the parameters of the request, the current request's context generated by the app up to this point, and an emitter for the controller to emit when it's ready to pass the results to the server.
 
 <table>
-  <thead>
-    <tr>
-      <th colspan="2">Contents of the <code>params</code> argument</th>
-    </tr>
-  </thead>
+  <caption>Contents of the <code>params</code> argument</caption>
   <tr>
-    <th><code>request</code></th>
+    <td><code>request</code></td>
     <td>The request object generated by the server, just in case you need direct access</td>
   </tr>
   <tr>
-    <th><code>response</code></th>
+    <td><code>response</code></td>
     <td>The response object generated by the server</td>
   </tr>
   <tr>
-    <th><code>route</code></th>
+    <td><code>route</code></td>
     <td>Details of the route, such as the requested URL and the name of the route (controller)</td>
   </tr>
   <tr>
-    <th><code>url</code></th>
+    <td><code>url</code></td>
     <td>Any URL parameters that were passed including the descriptor, if provided</td>
   </tr>
   <tr>
-    <th><code>form</code></th>
+    <td><code>form</code></td>
     <td>Data collected from a POST</td>
   </tr>
   <tr>
-    <th><code>payload</code></th>
+    <td><code>payload</code></td>
     <td>Data collected from a PUT</td>
   </tr>
   <tr>
-    <th><code>cookie</code></th>
+    <td><code>cookie</code></td>
     <td>An object containing any cookies that were sent with the request</td>
   </tr>
   <tr>
-    <th><code>session</code></th>
+    <td><code>session</code></td>
     <td>An object containing any session variables, if sessions are enabled</td>
   </tr>
 </table>
@@ -1126,17 +1457,11 @@ Note that if you put the `route` cache directive *anywhere* in your controller c
 If a given route will have variations, you can still cache individual controllers to speed up rendering. The `scope` property determines how the controller and its resulting view are cached.
 
 <table>
-  <thead>
-    <tr>
-      <th colspan="2">
-        Values for <code>cache.scope</code>
-      </th>
-    </tr>
-  </thead>
+  <caption>Values for <code>cache.scope</code></caption>
   <tr>
-    <th>
+    <td>
       route
-    </th>
+    </td>
     <td>
       <p>
         Setting cache scope to "route" caches an instance of the controller, action, and view for every unique route that calls the controller. If the following URLs are requested and the article controller's cache scope is set to "route", each URL will get its own unique cached instance of the article controller:
@@ -1158,9 +1483,9 @@ If a given route will have variations, you can still cache individual controller
     </td>
   </tr>
   <tr>
-    <th>
+    <td>
       global
-    </th>
+    </td>
     <td>
       A cache scope of "global" caches a single instance of a given controller and uses it everywhere, regardless of context or the requested route. If you have a controller whose output and rendering won't change across requests regardless of the context or route, "global" is a good option. It's perfect for caching citizen includes.
     </td>

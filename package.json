@@ -2,6 +2,19 @@
   "name": "citizen",
   "version": "0.3.7",
   "description": "A server-side MVC and caching framework for Node.js web applications.",
+  "keywords": [
+    "citizen",
+    "mvc",
+    "server side",
+    "server-side",
+    "cache",
+    "caching",
+    "router",
+    "routing",
+    "view rendering",
+    "framework",
+    "web server"
+  ],
   "author": {
     "name": "Jay Sylvester",
     "email": "jay@jaysylvester.com",
@@ -11,8 +24,10 @@
     "type": "git",
     "url": "https://github.com/jaysylvester/citizen"
   },
-  "license": "MIT",
-  "main": "index",
+  "bugs": {
+    "url": "https://github.com/jaysylvester/citizen/issues"
+  },
+  "main": "./lib/citizen.js",
   "dependencies": {
     "handlebars": "2.0.0",
     "jade": "1.9.1",
@@ -20,5 +35,6 @@
   },
   "engines": {
     "node": ">= 0.10.x"
-  }
+  },
+  "license": "MIT"
 }
