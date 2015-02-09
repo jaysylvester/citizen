@@ -1,3 +1,6 @@
+[0.3.7]
+  * Added application mode descriptions to readme
+
 [0.3.6]
   * Added another error scenario for HTTP port availability
 
