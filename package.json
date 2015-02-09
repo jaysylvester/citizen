@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "An event-driven MVC and caching framework for Node.js web applications.",
   "author": {
     "name": "Jay Sylvester",
