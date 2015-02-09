@@ -25,7 +25,7 @@ These commands will create a new directory for your web app, install citizen, us
     $ cd app
     $ node start.js
 
-If port 80 is already taken, swap this line for the line above, providing whatever port you want to use (8080 in this example):
+If port 80 is already in use or otherwise unavailable, swap this line for the line above, providing whatever port you want to use (8080 in this example):
 
     $ node node_modules/citizen/util/scaffold skeleton -n 8080
 
