@@ -1,3 +1,7 @@
+[0.3.8]
+  * app.copy() and app.extend() bug fixes and performance improvements
+  * Made startup messaging consistent with actual settings
+
 [0.3.7]
   * Fixed a bug in log()
   * app.config.hostname can be set to an empty string, allowing responses from any host

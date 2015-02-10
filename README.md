@@ -4,16 +4,18 @@ citizen is an event-driven MVC framework for Node.js web applications. Favoring 
 
 citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated.
 
-Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npm truncates it.
+Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npmjs.org truncates it.
 
 
 ## Benefits
 
-- Zero-configuration dynamic routing with a simple URL structure
-- Built-in configurable caching at both the route and controller level
-- Serve HTML, JSON, or JSONP from the same controller with a single URL flag
+- Zero-configuration dynamic routing with SEO-friendly URLs
+- In-memory caching of entire routes, individual controllers, and your own objects
+- Directives that make it easy to set cookies, sessions, redirects, caches, and more
+- Serve HTML, JSON, or JSONP from the same controller/view with a single URL flag
 - Easily chain controllers or include controllers within other controllers
 - Support for Jade and Handlebars templates with more on the way
+- Do it all on the server or include your favorite client-side templating engine
 
 
 ## Quick Start
@@ -31,9 +33,9 @@ If port 80 is already in use or otherwise unavailable, swap this line for the li
 
     $ node node_modules/citizen/util/scaffold skeleton -n 8080
 
-If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser (with the alternate port number appended if necessary) and you'll see a bare index template. For configuration options, see [Configuration](#configuration).
+If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser (with the alternate port number appended if necessary) and you'll see a bare index template.
 
-For more utilities, see [Utilities](#utilities).
+For configuration options, see [Configuration](#configuration). For more utilities, see [Utilities](#utilities).
 
 
 
@@ -118,7 +120,7 @@ Let's say you want to run an app on port 8080 in your local dev environment and 
       "hostname":             "My-MacBook-Pro.local",
       "citizen": {
         "mode":               "development",
-        "httpPort":           8080,
+        "httpPort":           8080
       },
       "db": {
         "server":             "localhost",
@@ -461,7 +463,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      The path pointing to a 404 error handler. By default, it's a static file in your /web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
+      The path pointing to a 404 error handler. By default, it's a static file in your app's web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
     </td>
   </tr>
   <tr>
@@ -477,7 +479,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      The path pointing to a 50x error handler. By default, it's a static file in your /web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
+      The path pointing to a 50x error handler. By default, it's a static file in your app's web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
     </td>
   </tr>
 </table>
