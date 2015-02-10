@@ -4,7 +4,7 @@ citizen is an event-driven MVC framework for Node.js web applications. Favoring 
 
 citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated.
 
-Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npmjs.org truncates it.
+Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npmjs.com truncates it.
 
 
 ## Benefits

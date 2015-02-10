@@ -1,6 +1,7 @@
 [0.3.9]
   * Added an error handler for EADDRNOTAVAIL (hostname unavailable/already in use)
   * Moved hasOwnProperty check in app.extend() to outer if statement so it covers both conditions
+  * Added clearTimeout to session.end() so timers are cleared when a session is ended manually
 
 [0.3.8]
   * app.copy() and app.extend() bug fixes and performance improvements
