@@ -187,7 +187,7 @@ function buildController(options) {
 
   return {
     name: name,
-    contents: "// " + pattern + " controller\n\n" + useStrict + "module.exports = {\n  'handler': handler\n};\n\n\n// default action\nfunction handler(params, context, emitter) {\n\n  " + appName + ".listen({\n    content: function (emitter) {\n      " + appName + ".models." + pattern + ".content(emitter);\n    }\n  }, function (output) {\n  \n    emitter.emit('ready', {\n      content: output.content\n    });\n    \n  });\n\n}\n"
+    contents: "// " + pattern + " controller\n\n" + useStrict + "module.exports = {\n  handler: handler\n};\n\n\n// default action\nfunction handler(params, context, emitter) {\n\n  " + appName + ".listen({\n    content: function (emitter) {\n      " + appName + ".models." + pattern + ".content(emitter);\n    }\n  }, function (output) {\n  \n    emitter.emit('ready', {\n      content: output.content\n    });\n    \n  });\n\n}\n"
   };
 }
 

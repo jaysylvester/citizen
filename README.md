@@ -20,20 +20,16 @@ Please see [Github](https://github.com/jaysylvester/citizen) for the complete re
 
 ## Quick Start
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen in production mode with the web server listening on port 80:
+These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen with the web server listening on port 8080 (you can change the port to whatever you want):
 
     $ mkdir mywebapp
     $ cd mywebapp
     $ npm install citizen
-    $ node node_modules/citizen/util/scaffold skeleton
+    $ node node_modules/citizen/util/scaffold skeleton -n 8080
     $ cd app
     $ node start.js
 
-If port 80 is already in use or otherwise unavailable, swap this line for the line above, providing whatever port you want to use (8080 in this example):
-
-    $ node node_modules/citizen/util/scaffold skeleton -n 8080
-
-If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1 in your browser (with the alternate port number appended if necessary) and you'll see a bare index template.
+If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
 
 For configuration options, see [Configuration](#configuration). For more utilities, see [Utilities](#utilities).
 
@@ -1299,19 +1295,13 @@ A common use case for `handoff` would be to create a layout controller that serv
           // Pass this request to app/patterns/controller/+_layout.js
           controller: '+_layout',
 
-          // Specifying the action is optional. The layout controller will use the
+          // Specifying the action is optional. The layout controller will use its
           // default action, handler(), unless you specify a different action here.
           action: 'handler',
 
           // Specifying the view is optional. The layout controller will use its
           // default view unless you tell it to use a different one.
-          view: '+_layout',
-
-          // Rendering the requested controller's view is optional.
-          // Using includeThisView tells citizen to render the article.jade view and
-          // store it in the include scope. If you don't specify includeThisView,
-          // the article controller's view won't be rendered.
-          includeThisView: true
+          view: '+_layout'
         },
 
         // A custom directive to drive some logic in the layout controller.
@@ -1323,13 +1313,15 @@ A common use case for `handoff` would be to create a layout controller that serv
       });
     }
 
-When you use the `handoff` directive and specify `includeThisView` like we did above, the originally requested view (article.jade in this case) is rendered as an include whose name matches its controller:
 
-    // article.jade, which is stored in the include scope as include.article
+The view of the originally requested controller (article.jade in this case) is rendered and stored in the `route.chain` object:
+
+    // article.jade, which is stored in the route.chain scope
 
     h1 #{article.title}
     p#summary #{article.summary}
     #text #{article.text}
+
 
 The layout controller handles the includes, follows your custom directive, and renders its own view:
 
@@ -1365,7 +1357,22 @@ The layout controller handles the includes, follows your custom directive, and r
       // do something
     }
 
-And our layout view:
+
+You can use `handoff` to chain requests across as many controllers as you want, with each controller's directives added to the request context. All controllers in the chain are stored in the `route` object as an array called `route.chain`:
+
+    [
+      { controller: 'article',
+        action: 'handler',
+        view: 'articles',
+        viewContent: '<h1>My Article Title</h1><p id="summary">The article summary.</p><div id="text">The article text.</div>'
+      },
+      { controller: '+_layout',
+        action: 'handler',
+        view: '+_layout'
+      }
+    ]
+
+You can loop over this object to render all the chained views:
 
     // +_layout.jade
 
@@ -1375,27 +1382,14 @@ And our layout view:
       body
         != include._header
         main
-          // You could use include.article here, but remember the route object?
-          // It contains useful details about the route, like the original
-          // controller's name. Now you can use this layout for any pattern.
-          != include[route.controller]
+          // Loop over each controller in the chain and incorporate its rendered view
+          each controller in route.chain
+            if controller.viewContent
+              | <!-- controller: #{controller.controller}, action: #{controller.action}, view: #{controller.view} -->
+              != controller.viewContent
 
 
-#### Chaining controllers
-
-You can use `handoff` to chain requests across as many controllers as you want, with each controller's directives added to the request context and each controller's view optionally added to the include scope. The initially requested controller's name and all following handoff controllers' names, along with their view names, are stored in the `route` object as an array called `route.chain`. You can loop over this object to render all the included views:
-
-    // +_layout.jade
-
-    doctype html
-    html
-      != include._head
-      body
-        != include._header
-        main
-          // Include every view that was rendered via handoff
-          each val in route.chain
-            != include[val.controller]
+It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
 
 
 ### Cache
@@ -1437,8 +1431,7 @@ Let's say you chain the article controller with the layout controller like we di
 
     emitter.emit('ready', {
       handoff: {
-        controller: '+_layout',
-        includeThisView: true
+        controller: '+_layout'
       },
       cache: {
         route: true
@@ -1501,8 +1494,7 @@ The `urlParams` property helps protect against invalid cache items (or worse: an
 
     emitter.emit('ready', {
       handoff: {
-        controller: '+_layout',
-        includeThisView: true
+        controller: '+_layout'
       },
       cache: {
         route: true,
@@ -1516,7 +1508,7 @@ http://cleverna.me/article
 http://cleverna.me/article/My-Article-Title  
 http://cleverna.me/article/My-Article-Title/page/2
 
-These URLs wouldn't be cached, which is a good thing because it wouldn't take long for an attacker's script to loop over a URL and flood the cache:
+The following URLs wouldn't be cached, which is a good thing because it wouldn't take long for an attacker's script to loop over a URL and flood the cache:
 
 http://cleverna.me/article/My-Article-Title/dosattack/1  
 http://cleverna.me/article/My-Article-Title/dosattack/2
@@ -1536,8 +1528,7 @@ If you want directives to persist within the cache, include them in the `directi
 
     emitter.emit('ready', {
       handoff: {
-        controller: '+_layout',
-        includeThisView: true
+        controller: '+_layout'
       },
       cookie: {
         myCookie: {
@@ -1606,7 +1597,7 @@ Cache defensively. Place logic in your controllers that combines the urlParams v
 
 Certain events will occur throughout the life of your citizen application. You can act on these application events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
 
-To take advantage of these events, include a directory called "on" in your app with any or all of follwowing modules and exports:
+To take advantage of these events, include a directory called "on" in your app with any or all of following modules and exports:
 
     app/
       on/
