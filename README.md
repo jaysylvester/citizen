@@ -1573,9 +1573,7 @@ If you want directives to persist within the cache, include them in the `directi
 
 #### Cache Limitations and Warnings
 
-Controllers that use the `include` directive can't use global or route cache scopes due to the way citizen renders includes, but it's on the roadmap for a future release. In the meantime, you can get around it by using the cache directive within the included controllers. The `cache.route` property works fine.
-
-As mentioned previously, if you use the handoff directive to call a series of controllers and any one of those controllers sets `cache.route` to true, the final view will be cached. Therefore, caching any controllers in that chain would be redundant. In most cases, you'll want to choose between caching an entire route or caching individual controllers, but not both.
+As mentioned previously, if you use the handoff directive to call a series of controllers and any one of those controllers sets `cache.route` to true, the final view will be cached. Therefore, caching any controllers in that chain might be redundant. In most cases, you'll want to choose between caching an entire route or caching individual controllers, but not both.
 
 citizen's cache is a RAM cache, so be careful with your caching strategy. You could very quickly find yourself out of memory. Use the lifespan option so URLs that aren't receiving a ton of traffic naturally fall out of the cache and free up resources for frequently accessed pages.
 

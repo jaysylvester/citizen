@@ -1,3 +1,6 @@
+[0.4.1]
+  * Seems silly to change version numbers just for a readme fix, but that's the world we live in.
+
 [0.4.0]
   * BREAKING CHANGE: Views rendered in a controller chain using handoff are now stored in the route.chain scope instead of the include scope (details in the readme under the "Controller Handoff" section)
   * BREAKING CHANGE: The syntax for the cache directive has been changed to make it a bit easier to understand. See the "Caching Routes and Controllers" section in the readme.
