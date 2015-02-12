@@ -1,21 +1,24 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes some of the pain out of building a Node web app, but still exposes enough of the internals to let you get a bit dirty if you need to.
+citizen is an event-driven MVC framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a tower of cards made out of 20 different packages.
 
-citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated.
+Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes the pain out of building a Node web app, but doesn't stop you from using native Node methods.
 
-Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npmjs.com truncates it.
+Future plans include tight integration with client-side rendering through a custom JS library that shares MVC patterns between the client and server, but this will be optional.
+
+citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated. Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npmjs.com truncates it.
 
 
 ## Benefits
 
+- Very high performance (even without caching)
 - Zero-configuration dynamic routing with SEO-friendly URLs
-- In-memory caching of entire routes, individual controllers, and your own objects
+- Optional in-memory caching of entire routes, individual controllers, and objects
 - Directives that make it easy to set cookies, sessions, redirects, caches, and more
 - Serve HTML, JSON, or JSONP from the same controller/view with a single URL flag
 - Easily chain controllers or include controllers within other controllers
+- Do it all on the server or roll in your favorite client-side templating engine
 - Support for Jade and Handlebars templates with more on the way
-- Do it all on the server or include your favorite client-side templating engine
 
 
 ## Quick Start
@@ -125,7 +128,9 @@ Let's say you want to run an app on port 8080 in your local dev environment and 
       }
     }
 
-This config would extend the default configuration only when running on your local machine. The database settings would be accessible within your app via `app.config.db`. **The citizen and hostname nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
+This config would extend the default configuration only when running on your local machine; you'll never accidentally push a test config to production again ;)
+
+The database settings would be accessible within your app via `app.config.db`. **The citizen and hostname nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
 
 Here's a complete rundown of citizen's settings and what they mean:
 
@@ -496,7 +501,6 @@ Run start.js from the command line:
 
     $ node start.js
 
-citizen is designed to handle dynamic requests. Its static file serving is just a hack to get your dev environment up and running quickly. I recommend something like [nginx](http://nginx.org) as a front end for static file serving in your production environment.
 
 <table>
   <caption>Objects created by citizen</caption>
@@ -1392,7 +1396,7 @@ You can loop over this object to render all the chained views:
 It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
 
 
-### Cache
+### Caching Routes and Controllers
 
 In many cases, a requested route or controller will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive. Caching works in both typical controllers and include controllers.
 
@@ -1400,26 +1404,30 @@ Here's an example `cache` directive (more details after the code sample):
 
     emitter.emit('ready', {
       cache: {
-        // Cache the entire view for this route
+        // Cache the final rendered view for this route (URL)
         route: true,
 
-        // Or, cache just this controller. Valid values are 'global' and 'route'.
-        // Details below on the differences.
-        scope: 'global',
+        // Cache just this controller
+        controller: true,
 
-        // Optional. List of valid URL parameters that protects against
-        // accidental caching of malformed URLs.
+        // Optional. If caching the controller, 'global' (default) will cache one
+        // instance of the controller and use it globally, while 'route' will cache a
+        // unique instance of the controller for every route that calls it.
+        scope: 'route',
+
+        // Optional. List of valid URL parameters that protects against accidental
+        // caching of malformed URLs.
         urlParams: ['article', 'page'],
 
         // Optional. List of directives to cache with the controller.
         directives: ['handoff', 'cookie'],
 
-        // Optional. Life of cached item in milliseconds. Default is the life of
-        // the application (no expiration).
-        lifespan: 600000
+        // Optional. Life of cached item in milliseconds. Default is the life of the
+        // application (no expiration).
+        lifespan: 600000,
 
-        // Reset the cached item's expiration timer whenever the item is
-        // accessed, keeping it in the cache until traffic subsides.
+        // Reset the cached item's expiration timer whenever the item is accessed,
+        // keeping it in the cache until traffic subsides.
         resetOnAccess: true
     });
 
@@ -1446,10 +1454,22 @@ http://cleverna.me/article/My-Article/page/2
 
 Note that if you put the `route` cache directive *anywhere* in your controller chain, the route will be cached.
 
+Also note that you can't cache directives in a route cache. Only controller caches can store directives.
 
-#### cache.scope
 
-If a given route will have variations, you can still cache individual controllers to speed up rendering. The `scope` property determines how the controller and its resulting view are cached.
+#### cache.controller and cache.scope
+
+If a given route will have variations, you can still cache individual controllers to speed up rendering. The `controller` property tells citizen to cache the controller, while the `scope` property determines how the controller and its resulting view are cached.
+
+    emitter.emit('ready', {
+      handoff: {
+        controller: '+_layout'
+      },
+      cache: {
+        controller: true,
+        scope: 'route'
+      }
+    });
 
 <table>
   <caption>Values for <code>cache.scope</code></caption>

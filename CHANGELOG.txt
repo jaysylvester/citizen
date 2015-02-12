@@ -1,7 +1,9 @@
 [0.4.0]
-  * BREAKING CHANGE: Views rendered in a controller chain using handoff are now stored in the chain scope instead of the include scope (details in the readme under the "Controller Handoff" section)
+  * BREAKING CHANGE: Views rendered in a controller chain using handoff are now stored in the route.chain scope instead of the include scope (details in the readme under the "Controller Handoff" section)
+  * BREAKING CHANGE: The syntax for the cache directive has been changed to make it a bit easier to understand. See the "Caching Routes and Controllers" section in the readme.
+  * Fixed a bug in controller caching that threw an error when trying to cache a controller that also used the include directive
   * The "includeThisView" attribute within the handoff directive has been deprecated. If a controller in a handoff chain has a matching view, it's rendered automatically. If you leave this attribute in place, it won't break anything, but it will be ignored.
-  * Added an error handler for EADDRNOTAVAIL (hostname unavailable/already in use)
+  * Added an error handler for EADDRNOTAVAIL at server startup (hostname unavailable/already in use)
   * Moved hasOwnProperty check in app.extend() to outer if statement so it covers both conditions
   * Added clearTimeout to session.end() so timers are cleared when a session is ended manually
 
