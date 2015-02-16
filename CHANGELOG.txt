@@ -1,3 +1,6 @@
+[0.5.2]
+  * Added "secureCookies" option to "https" config. By default, all cookies set during an HTTPS request are secure. Setting this option to false allows non-secure cookies to be set by secure pages.
+
 [0.5.1]
   * Forgot to update the config builder in util/scaffold.js with the new HTTP config
 

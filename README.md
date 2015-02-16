@@ -6,7 +6,7 @@ Favoring convention over configuration, citizen's purpose is to handle server-si
 
 Future plans include tight integration with client-side rendering through a custom JS library that shares MVC patterns between the client and server, but this will be optional.
 
-citizen is reliable, but the API is not yet stable. Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Your comments, criticisms, and (pull) requests are appreciated. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it. 
+citizen is reliable, but the API is not yet stable. Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Your comments, criticisms, and (pull) requests are appreciated. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it.
 
 
 ## Benefits
@@ -89,7 +89,8 @@ The following represents citizen's default configuration, which is extended by y
         },
         "https": {
           "hostname":         "127.0.0.1",
-          "port":             443
+          "port":             443,
+          "secureCookies":    true
         },
         "connectionQueue":    undefined,
         "sessions":           false,
@@ -532,6 +533,22 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       The port number on which citizen's HTTPS server should listen for requests.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>secureCookies</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      By default, all cookies set during an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
     </td>
   </tr>
 </table>
