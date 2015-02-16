@@ -1022,8 +1022,17 @@ Here's an example of a complete cookie object's default values:
       // 'session' - expires at the end of the browser session (default)
       // [time in milliseconds] - added to current time for a specific expiration date
       expires: 'session',
-      path: '/',
+
+      // By default, a cookie's path is the same as the app path in your config
+      path: app.config.citizen.urlPaths.app,
+
+      // citizen's cookies are accessible via HTTP only by default. To access a
+      // cookie via JavaScript, set this to false.
       httpOnly: true,
+
+      // Cookies are insecure over HTTP. By default, they're made secure over HTTPS.
+      // You can override that behavior globally with the https.secureCookies setting
+      // in your config or on a case-by-case basis with this setting.
       secure: false
     }
 
