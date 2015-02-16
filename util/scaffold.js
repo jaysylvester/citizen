@@ -249,6 +249,6 @@ function buildConfig(options) {
 
   return {
     name: name + '.json',
-    contents: '{\n  "citizen": {\n    "mode":             "' + mode + '",\n    "httpPort":         ' + port + '\n  }\n}\n'
+    contents: '{\n  "citizen": {\n    "mode":             "' + mode + '",\n    "http": {\n      "port":           ' + port + '\n    }\n  }\n}\n'
   };
 }

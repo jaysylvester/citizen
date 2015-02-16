@@ -1,3 +1,6 @@
+[0.5.1]
+  * Forgot to update the config builder in util/scaffold.js with the new HTTP config
+
 [0.5.0]
   * BREAKING CHANGE: Secure server support (HTTPS) has been added, resulting in minor changes to the way default hostnames and ports are stored in the config file. See "Configuration" and "HTTPS" in the readme for details.
   * BREAKING CHANGE (potentially): The default setting for citizen.urlPaths.app has been changed to "/" (previously an empty string). If you're referencing this variable within your own app to build URLs, it might cause problems.
