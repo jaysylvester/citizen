@@ -1,12 +1,12 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a tower of cards made out of 20 different packages.
+citizen is an event-driven MVC framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a house of cards made out of 20 different packages.
 
 Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes the pain out of building a Node web app, but doesn't stop you from using native Node methods.
 
 Future plans include tight integration with client-side rendering through a custom JS library that shares MVC patterns between the client and server, but this will be optional.
 
-citizen is in beta. Your comments, criticisms, and (pull) requests are appreciated. Please see [Github](https://github.com/jaysylvester/citizen) for the complete readme. npmjs.com truncates it.
+citizen is reliable, but the API is not yet stable. Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Your comments, criticisms, and (pull) requests are appreciated. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it. 
 
 
 ## Benefits
@@ -45,7 +45,7 @@ For configuration options, see [Configuration](#configuration). For more utiliti
         local.json
         qa.json
         production.json
-      logs/                 // Log files created by citizen and your app
+      logs/                  // Log files created by citizen and your app
         app.txt
         citizen.txt
       on/                   // Optional application events
@@ -83,8 +83,14 @@ The following represents citizen's default configuration, which is extended by y
       "hostname":             "",
       "citizen": {
         "mode":               "production",
-        "httpPort":           80,
-        "hostname":           "127.0.0.1",
+        "http": {
+          "hostname":         "127.0.0.1",
+          "port":             80
+        },
+        "https": {
+          "hostname":         "127.0.0.1",
+          "port":             443
+        },
         "connectionQueue":    undefined,
         "sessions":           false,
         "sessionTimeout":     1200000,
@@ -93,6 +99,7 @@ The following represents citizen's default configuration, which is extended by y
         "log": {
           "toConsole":        false,
           "toFile":           false,
+          "path":             "/absolute/path/to/app/logs",
           "defaultFile":      "citizen.txt"
         },
         "debug": {
@@ -102,9 +109,9 @@ The following represents citizen's default configuration, which is extended by y
           "jade":             false
         },
         "urlPaths": {
-          "app":              "",
-          "404":              "404.html",
-          "50x":              "50x.html"
+          "app":              "/",
+          "404":              "/404.html",
+          "50x":              "/50x.html"
         }
       }
     }
@@ -119,7 +126,9 @@ Let's say you want to run an app on port 8080 in your local dev environment and 
       "hostname":             "My-MacBook-Pro.local",
       "citizen": {
         "mode":               "development",
-        "httpPort":           8080
+        "http": {
+          "port":             8080
+        }
       },
       "db": {
         "server":             "localhost",
@@ -189,38 +198,6 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       The application mode determines certain runtime behaviors. Production mode silences most logging and enables all application features. Development mode also silences most logs, but allows you to edit view templates on the fly without restarting the app. In addition to on-the-fly view editing, debug mode enables verbose logging and disables caching.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>httpPort</code>
-    </td>
-    <td>
-      <p>
-        A valid port number
-      </p>
-      <p>
-        Default: <code>80</code>
-      </p>
-    </td>
-    <td>
-      The port number on which citizen's web server should listen for requests.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>hostname</code>
-    </td>
-    <td>
-      <p>
-        A valid hostname
-      </p>
-      <p>
-        Default: <code>127.0.0.1</code>
-      </p>
-    </td>
-    <td>
-      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. Don't confuse this with the host machine's <code>hostname</code> setting above, which is different.
     </td>
   </tr>
   <tr>
@@ -444,7 +421,7 @@ Here's a complete rundown of citizen's settings and what they mean:
         String
       </p>
       <p>
-        Default: empty
+        Default: <code>/</code>
       </p>
     </td>
     <td>
@@ -483,6 +460,80 @@ Here's a complete rundown of citizen's settings and what they mean:
       The path pointing to a 50x error handler. By default, it's a static file in your app's web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
     </td>
   </tr>
+  <tr>
+    <td colspan="3">
+      citizen.http
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+      <p>
+        A valid hostname
+      </p>
+      <p>
+        Default: <code>127.0.0.1</code>
+      </p>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. Don't confuse this with the host machine's <code>hostname</code> setting above, which is different.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>port</code>
+    </td>
+    <td>
+      <p>
+        A valid port number
+      </p>
+      <p>
+        Default: <code>80</code>
+      </p>
+    </td>
+    <td>
+      The port number on which citizen's HTTP server should listen for requests.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.https
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+      <p>
+        A valid hostname
+      </p>
+      <p>
+        Default: <code>127.0.0.1</code>
+      </p>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTPS. You need to configure your server's DNS settings to support this setting. Don't confuse this with the host machine's <code>hostname</code> setting above, which is different.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>port</code>
+    </td>
+    <td>
+      <p>
+        A valid port number
+      </p>
+      <p>
+        Default: <code>443</code>
+      </p>
+    </td>
+    <td>
+      The port number on which citizen's HTTPS server should listen for requests.
+    </td>
+  </tr>
 </table>
 
 
@@ -501,6 +552,30 @@ Run start.js from the command line:
 
     $ node start.js
 
+Other ways to use `app.start()`:
+
+    // Start an HTTP server with inline hostname and port, overriding the config
+    app.start({
+      hostname: 'www.mysite.com',
+      port: 8282
+    });
+
+    // Start an HTTPS server with key and cert PEM files
+    app.start({
+      key: fs.readFileSync('key.pem'),
+      cert: fs.readFileSync('cert.pem')
+    });
+
+    // Start an HTTPS server with a PFX file running on port 3000
+    app.start({
+      port: 3000,
+      pfx: fs.readFileSync('mysite.pfx')
+    });
+
+If you pass `app.start()` either a key/cert pair or PFX file, it assumes you want HTTPS.
+
+When starting an HTTPS server, in addition to the `hostname` and `port` options, `app.start()` takes the same options as [Node's https.createServer()](http://nodejs.org/api/https.html#https_https_createserver_options_requestlistener) (which takes the same options as [tls.createServer()](http://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener)).
+
 
 <table>
   <caption>Objects created by citizen</caption>
@@ -509,7 +584,7 @@ Run start.js from the command line:
       <code>app.start()</code>
     </td>
     <td>
-      Starts the web server
+      Starts either an HTTP or HTTPS server.
     </td>
   </tr>
   <tr>
@@ -641,10 +716,12 @@ Each controller requires at least one public function. The default action is nam
       handler: handler
     };
 
+    // Required
     function handler(params, context, emitter) {
 
       // do some stuff
 
+      // Required
       emitter.emit('ready', {
         // content and directives for the server
       });
@@ -2043,7 +2120,7 @@ When citizen is in production or development mode, log() does nothing by default
       timestamp: false
     });
 
-When file logging is enabled, citizen writes its logs to citizen.txt. Log files appear in the folder you specify in `config.citizen.directories.logs`.
+When file logging is enabled, citizen writes its logs to citizen.txt. Log files appear in the folder you specify in `config.citizen.log.path`.
 
 
 
@@ -2097,7 +2174,7 @@ Resulting file structure:
     app/
       config/
         citizen.json
-      logs/
+      log/
       on/
         application.js
         request.js

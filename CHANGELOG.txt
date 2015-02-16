@@ -1,3 +1,9 @@
+[0.5.0]
+  * BREAKING CHANGE: Secure server support (HTTPS) has been added, resulting in minor changes to the way default hostnames and ports are stored in the config file. See "Configuration" and "HTTPS" in the readme for details.
+  * BREAKING CHANGE (potentially): The default setting for citizen.urlPaths.app has been changed to "/" (previously an empty string). If you're referencing this variable within your own app to build URLs, it might cause problems.
+  * Added a "path" option under "log" in the config so you can specify an alternate location for log files
+  * Fixed a bug in error handling caused by the addition of helpers.public
+
 [0.4.1]
   * Seems silly to change version numbers just for a readme fix, but that's the world we live in.
 
