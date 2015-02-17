@@ -1,3 +1,6 @@
+[0.5.5]
+  * Bug fixes for JSON and JSONP output
+
 [0.5.4]
   * Readme fixes related to cache syntax changes
 
