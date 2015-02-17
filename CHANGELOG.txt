@@ -1,3 +1,6 @@
+[0.5.4]
+  * Readme fixes related to cache syntax changes
+
 [0.5.3]
   * Fixed a bug in https.secureCookies that prevented the cookie directive from overriding it. You can now tell citizen to intentionally set an insecure cookie in a secure environment.
   * Changed the default cookie path to urlPaths.app (cookies were being set to the root path "/" by default previously). This is technically a breaking change, but the worst that will happen is that cookies set prior to this change will no longer be accessible if your app path is something other than "/".

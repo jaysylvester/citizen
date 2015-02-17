@@ -1663,6 +1663,7 @@ If you want directives to persist within the cache, include them in the `directi
         doSomething: true
       },
       cache: {
+        controller: true,
         scope: 'route',
 
         // Cache handoff and myCustomDirective so that if this controller is
@@ -1700,6 +1701,7 @@ Cache defensively. Place logic in your controllers that combines the urlParams v
             article: article
           },
           cache: {
+            controller: true,
             scope: 'route',
             urlParams: ['article', 'page']
           }
@@ -1947,7 +1949,12 @@ Clear a cache object using a key or a scope.
     app.clear({ key: '/path/to/articles.txt' });
 
 
-`clear()` can also be used to remove cached controllers and routes from their respective caches.
+`clear()` can also be used to remove cached routes and controllers from their respective caches.
+
+    // Clear the specified route from the cache
+    app.clear({
+      route: '/article/My-Article/page/2/action/edit'
+    });
 
     // Clear the specified controller from the cache, including all actions and views
     app.clear({
