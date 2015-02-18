@@ -1,4 +1,5 @@
 [0.5.6]
+  * Fixed a bug in view rendering caused by controllers that have includes but no content directive in the emitter
   * Improvements to format parameter handling
 
 [0.5.5]
