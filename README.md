@@ -1679,6 +1679,8 @@ If you want directives to persist within the cache, include them in the `directi
 
 As mentioned previously, if you use the handoff directive to call a series of controllers and any one of those controllers sets `cache.route` to true, the final view will be cached. Therefore, caching any controllers in that chain might be redundant. In most cases, you'll want to choose between caching an entire route or caching individual controllers, but not both.
 
+When caching an include controller, the view directive doesn't work. Set the view within the include directive of the calling controller.
+
 citizen's cache is a RAM cache, so be careful with your caching strategy. You could very quickly find yourself out of memory. Use the lifespan option so URLs that aren't receiving a ton of traffic naturally fall out of the cache and free up resources for frequently accessed pages.
 
 Cache defensively. Place logic in your controllers that combines the urlParams validation with some simple checks so invalid URLs don't result in junk pages clogging your cache:

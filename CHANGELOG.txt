@@ -1,3 +1,8 @@
+[0.5.7]
+  * Fixed a bug in the view directive when used within an include controller. Note that the view directive still can't (and never will) work within a cached include controller. You need to specify the include controller's view in the include directive of the calling controller if you intend to cache the result.
+  * Improved error messages by throwing proper Error objects, allowing more useful trace logs
+  * Cleaned up server.js and helpers.js a bit
+
 [0.5.6]
   * Fixed a bug in view rendering caused by controllers that have includes but no content directive in the emitter
   * Improvements to format parameter handling
