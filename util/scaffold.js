@@ -1,4 +1,4 @@
-// Generate files and directories needed for a citizen pattern
+// Generates files and directories needed for citizen apps
 
 'use strict';
 
@@ -69,8 +69,7 @@ program
     console.log('');
     console.log('To start your app:');
     console.log('');
-    console.log('  $ cd ' + appPath);
-    console.log('  $ node start.js');
+    console.log('  $ node ' + appPath + '/start.js');
     console.log('');
   })
   .on('--help', function(){

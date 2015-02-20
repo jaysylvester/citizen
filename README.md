@@ -1,6 +1,6 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a house of cards made out of 20 different packages.
+citizen is an event-driven MVC framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a Jenga tower made out of 20 different packages.
 
 Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes the pain out of building a Node web app, but doesn't stop you from using native Node methods.
 
@@ -29,8 +29,7 @@ These commands will create a new directory for your web app, install citizen, us
     $ cd mywebapp
     $ npm install citizen
     $ node node_modules/citizen/util/scaffold skeleton -n 8080
-    $ cd app
-    $ node start.js
+    $ node app/start.js
 
 If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
 
