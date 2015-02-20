@@ -45,7 +45,7 @@ For configuration options, see [Configuration](#configuration). For more utiliti
         local.json
         qa.json
         production.json
-      logs/                  // Log files created by citizen and your app
+      logs/                 // Log files created by citizen and your app
         app.txt
         citizen.txt
       on/                   // Optional application events
@@ -113,6 +113,15 @@ The following represents citizen's default configuration, which is extended by y
           "app":              "/",
           "404":              "/404.html",
           "50x":              "/50x.html"
+        },
+        directories: {
+          "app":              "(resolved based on location of start.js)",
+          "logs":             "(directories.app)/logs",
+          "on":               "(directories.app)/on",
+          "controllers":      "(directories.app)/patterns/controllers",
+          "models":           "(directories.app)/patterns/models",
+          "views":            "(directories.app)/patterns/views",
+          "web":              "(up one directory from directories.app)/web"
         }
       }
     }
@@ -2202,14 +2211,14 @@ The util directory within the citizen package has some helpful CLI utilities.
 
 Creates a complete skeleton of a citizen app with a functional index pattern.
 
-    $ node scaffold skeleton
+    $ node node_modules/citizen/util/scaffold skeleton
 
 Resulting file structure:
 
     app/
       config/
         citizen.json
-      log/
+      logs/
       on/
         application.js
         request.js
@@ -2226,14 +2235,14 @@ Resulting file structure:
       start.js
     web/
 
-Run `node scaffold skeleton -h` for options.
+Run `node node_modules/citizen/util/scaffold skeleton -h` for options.
 
 
 #### pattern
 
 Creates a complete citizen MVC pattern. The pattern command takes a pattern name and options:
 
-    $ node scaffold pattern [options] [pattern]
+    $ node node_modules/citizen/util/scaffold pattern [options] [pattern]
 
 For example, `node scaffold pattern -f hbs article` will create the following pattern with a view file in Handlebars format:
 
@@ -2247,14 +2256,14 @@ For example, `node scaffold pattern -f hbs article` will create the following pa
           article/
             article.hbs
 
-Use `node scaffold pattern -h` to see all available options for customizing your patterns.
+Use `node node_modules/citizen/util/scaffold pattern -h` to see all available options for customizing your patterns.
 
 
 ## License
 
 (The MIT License)
 
-Copyright (c) 2014 Jason Sylvester <jay@jaysylvester.com>
+Copyright (c) 2014 [Jason Sylvester](http://jaysylvester.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
