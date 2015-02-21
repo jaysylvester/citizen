@@ -103,7 +103,7 @@ The following represents citizen's default configuration, which is extended by y
           "defaultFile":      "citizen.txt"
         },
         "debug": {
-          "output":           "view",
+          "output":           "console",
           "depth":            2,
           "disableCache":     true,
           "jade":             false
@@ -2171,7 +2171,7 @@ When file logging is enabled, citizen writes its logs to citizen.txt. Log files 
 
 **Warning: `debug` and `development` modes are inherently insecure. Don't use them in a production environment.**
 
-If you set `"mode": "debug"` in your config file, citizen dumps the current pattern's output to the console by default. You can also dump it to the view by setting `debug.output` in your config file to `view`, or use the `ctzn_dump` URL parameter on a per-request basis:
+If you set `"mode": "debug"` in your config file, citizen dumps the current pattern's context and request parameters to the console. You can dump it to the view instead by setting `debug.output` in your config file to `view`, or use the `ctzn_dump` URL parameter on a per-request basis:
 
     // config file: always dumps debug output in the view
     {
@@ -2183,21 +2183,39 @@ If you set `"mode": "debug"` in your config file, citizen dumps the current patt
     // URL
     http://www.cleverna.me/article/id/237/page/2/ctzn_dump/view
 
-By default, the pattern's complete output is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter. You can access globals, `pattern`, and server `params`:
 
-    // Dumps pattern.content to the console
+By default, the pattern's complete output is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter. You can access globals, `pattern` (which is the current controller chain), and request `params`:
+
+    // Dumps pattern.content
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/pattern.content
 
-    // Dumps the server params object to the console
+    // Dumps the server params object
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params
 
-    // Dumps the user's session to the console
+    // Dumps the user's session scope
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params.session
 
-    // Dumps the user's session to the view
+    // Dumps the user's session scope to the view
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params.session/ctzn_dump/view
 
-In `development` mode, you must specify the `ctzn_debug` URL parameter to enable debug output. Debug output is disabled in production mode.
+    // Dumps the CTZN global object
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN
+
+
+The debug output traverses objects 2 levels deep by default. To display deeper output, use the `debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
+
+    // config file: debug 4 levels deep
+    {
+      "debug": {
+        "depth": 4
+      }
+    }
+
+    // URL
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debugDepth/4
+
+
+In `development` mode, you must specify the `ctzn_debug` URL parameter to display debug output. Debug output is disabled in production mode.
 
 
 ## Utilities

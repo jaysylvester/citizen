@@ -1,3 +1,7 @@
+[0.5.9]
+  * Fixed default debug rendering (defaults to console, view is optional)
+  * Styled debug output in the view
+
 [0.5.8]
   * Small performance tweaks and debug additions in the server and router
   * Readme updates
