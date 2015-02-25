@@ -18,7 +18,7 @@
   "author": {
     "name": "Jay Sylvester",
     "email": "jay@jaysylvester.com",
-    "url": "http://jaysylvester.com/"
+    "url": "http://jaysylvester.com"
   },
   "repository": {
     "type": "git",
@@ -29,9 +29,10 @@
   },
   "main": "./lib/citizen.js",
   "dependencies": {
+    "commander": "~2.6.0",
+    "formidable": "~1.0.17",
     "handlebars": "~2.0.0",
-    "jade": "~1.9.1",
-    "commander": "~2.6.0"
+    "jade": "~1.9.1"
   },
   "engines": {
     "node": ">= 0.10.x"

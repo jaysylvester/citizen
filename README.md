@@ -2226,7 +2226,7 @@ The util directory within the citizen package has some helpful CLI utilities.
 
 #### skeleton
 
-Creates a complete skeleton of a citizen app with a functional index pattern.
+Creates a complete skeleton of a citizen app with a functional index pattern and error templates.
 
     $ node node_modules/citizen/util/scaffold skeleton
 
@@ -2247,6 +2247,11 @@ Resulting file structure:
         models/
           index.js
         views/
+          error/
+            404.jade
+            500.jade
+            ENOENT.jade
+            error.jade
           index/
             index.jade
       start.js
