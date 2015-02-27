@@ -328,6 +328,22 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td>
+      <code>path</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>/path/to/app/logs</code>
+      </p>
+    </td>
+    <td>
+      citizen writes log files to the <code>logs</code> directory in your app folder by default. Enter a different absolute path in this setting to change the location.
+    </td>
+  </tr>
+  <tr>
+    <td>
       <code>defaultFile</code>
     </td>
     <td>
@@ -435,38 +451,6 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       Denotes the URL path leading to your app. If you want your app to be located at http://yoursite.com/my/app, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>404</code>
-    </td>
-    <td>
-      <p>
-        String
-      </p>
-      <p>
-        Default: <code>/404.html</code>
-      </p>
-    </td>
-    <td>
-      The path pointing to a 404 error handler. By default, it's a static file in your app's web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>50x</code>
-    </td>
-    <td>
-      <p>
-        String
-      </p>
-      <p>
-        Default: <code>/50x.html</code>
-      </p>
-    </td>
-    <td>
-      The path pointing to a 50x error handler. By default, it's a static file in your app's web directory. If you want to write an error handling pattern, you can do that and change this to <code>/error</code> or whatever you want.
     </td>
   </tr>
   <tr>
@@ -1718,9 +1702,7 @@ Cache defensively. Place logic in your controllers that combines the urlParams v
         });
       // Throw a 404 if the article doesn't exist. Nothing will be cached.
       } else {
-        throw {
-          statusCode: 404
-        };
+        throw new Error(404);
       }
 
     }
@@ -2003,56 +1985,47 @@ Clear a cache object using a key or a scope.
     app.clear({ scope: 'app' });
 
 
-### listen({ functions }, callback)
+### listen([flow,] { functions }, callback)
 
 The article example we've been using has only simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
-`listen()` takes two arguments: an object containing one or more methods you want to call, and a callback to handle the output. `listen()` requires that your functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
+`listen()` takes up to three arguments: the type of flow control you'd like to use (optional), an object containing one or more methods you want to call, and a callback to process the output. `listen()` requires that your asynchronous functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
 
-Let's say our article model has two methods that need to be called before returning the results to the controller. One is called `getArticle()` and the other is `getViewers()`. Assume both methods make an asynchronous call to a database and can't be relied upon to return their output immediately, so we have to listen for when they're ready and then react.
+#### Parallel function calls
 
-    // article controller
+`listen()` defaults to parallel processing. It fires all the functions you provide, then returns the output of all functions in a single output object. This is the option to use if none of the functions you're calling depend on each other in any way, but you need all of them to return before proceeding.
 
-    module.exports = {
-      handler: handler
-    };
+Let's say our article controller needs to call several methods that hit the database asynchronously. Use `listen()` to call them all and proceed only after all are complete:
 
-    function handler(params, context, emitter) {
+      // listen() defaults to parallel processing, so the flow option is optional
       app.listen({
+
         // The property contains the action you want to listen for, which is
         // wrapped in an anonymous function in order to pass the emitter
         article: function (emitter) {
+
+          // Pass the emitter into the function you call
           app.models.article.getArticle(params.url.article, params.url.page, emitter);
         },
         viewers: function (emitter) {
           app.models.article.getViewers(params.url.article, emitter);
         }
       }, function (output) {
-        // Emit `ready` now that we have the output from article and viewers and
-        // pass the context back to the server
-        emitter.emit('ready', {
-          content: {
-            // The property names you assign to the methods above become the names
-            // of the output objects
-            article: output.article,
-            viewers: output.viewers
-          }
-        });
+
+        // This callback fires after both functions emit 'ready'.
+        // Access the returned data via the output argument:
+        //
+        // output.article
+        // output.viewers
+
       });
-    }
 
 And the model:
 
-    // article model
-
-    module.exports = {
-      getArticle: getArticle,
-      getViewers: getViewers
-    };
-
-    // Methods called via listen() must be written to accept an emitter
+    // Methods called via listen() must be written to accept the emitter
     function getArticle(article, page, emitter) {
       app.db.article({ article: article, page: page }, function (data) {
+
         // When the database returns the data, emit `ready` and pass the
         // data back to listen()
         emitter.emit('ready', data);
@@ -2065,26 +2038,69 @@ And the model:
       });
     };
 
-`listen()` currently fires all functions asynchronously and returns the results for every function in a single output object after all functions have completed. A waterfall-type execution is being worked on, but in the meantime, you can nest `listen()` functions to achieve the same effect:
 
-    app.listen({
-      first: function (emitter) {
-        doSomething(emitter);
+After `getArticle()` and `getViewers()` both emit ready, the callback is fired.
+
+
+#### Series function calls
+
+If you need functions to fire and return in order, use `series`. The syntax is the same as `parallel` except for the inclusion of the series option:
+
+    app.listen('series', {
+
+      // article fires first
+      article: function (emitter) {
+        app.models.article.getArticle(params.url.article, params.url.page, emitter);
+      },
+
+      // viewers fires only after the article function emits 'ready'
+      viewers: function (emitter) {
+        app.models.article.getViewers(params.url.article, emitter);
       }
     }, function (output) {
-      app.listen({
-        second: function (emitter) {
-          doNextThing(output.first, emitter);
-        }
-      }, function (output) {
-        app.listen({
-          third: function (emitter) {
-            doOneMoreThing(output.second, emitter);
-          }
-        }, function (output) {
-          thisIsExhausting(output.third);
-        });
-      });
+      
+        // output.article
+        // output.viewers
+
+    });
+
+
+#### Waterfall function calls
+
+Use `waterfall` to fire and return functions in order and then pass all previous functions' results to the next function in line. Functions after the first function must be written to accept two arguments: the result from the previous function(s) and the emitter.
+
+    app.listen('waterfall', {
+
+      // article fires first
+      article: function (emitter) {
+        app.models.article.getArticle(params.url.article, params.url.page, emitter);
+      },
+      
+      // viewers will not fire until the previous article function is complete.
+      // It accepts an object that contains the emitted result from the previous
+      // function.
+      viewers: function (previous, emitter) {
+
+        // previous.article
+
+        app.models.article.getViewers(previous.article.id, emitter);
+      },
+      
+      // details fires after viewers is complete and its output is added to the
+      // collection
+      details: function (previous, emitter) {
+
+        // previous.article
+        // previous.viewers
+
+        app.models.article.getDetails(previous.viewers, emitter);
+      }
+    }, function (output) {
+
+        // output.article
+        // output.viewers
+        // output.details
+
     });
 
 

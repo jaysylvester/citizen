@@ -5,7 +5,8 @@
 var program = require('commander'),
     fs = require('fs'),
     path = require('path'),
-    appPath = path.resolve(path.dirname(module.filename), '../../../app');
+    scaffoldPath = path.dirname(module.filename),
+    appPath = path.resolve(scaffoldPath, '../../../app');
 
 program
   .version('0.0.1');
@@ -19,6 +20,9 @@ program
   .option('-U, --no-use-strict', 'Don\'t include the \'use strict\'; statement in any of the modules')
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
+        templates = {
+          error: fs.readdirSync(scaffoldPath + '/templates/error')
+        },
         format = options.format || 'jade',
         useStrict = options.useStrict ? "'use strict';\n\n" : '',
         controller = buildController({
@@ -62,6 +66,17 @@ program
     fs.mkdirSync(appPath + '/patterns/views');
     fs.mkdirSync(appPath + '/patterns/views/' + view.directory);
     fs.writeFileSync(appPath + '/patterns/views/' + view.directory + '/' + view.name, view.contents);
+    fs.mkdirSync(appPath + '/patterns/views/error');
+    templates.error.forEach( function (file, index, array) {
+      var template,
+          viewRegex = new RegExp(/.+\.(hbs|jade|html)$/);
+
+      if ( viewRegex.test(file) ) {
+        template = fs.readFileSync(scaffoldPath + '/templates/error/' + file);
+      }
+
+      fs.writeFileSync(appPath + '/patterns/views/error/' + file, template);
+    });
     fs.mkdirSync(webPath);
 
     console.log('');
@@ -96,12 +111,17 @@ program
       console.log('        models/');
       console.log('          index.js');
       console.log('        views/');
+      console.log('          error/');
+      console.log('            404.jade');
+      console.log('            500.jade');
+      console.log('            ENOENT.jade');
+      console.log('            error.jade');
       console.log('          index/');
       console.log('            index.jade');
+      console.log('      start.js');
       console.log('');
       console.log('  After creating the skeleton:');
       console.log('');
-      console.log('    $ cd app');
       console.log('    $ node start.js');
       console.log('');
     });
@@ -158,14 +178,14 @@ program
       console.log('');
       console.log('    Creates the following pattern:');
       console.log('');
-      console.log('    /app');
-      console.log('      /patterns');
-      console.log('        /controllers');
+      console.log('    app/');
+      console.log('      patterns/');
+      console.log('        controllers/');
       console.log('          foo.js');
-      console.log('        /models');
+      console.log('        models/');
       console.log('          foo.js');
-      console.log('        /views');
-      console.log('          /foo');
+      console.log('        views/');
+      console.log('          foo/');
       console.log('            foo.jade');
       console.log('');
     });

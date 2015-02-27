@@ -1,9 +1,9 @@
 [0.5.9]
-  * Added formidable dependency to handle form file uploads
+  * app.listen() has been enhanced to perform asynchronous parallel, series, or waterfall processing. This is a non-breaking change because the default behavior (parallel) is the same as the original behavior. See listen() in the readme for details.
+  * Replaced POST body parsing with formidable. I hate adding dependencies, but formidable is the standard and it works very well, so it seems silly to write a multipart form parser from scratch.
   * Fixed default debug rendering (defaults to console, view is optional)
-  * Styled debug output in the view
-  * Errors now have their own custom views based on the JS error code or HTTP status code, with a catch-all default error view. These views are optional and have no matching controller model. See readme for details.
-  * Added error views to scaffold
+  * Errors now have their own views determined by the JS error code or HTTP status code, with a catch-all default error view. These views are optional and have no matching controller or model. See readme for details.
+  * Added example error views to scaffold
 
 [0.5.8]
   * Small performance tweaks and debug additions in the server and router

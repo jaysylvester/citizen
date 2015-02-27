@@ -1,0 +1,14 @@
+//- Template for 404 errors (not found)
+
+doctype html
+html
+  meta(charset="utf-8")
+  meta(name="viewport" content="width=device-width, initial-scale=1.0")
+  title D'oh!
+  body(data-controller="#{route.controller}" data-action="#{route.action}" data-view="#{route.view}" data-renderer="#{route.renderer}" data-rendered-view="#{route.renderedView}" data-show="#{route.show}" data-task="#{route.task}" data-type="#{route.type}" data-mode="#{config.citizen.mode}")
+    main
+      h1 ¯\_(ツ)_/¯
+      p What can you do? These things happen.
+      pre
+        code
+          = error.inspect
