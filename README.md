@@ -1708,6 +1708,136 @@ Cache defensively. Place logic in your controllers that combines the urlParams v
     }
 
 
+## Forms
+
+citizen uses [formidable](https://www.npmjs.com/package/formidable) to parse form data. When a user submits a form, the resulting form data is available in your controller via `params.form`.
+
+    // login controller
+
+    function handler(params, context, emitter) {
+      // Set some defaults for the login view
+      params.form.username = '';
+      params.form.password = '';
+      params.form.remember = false;
+
+      emitter.emit('ready');
+    }
+
+    // Using a separate action in your controller for form submissions
+    // is probably a good idea
+    function form(params, context, emitter) {
+      var authenticate = app.models.user.authenticate({
+            username: params.form.username,
+            password: params.form.password
+          }),
+          cookie = {};
+
+      if ( authenticate.success ) {
+        if ( params.form.remember ) {
+          cookie = {
+            username: params.form.username
+          };
+        }
+
+        emitter.emit('ready', {
+          cookie: cookie,
+          redirect: {
+            url: '/'
+          }
+        });
+      } else {
+        emitter.emit('ready', {
+          content: {
+            message: 'Login failed.'
+          }
+        });
+      }
+    }
+
+If it's a multipart form containing a file, the file is uploaded to your operating system's temp directory by default. The form object passed to your controller will look something like this:
+
+    {
+      foo: 'bar',
+      fizz: 'buzz',
+      imageFieldName: {
+        size: 280,
+        path: '/tmp/upload_6d9c4e3121f244abdff36311a3b19a16',
+        name: 'image.png',
+        type: 'image/png',
+        hash: null,
+        lastModifiedDate: Fri Feb 27 2015 06:01:36 GMT-0500 (EST)
+      }
+    }
+
+The `path` key tells you where the file was uploaded. File uploads are saved to your operating system's tmp directory by default, where you can read their contents and then move or manipulate them. To change the default upload directory, use the `uploadDir` setting under the `forms` node in your config file:
+
+    {
+      "hostname":       "My-Macbook-Pro.local",
+      "citizen": {
+        "forms": {
+          "uploadDir":  '/absolute/path/to/upload/directory'
+        }
+      }
+    }
+
+Make sure the user account running your Node process has write permissions for this directory.
+
+See the [formidable documentation](https://www.npmjs.com/package/formidable) for other form settings.
+
+
+### AJAX form submissions
+
+citizen makes it easy to build progressively enhanced HTML forms that work both server-side and client-side. Here's a login form that will submit to the login controller and fire the `form()` action:
+
+    section.login-form
+      p#message
+        if message
+          = message
+        else
+          | Please log in below.
+      form#login-form(action="/login/action/form" method="post" novalidate)
+        .data
+          ul
+            li.username
+              label(for="username") Username
+              input(id="username" name="username" type="text" value="#{form.username}" required autofocus)
+            li.password
+              label(for="password") Password
+              input(id="password" name="password" type="password" value="#{form.password}" required)
+        .actions
+          ul
+            li.primary
+              input(name="formAction" type="submit" value="Sign in")
+
+
+This will perform a traditional POST to the server and reload the login page to display any messages. You can easily enhance this with a little JavaScript on the client to submit via AJAX and return a JSON response:
+
+    var loginForm = document.querySelector('#login-form'),
+        message = document.querySelector('#message');
+
+    loginForm.addEventListener('submit', function (e) {
+      var request = new XMLHttpRequest(),
+          formData = new FormData(loginForm);
+
+      e.preventDefault();
+
+      // Appending /format/json to the form action tells the server to
+      // respond with JSON instead of a rendered HTML view
+      request.open('POST', loginForm.action + '/format/json', true);
+
+      request.send(formData);
+
+      request.onload = function() {
+        var loginResponse = JSON.parse(request.responseText);
+
+        message.innerHTML = loginResponse.message;
+      };
+    });
+
+
+By appending `/format/json` to the action URL via JavaScript, we receive a JSON response from the controller and can then parse this response and update the view on the client. This is a form that provides a good user experience, but still works without JavaScript.
+
+
 ## Application Events and the Context Argument
 
 Certain events will occur throughout the life of your citizen application. You can act on these application events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
