@@ -1,3 +1,6 @@
+[0.5.11]
+  * Replaced object key null assignments with delete statements (setting to null is faster, but delete triggers GC, whereas null does not)
+
 [0.5.10]
   * You can now specify a node name in the URL to return a specific top-level JSON node (/format/json/output/nodename). Works for JSONP also. See JSON in the readme for instructions.
   * Added Forms section to readme to provide some tips on working with form data and creating progressively enhanced forms

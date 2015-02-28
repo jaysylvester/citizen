@@ -112,9 +112,7 @@ The following represents citizen's default configuration, which is extended by y
           "jade":             false
         },
         "urlPaths": {
-          "app":              "/",
-          "404":              "/404.html",
-          "50x":              "/50x.html"
+          "app":              "/"
         },
         directories: {
           "app":              "(resolved based on location of start.js)",
@@ -401,11 +399,11 @@ Here's a complete rundown of citizen's settings and what they mean:
         </li>
       </ul>
       <p>
-        Default: <code>view</code>
+        Default: <code>console</code>
       </p>
     </td>
     <td>
-      In debug mode, citizen dumps debug info to the view so you can see it in your browser. Change this setting to dump to the console instead.
+      In debug mode, citizen dumps debug info to the console. Change this setting to <code>view</code> to display the debug output in your browser.
     </td>
   </tr>
   <tr>
