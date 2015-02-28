@@ -96,6 +96,9 @@ The following represents citizen's default configuration, which is extended by y
         "sessionTimeout":     1200000,
         "requestTimeout":     30000,
         "prettyHTML":         true,
+        "cache": {
+          "invalidUrlParams": "warn"
+        },
         "log": {
           "toConsole":        false,
           "toFile":           false,
@@ -287,6 +290,27 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       By default, rendered HTML sourced from Jade templates includes the original whitespace and line breaks. Change this setting to <code>false</code> to remove whitespace and minimize file size.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.cache
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>invalidUrlParams</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>warn</code>
+      </p>
+    </td>
+    <td>
+      Determines the outcome when citizen attempts to cache a route or controller based on a URL with invalid cache parameters. The default is to log a warning and continue serving the request without caching. Set this to <code>throw</code> to throw an error instead. See the Cache section for instructions on caching.
     </td>
   </tr>
   <tr>
@@ -809,9 +833,7 @@ Using the above URL parameters, I can retrieve the article content from the mode
       // Emit the 'ready' event and pass any objects you want added to the view
       // context via the content object
       emitter.emit('ready', {
-        content: {
-          article: article
-        }
+        content: article
       });
     };
 
@@ -833,9 +855,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
       // Emit the 'ready' event and pass any objects you want added to the view
       // context via the content object
       emitter.emit('ready', {
-        content: {
-          article: article
-        }
+        content: article
       });
     };
 
@@ -846,9 +866,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
       // Use the /patterns/views/article/edit.jade view for this action (more on
       // alternate views in later sections).
       emitter.emit('ready', {
-        content: {
-          article: article
-        },
+        content: article,
         view: 'edit'
       });
     };
@@ -920,11 +938,12 @@ In `article.jade`, you can reference objects you placed within the `content` obj
     html
       body
         main
-          h1 #{article.title} - Page #{url.page}
-          p#summary #{article.summary}
-          #text #{article.text}
+          h1 #{title} - Page #{url.page}
+          p#summary #{summary}
+          #text #{text}
 
 citizen sends HTML to the client by default, but you can also return JSON and JSONP with no extra work on your part.
+
 
 #### JSON
 
@@ -935,16 +954,21 @@ You don't need a custom view just for JSON. You can tell a controller to return 
 Returns...
 
     {
-      "article": {
-        "My-Clever-Article-Title": {
-          "title": "My Clever Article Title",
-          "summary": "Am I not terribly clever?",
-          "text": "Second page content"
-        }
-      }
+      "title": "My Clever Article Title",
+      "summary": "Am I not terribly clever?",
+      "text": "Second page content"
     }
 
 Whatever you've added to the controller's emitter `content` object will be returned. (The line breaks are just for readability. The actual output is compressed.)
+
+You can also specify specific top-level nodes to return instead of returning the entire content object by using the `output` URL parameter:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/text
+
+Returns...
+
+    { "text": "Second page content" }
+
 
 #### JSONP
 
@@ -955,20 +979,28 @@ JSONP is pretty much the same. Use `format` and `callback` in the URL:
 Returns:
 
     foo({
-      "article": {
-        "My-Clever-Article-Title": {
-          "title": "My Clever Article Title",
-          "summary": "Am I not terribly clever?",
-          "text": "Second page content"
-        }
-      }
+      "title": "My Clever Article Title",
+      "summary": "Am I not terribly clever?",
+      "text": "Second page content"
     });
 
-If you want to make a controller available to third party sites, see the [CORS section](#cross-origin-resource-sharing-cors).
+The `output` URL parameter works with JSONP as well.
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo/output/text
+
+Returns...
+
+    foo({ "text": "Second page content" });
+
 
 ### Rendering alternate views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your emitter](#alternate-views).
+
+
+### Cross domain requests
+
+If you want to make a controller available to third party sites, see the [CORS section](#cross-origin-resource-sharing-cors).
 
 
 
@@ -1182,9 +1214,9 @@ Let's say our article pattern's Jade template has the following contents. The he
                 li
                   a(href="/admin") Site Administration
         main
-          h1 #{article.title} - Page #{url.page}
-          p#summary #{article.summary}
-          #text #{article.text}
+          h1 #{title} - Page #{url.page}
+          p#summary #{summary}
+          #text #{text}
 
 It probably makes sense to use includes for the head section and header because you'll use that code everywhere, but rather than simple partials, you can create citizen includes. The head section can use its own model for populating the meta data, and since the header is different for authenticated users, let's pull that logic out of the template and put it in the header's controller. I like to follow the convention of starting partials with an underscore, but that's up to you:
 
@@ -1218,9 +1250,7 @@ When the article controller is fired, it has to tell citizen which includes it n
       var article = app.models.article.getArticle(params.url.article, params.url.page);
 
       emitter.emit('ready', {
-        content: {
-          article: article
-        },
+        content: article,
         include: {
           _head: {
             // If only the controller is specified, the default action handler() is
@@ -1304,9 +1334,9 @@ The rendered includes are stored in the `include` scope. The `include` object co
       body
         != include._header
         main
-          h1 #{article.title} - Page #{url.page}
-          p#summary #{article.summary}
-          #text #{article.text}
+          h1 #{title} - Page #{url.page}
+          p#summary #{summary}
+          #text #{text}
 
 citizen includes are self-contained and sandboxed. Content you generate in the calling controller isn't passed to its include controllers, and content generated inside an include isn't passed back to the parent. citizen includes also can't make use of cookie, session, redirect, or handoff directives. They only use the content directive (to populate their own views), the view directive for setting the view used by the include, and the cache directive for controller caching.
 
@@ -1387,9 +1417,7 @@ A common use case for `handoff` would be to create a layout controller that serv
       var article = app.models.article.getArticle(params.url.article, params.url.page);
 
       emitter.emit('ready', {
-        content: {
-          article: article
-        },
+        content: article,
         handoff: {
           // Pass this request to app/patterns/controller/+_layout.js
           controller: '+_layout',
@@ -1417,9 +1445,9 @@ The view of the originally requested controller (article.jade in this case) is r
 
     // article.jade, which is stored in the route.chain scope
 
-    h1 #{article.title}
-    p#summary #{article.summary}
-    #text #{article.text}
+    h1 #{title}
+    p#summary #{summary}
+    #text #{text}
 
 
 The layout controller handles the includes, follows your custom directive, and renders its own view:
@@ -1632,7 +1660,15 @@ http://cleverna.me/article/My-Article-Title/dosattack/2
 
 http://cleverna.me/article/My-Article-Title/page/2/dosattack/3
 
-The server will throw an error when an invalid URL is requested with a cache directive. Additionally, any URL that results in an error won't be cached, whether it's valid or not.
+By default, the server logs a warning when invalid URL parameters are present and continues processing without caching the result. To throw an error instead, set "invalidUrlParams" to "throw" in the config file:
+
+    {
+      "citizen": {
+        "cache": {
+          "invalidUrlParams": "throw"
+        }
+      }
+    }
 
 
 #### cache.directives
@@ -1691,9 +1727,7 @@ Cache defensively. Place logic in your controllers that combines the urlParams v
       // there's a mismatch, citizen won't cache the result.
       if ( article.title ) {
         emitter.emit('ready', {
-          content: {
-            article: article
-          },
+          content: article,
           cache: {
             controller: true,
             scope: 'route',
@@ -1772,7 +1806,6 @@ If it's a multipart form containing a file, the file is uploaded to your operati
 The `path` key tells you where the file was uploaded. File uploads are saved to your operating system's tmp directory by default, where you can read their contents and then move or manipulate them. To change the default upload directory, use the `uploadDir` setting under the `forms` node in your config file:
 
     {
-      "hostname":       "My-Macbook-Pro.local",
       "citizen": {
         "forms": {
           "uploadDir":  '/absolute/path/to/upload/directory'
@@ -1908,7 +1941,7 @@ citizen has helper functions that it uses internally, but might be of use to you
 
 ### cache(options)
 
-You can store any object in citizen's cache. The primary benefits of using cache() over storing content in your own global app variables are  built-in timeout functionality and wrappers for reading, parsing, and storing file content.
+You can store any object in citizen's cache. The primary benefits of using cache() over storing content in your own global app variables are built-in timeout functionality and wrappers for reading, parsing, and storing file content.
 
     // Cache a string in the default app scope for the life of the application. Keys
     // must be unique within a given scope.
@@ -2321,8 +2354,10 @@ If you set `"mode": "debug"` in your config file, citizen dumps the current patt
 
     // config file: always dumps debug output in the view
     {
-      "debug": {
-        "output": "view"
+      "citizen": {
+        "debug": {
+          "output": "view"
+        }
       }
     }
 
@@ -2352,8 +2387,10 @@ The debug output traverses objects 2 levels deep by default. To display deeper o
 
     // config file: debug 4 levels deep
     {
-      "debug": {
-        "depth": 4
+      "citizen": {
+        "debug": {
+          "depth": 4
+        }
       }
     }
 

@@ -1,5 +1,9 @@
 [0.5.10]
+  * You can now specify a node name in the URL to return a specific top-level JSON node (/format/json/output/nodename). Works for JSONP also. See JSON in the readme for instructions.
   * Added Forms section to readme to provide some tips on working with form data and creating progressively enhanced forms
+  * citizen's reserved URL parameters no longer need to be added to cache.directives manually
+  * Added an option to log a warning about invalid cache URL parameters instead of throwing an error. If citizen encounters a URL parameter not present in cache.urlParams, the route will be processed and displayed, but not cached. This is now the default behavior. Use "cache": { "invalidUrlParams" : "throw" } in your config to throw an error instead.
+  * The server now throws an error if you try to assign values to any reserved directive names that will cause problems in your application; scopes include url, session, content, and others. I'd label this a breaking change, but if you're doing this, your application is probably already broken.
 
 [0.5.9]
   * app.listen() has been enhanced to perform asynchronous parallel, series, or waterfall processing. This is a non-breaking change because the default behavior (parallel) is the same as the original behavior. See listen() in the readme for details.
