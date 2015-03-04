@@ -8,6 +8,8 @@ Future plans include tight integration with client-side rendering through a cust
 
 citizen is reliable, but the API is not yet stable. Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Your comments, criticisms, and (pull) requests are appreciated. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it.
 
+Have questions? Need help? [Send me an e-mail](http://jaysylvester.com/contact).
+
 
 ## Benefits
 
@@ -92,13 +94,19 @@ The following represents citizen's default configuration, which is extended by y
           "secureCookies":    true
         },
         "connectionQueue":    undefined,
+        "gzip": {
+          "enable":           false,
+          "force":            false,
+          "mimeTypes":        "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
+        },
+        "cache": {
+          "static":           false,
+          "invalidUrlParams": "warn"
+        },
         "sessions":           false,
         "sessionTimeout":     1200000,
         "requestTimeout":     30000,
         "prettyHTML":         true,
-        "cache": {
-          "invalidUrlParams": "warn"
-        },
         "log": {
           "toConsole":        false,
           "toFile":           false,
@@ -292,7 +300,73 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
+      citizen.gzip
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Enables gzip compression for rendered views and static assets. Compression occurs on the fly, but compressed routes can be cached with the cache directive, and static assets can be cached using the cache setting below.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>force</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Forces gzip encoding for all clients, even if they don't report accepting gzip. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since pretty much all modern clients support gzip, it's probably safe to force it by setting this to `true`.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>mimeTypes</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+    </td>
+    <td>
+      A space-delimited list of MIME types that should be gzipped if gzip is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the list in its entirety.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
       citizen.cache
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>static</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to `true`, which enables the static file cache.
     </td>
   </tr>
   <tr>
@@ -684,7 +758,7 @@ When starting an HTTPS server, in addition to the `hostname` and `port` options,
 
 Apps using citizen have a simple URL structure that determines which controller and action to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that can double as a unique identifier. The structure looks like this:
 
-    http://www.site.com/controller/content-description/param/val/param2/val2
+    http://www.site.com/controller/content-description/action/myAction/param/val/param2/val2
 
 For example, let's say your site's base URL is:
 
@@ -1519,38 +1593,8 @@ It's assumed the last controller in the chain provides the master view, so it ha
 
 ### Caching Routes and Controllers
 
-In many cases, a requested route or controller will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive. Caching works in both typical controllers and include controllers.
+In many cases, a requested route or controller will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive.
 
-Here's an example `cache` directive (more details after the code sample):
-
-    emitter.emit('ready', {
-      cache: {
-        // Cache the final rendered view for this route (URL)
-        route: true,
-
-        // Cache just this controller
-        controller: true,
-
-        // Optional. If caching the controller, 'global' (default) will cache one
-        // instance of the controller and use it globally, while 'route' will cache a
-        // unique instance of the controller for every route that calls it.
-        scope: 'route',
-
-        // Optional. List of valid URL parameters that protects against accidental
-        // caching of malformed URLs.
-        urlParams: ['article', 'page'],
-
-        // Optional. List of directives to cache with the controller.
-        directives: ['handoff', 'cookie'],
-
-        // Optional. Life of cached item in milliseconds. Default is the life of the
-        // application (no expiration).
-        lifespan: 600000,
-
-        // Reset the cached item's expiration timer whenever the item is accessed,
-        // keeping it in the cache until traffic subsides.
-        resetOnAccess: true
-    });
 
 #### cache.route
 
@@ -1575,21 +1619,58 @@ http://cleverna.me/article/My-Article/page/2
 
 Note that if you put the `route` cache directive *anywhere* in your controller chain, the route will be cached.
 
-Also note that you can't cache directives in a route cache. Only controller caches can store directives.
+The example above is shorthand for default cache settings. The cache.route directive can also be an object with options:
+
+    // Cache the requested route with some additional options
+    emitter.emit('ready', {
+      cache: {
+        route: {
+          // Optional. List of valid URL parameters that protects against accidental
+          // caching of malformed URLs.
+          urlParams: ['article', 'page'],
+
+          // Optional. Life of cached item in milliseconds. Default is the life of
+          // the application (no expiration).
+          lifespan: 600000,
+
+          // Optional. Reset the cached item's expiration timer whenever the item is
+          // accessed, keeping it in the cache until traffic subsides.
+          resetOnAccess: true
+        }
+    });
 
 
-#### cache.controller and cache.scope
+#### cache.controller
 
 If a given route will have variations, you can still cache individual controllers to speed up rendering. The `controller` property tells citizen to cache the controller, while the `scope` property determines how the controller and its resulting view are cached.
 
+    // Cache this controller using the default settings
     emitter.emit('ready', {
       handoff: {
         controller: '+_layout'
       },
       cache: {
-        controller: true,
-        scope: 'route'
+        controller: true
       }
+    });
+
+    // Cache this controller with additional options
+    emitter.emit('ready', {
+      cache: {
+        controller: {
+
+          // Optional. If caching the controller, 'global' (default) will cache one
+          // instance of the controller and use it globally, while 'route' will cache
+          // a unique instance of the controller for every route that calls it.
+          scope: 'route',
+
+          // Optional. List of directives to cache with the controller.
+          directives: ['handoff', 'cookie'],
+
+          urlParams: ['article', 'page'],
+          lifespan: 600000,
+          resetOnAccess: true
+        }
     });
 
 <table>
@@ -1613,9 +1694,6 @@ If a given route will have variations, you can still cache individual controller
           <code>http://cleverna.me/article/Another-Article/action/edit</code>
         </li>
       </ul>
-      <p>
-         Use this scope if you're chaining multiple controllers and you want to cache each of those controllers, but not cache the final rendered view (like the previous layout controller example).
-      </p>
     </td>
   </tr>
   <tr>
@@ -1629,7 +1707,9 @@ If a given route will have variations, you can still cache individual controller
 </table>
 
 
-#### cache.urlParams
+#### cache.route and cache.controller options
+
+##### `urlParams`
 
 The `urlParams` property helps protect against invalid cache items (or worse: an attack meant to flood your server's resources by overloading the cache).
 
@@ -1638,8 +1718,9 @@ The `urlParams` property helps protect against invalid cache items (or worse: an
         controller: '+_layout'
       },
       cache: {
-        route: true,
-        urlParams: ['article', 'page']
+        route: {
+          urlParams: ['article', 'page']
+        }
       }
     });
 
@@ -1669,7 +1750,7 @@ By default, the server logs a warning when invalid URL parameters are present an
     }
 
 
-#### cache.directives
+##### `directives`
 
 By default, any directives you specify in a cached controller aren't cached; they're implemented the first time the controller is called and then ignored after that. This is to prevent accidental storage of private data in the cache through session or cookie directives.
 
@@ -1689,15 +1770,46 @@ If you want directives to persist within the cache, include them in the `directi
         doSomething: true
       },
       cache: {
-        controller: true,
-        scope: 'route',
+        controller: {
+          scope: 'route',
 
-        // Cache handoff and myCustomDirective so that if this controller is
-        // called from the cache, it hands off to the layout controller and acts
-        // upon myCustomDirective every time. The cookie directive will only be
-        // acted upon the first time the controller is called, however.
-        directives: ['handoff', 'myCustomDirective']
+          // Cache handoff and myCustomDirective so that if this controller is
+          // called from the cache, it hands off to the layout controller and acts
+          // upon myCustomDirective every time. The cookie directive will only be
+          // acted upon the first time the controller is called, however.
+          directives: ['handoff', 'myCustomDirective']
+        }
       }
+    });
+
+
+##### `lifespan`
+
+This setting determines how long the route or controller should remain in the cache, in milliseconds.
+
+    emitter.emit('ready', {
+      cache: {
+        route: {
+
+          // This route cache will expire in 10 minutes
+          lifespan: 600000
+        }
+    });
+
+
+##### `resetOnAccess`
+
+Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the route or controller cache whenever it's accessed, keeping it in the cache until traffic subsides.
+
+    emitter.emit('ready', {
+      cache: {
+        route: {
+
+          // This route cache will expire in 10 minutes, but if a request accesses it
+          // before then, the cache timer will be reset to 10 minutes again
+          lifespan: 600000,
+          resetOnAccess: true
+        }
     });
 
 
@@ -1707,37 +1819,7 @@ As mentioned previously, if you use the handoff directive to call a series of co
 
 When caching an include controller, the view directive doesn't work. Set the view within the include directive of the calling controller.
 
-citizen's cache is a RAM cache, so be careful with your caching strategy. You could very quickly find yourself out of memory. Use the lifespan option so URLs that aren't receiving a ton of traffic naturally fall out of the cache and free up resources for frequently accessed pages.
-
-Cache defensively. Place logic in your controllers that combines the urlParams validation with some simple checks so invalid URLs don't result in junk pages clogging your cache:
-
-    // article controller
-
-    module.exports = {
-      handler: handler
-    };
-
-    function handler(params, context, emitter) {
-      var article = app.model.article.getArticle(params.url.article, params.url.page);
-
-      // If the article exists, cache the result. citizen will compare the
-      // existing URL parameters against the urlParams list you provide. If
-      // there's a mismatch, citizen won't cache the result.
-      if ( article.title ) {
-        emitter.emit('ready', {
-          content: article,
-          cache: {
-            controller: true,
-            scope: 'route',
-            urlParams: ['article', 'page']
-          }
-        });
-      // Throw a 404 if the article doesn't exist. Nothing will be cached.
-      } else {
-        throw new Error(404);
-      }
-
-    }
+citizen's cache is a RAM cache stored in the heap, so be careful with your caching strategy. You could find yourself out of memory. Use the lifespan option so URLs that aren't receiving a ton of traffic naturally fall out of the cache and free up resources for frequently accessed pages.
 
 
 ## Forms
@@ -2048,7 +2130,7 @@ This is a way to check for the existence of a given key or scope in the cache wi
 
 Retrieve an individual key or an entire scope. Returns `false` if the requested item doesn't exist. If `resetOnAccess` was true when the item was cached, using retrieve() will reset the cache clock and extend the life of the cached item. If a scope is retrieved, all items in that scope will have their cache timers reset.
 
-Optionally, you can override the `resetOnAccess` attribute when retrieving a cache item by specifying it now.
+Optionally, you can override the `resetOnAccess` attribute when retrieving a cache item by specifying it inline.
 
     // Retrieve the specified key from the default (app) scope
     var welcomeMessage = app.retrieve({
@@ -2219,7 +2301,7 @@ If you need functions to fire and return in order, use `series`. The syntax is t
         app.models.article.getViewers(params.url.article, emitter);
       }
     }, function (output) {
-      
+
         // output.article
         // output.viewers
 
@@ -2236,7 +2318,7 @@ Use `waterfall` to fire and return functions in order and then pass all previous
       article: function (emitter) {
         app.models.article.getArticle(params.url.article, params.url.page, emitter);
       },
-      
+
       // viewers will not fire until the previous article function is complete.
       // It accepts an object that contains the emitted result from the previous
       // function.
@@ -2246,7 +2328,7 @@ Use `waterfall` to fire and return functions in order and then pass all previous
 
         app.models.article.getViewers(previous.article.id, emitter);
       },
-      
+
       // details fires after viewers is complete and its output is added to the
       // collection
       details: function (previous, emitter) {

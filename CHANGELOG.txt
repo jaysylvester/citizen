@@ -1,5 +1,7 @@
-[0.5.11]
-  * Replaced object key null assignments with delete statements (setting to null is faster, but delete triggers GC, whereas null does not)
+[0.6.0]
+  * BREAKING CHANGE: The nesting syntax for the cache directive has changed slightly, but updating your code will be easy (mostly copy/paste of your existing cache directives). See "Caching Routes and Controllers" in the readme.
+  * gzip support added for both dynamic and static resources. See configuration options in the readme.
+  * Static asset caching added. See configuration options in the readme.
 
 [0.5.10]
   * You can now specify a node name in the URL to return a specific top-level JSON node (/format/json/output/nodename). Works for JSONP also. See JSON in the readme for instructions.
