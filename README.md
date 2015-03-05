@@ -101,6 +101,7 @@ The following represents citizen's default configuration, which is extended by y
         },
         "cache": {
           "static":           false,
+          "control":          {},
           "invalidUrlParams": "warn"
         },
         "sessions":           false,
@@ -332,7 +333,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      Forces gzip encoding for all clients, even if they don't report accepting gzip. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since pretty much all modern clients support gzip, it's probably safe to force it by setting this to `true`.
+      Forces gzip encoding for all clients, even if they don't report accepting gzip. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since pretty much all modern clients support gzip, it's probably safe to force it by setting this to <code>true</code>.
     </td>
   </tr>
   <tr>
@@ -366,7 +367,23 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to `true`, which enables the static file cache.
+      When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to <code>true</code>, which enables the static file cache.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>control</code>
+    </td>
+    <td>
+      <p>
+        Key/value pairs
+      </p>
+      <p>
+        Default: <code>{}</code>
+      </p>
+    </td>
+    <td>
+      Use this setting to set Cache-Control headers for static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
     </td>
   </tr>
   <tr>
@@ -1591,9 +1608,40 @@ You can loop over this object to render all the chained views:
 It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
 
 
-### Caching Routes and Controllers
+## Performance
 
-In many cases, a requested route or controller will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive.
+citizen provides several ways for you to speed up your app's performance, most of which come at the cost of system resources (memory or CPU). You'll definitely want to do some performance monitoring to make sure the benefits are worth the cost.
+
+
+### gzip
+
+Both dynamic routes and static assets can be served with gzip compression. To enable gzip compression for clients that support it:
+
+    {
+      "citizen": {
+        "gzip": {
+          "enable": true
+        }
+      }
+    }
+
+Proxies, firewalls, and other network circumstances can strip the request header that tells the server to use gzipped assets. You can force gzip for all clients like this:
+
+    {
+      "citizen": {
+        "gzip": {
+          "enable": true,
+          "force":  true
+        }
+      }
+    }
+
+If you have [route caching](#caching-routes-and-controllers) enabled, both the original and compressed version of the route will be cached, so your cache's memory utilization will increase.
+
+
+### Caching Dynamic Requests (Controllers and Routes)
+
+In many cases, a requested route or controller will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller chain and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive.
 
 
 #### cache.route
@@ -1617,14 +1665,23 @@ http://cleverna.me/article
 http://cleverna.me/article/My-Article  
 http://cleverna.me/article/My-Article/page/2
 
-Note that if you put the `route` cache directive *anywhere* in your controller chain, the route will be cached.
+Note that if you put the `cache.route` directive *anywhere* in your controller chain, the route will be cached.
 
-The example above is shorthand for default cache settings. The cache.route directive can also be an object with options:
+The example above is shorthand for default cache settings. The `cache.route` directive can also be an object with options:
 
     // Cache the requested route with some additional options
     emitter.emit('ready', {
       cache: {
         route: {
+          // Optional. Set the HTTP Cache-Control header for this route, caching it
+          // on the client for the specified time in seconds.
+          control: 86400,
+
+          // Optional. This setting lets the server respond with a 304 Not Modified
+          // status if the cache content hasn't been updated since the client last
+          // accessed the route. Defaults to the current time if not specified.
+          lastModified: new Date().toISOString(),
+
           // Optional. List of valid URL parameters that protects against accidental
           // caching of malformed URLs.
           urlParams: ['article', 'page'],
@@ -1642,7 +1699,7 @@ The example above is shorthand for default cache settings. The cache.route direc
 
 #### cache.controller
 
-If a given route will have variations, you can still cache individual controllers to speed up rendering. The `controller` property tells citizen to cache the controller, while the `scope` property determines how the controller and its resulting view are cached.
+If a given route chain will vary across requests, you can still cache individual controllers to speed up rendering. The `controller` property tells citizen to cache the controller, while the `scope` option determines how the controller and its resulting view are cached.
 
     // Cache this controller using the default settings
     emitter.emit('ready', {
@@ -1667,47 +1724,49 @@ If a given route will have variations, you can still cache individual controller
           // Optional. List of directives to cache with the controller.
           directives: ['handoff', 'cookie'],
 
+          // These options function the same as in route caching (see above)
           urlParams: ['article', 'page'],
           lifespan: 600000,
           resetOnAccess: true
         }
     });
 
-<table>
-  <caption>Values for <code>cache.scope</code></caption>
-  <tr>
-    <td>
-      route
-    </td>
-    <td>
-      <p>
-        Setting cache scope to "route" caches an instance of the controller, action, and view for every unique route that calls the controller. If the following URLs are requested and the article controller's cache scope is set to "route", each URL will get its own unique cached instance of the article controller:
-      </p>
-      <ul>
-        <li>
-          <code>http://cleverna.me/article/My-Article</code>
-        </li>
-        <li>
-          <code>http://cleverna.me/article/My-Clever-Article/page/2</code>
-        </li>
-        <li>
-          <code>http://cleverna.me/article/Another-Article/action/edit</code>
-        </li>
-      </ul>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      global
-    </td>
-    <td>
-      A cache scope of "global" caches a single instance of a given controller and uses it everywhere, regardless of context or the requested route. If you have a controller whose output and rendering won't change across requests regardless of the context or route, "global" is a good option. It's perfect for caching citizen includes.
-    </td>
-  </tr>
-</table>
-
 
 #### cache.route and cache.controller options
+
+##### `control` (route cache only)
+
+Use this option to set the Cache-Control header for the requested route:
+
+    emitter.emit('ready', {
+      cache: {
+        route: {
+          // Set the HTTP Cache-Control header for this route, caching it on the
+          // client for 1 day (86400 seconds)
+          control: 86400
+        }
+    });
+
+The client will pull this route from its local cache until the cache expires.
+
+
+##### `lastModified` (route cache only)
+
+This setting lets the server respond with a faster `304 Not Modified` response if the content of the route cache hasn't changed since the client last accessed it. By default, it's set to the time at which the route was cached, but you can specify a custom date in ISO format that reflects the last modification to the route's content. This way, if you restart your app or clear the cache for some reason, returning clients will still get a 304.
+
+    emitter.emit('ready', {
+      handoff: {
+        controller: '+_layout'
+      },
+      cache: {
+        route: {
+
+          // Use toISOString() to format your date appropriately
+          lastModified: myDate.toISOString()       // 2015-03-05T08:59:51.491Z
+        }
+      }
+    });
+
 
 ##### `urlParams`
 
@@ -1750,7 +1809,7 @@ By default, the server logs a warning when invalid URL parameters are present an
     }
 
 
-##### `directives`
+##### `directives` (controller cache only)
 
 By default, any directives you specify in a cached controller aren't cached; they're implemented the first time the controller is called and then ignored after that. This is to prevent accidental storage of private data in the cache through session or cookie directives.
 
@@ -1820,6 +1879,44 @@ As mentioned previously, if you use the handoff directive to call a series of co
 When caching an include controller, the view directive doesn't work. Set the view within the include directive of the calling controller.
 
 citizen's cache is a RAM cache stored in the heap, so be careful with your caching strategy. You could find yourself out of memory. Use the lifespan option so URLs that aren't receiving a ton of traffic naturally fall out of the cache and free up resources for frequently accessed pages.
+
+
+### Caching Static Assets
+
+By caching static assets in memory, you speed up file serving considerably. To enable static asset caching for your app's public (web) directory, set "static" to `true` in your config:
+
+    {
+      "citizen": {
+        "cache": {
+          "static": true
+        }
+      }
+    }
+
+Any static files citizen serves will be cached, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [app.clear()](#clear-options) or restart the app.
+
+
+### Client-Side Caching
+
+citizen automatically sets ETag headers for cached routes and static assets. You don't need to do anything to make them work. The Cache-Control header is entirely manual, however.
+
+We already looked at setting Cache-Control for routes above. To do it for static assets, use the "control" setting in your config:
+
+    {
+      "citizen": {
+        "cache": {
+          "static":                true,
+          "control": {
+            "/path/to/styles.css": "max-age=86400",
+            "/path/to/scripts.js": "max-age=86400"
+          }
+        }
+      }
+    }
+
+The key name is the pathname that points to the static asset in your web directory. The value is the Cache-Control header value you want to assign to that asset.
+
+Here's [a great tutorial on client-side caching](https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching) to help explain ETag and Cache-Control headers.
 
 
 ## Forms

@@ -1,3 +1,7 @@
+[0.6.1]
+  * Added ETag and Cache-Control headers to cached routes and static files. See "Client-Side Caching" in the readme.
+  * Minor breaking change due to a bug fix: the app's urlPath (config.urlPaths.app) is now removed from params.route.filePath for static resources to provide an accurate file path from your public web root. The appropriate replacement is params.route.pathname, which includes the entire path after your site's domain.
+
 [0.6.0]
   * BREAKING CHANGE: The nesting syntax for the cache directive has changed slightly, but updating your code will be easy (mostly copy/paste of your existing cache directives). See "Caching Routes and Controllers" in the readme.
   * gzip support added for both dynamic and static resources. See configuration options in the readme.
