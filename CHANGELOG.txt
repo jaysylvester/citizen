@@ -1,3 +1,6 @@
+[0.6.3]
+  * Fixed another bug in controller caching. Dur.
+
 [0.6.2]
   * Fixed a bug in controller caching that threw a server error
   * Updated the readme to reflect breaking changes introduced in 0.6.0 that I somehow missed.
