@@ -2175,10 +2175,10 @@ You can store any object in citizen's cache. The primary benefits of using cache
 This is a way to check for the existence of a given key or scope in the cache without resetting the cache timer on that item. Returns `false` if a match isn't found.
 
     // Check the default scope (app) for the specified key
-    var keyExists = app.exists({ key: 'welcome message' })         // keyExists is true
-    var keyExists = app.exists({ key: '/path/to/articles.txt' })   // keyExists is true
-    var keyExists = app.exists({ key: 'articles' })                // keyExists is true
-    var keyExists = app.exists({ key: 'foo' })                     // keyExists is false
+    var keyExists = app.exists({ key: 'welcome message' })          // keyExists is true
+    var keyExists = app.exists({ file: '/path/to/articles.txt' })   // keyExists is true
+    var keyExists = app.exists({ file: 'articles' })                // keyExists is true
+    var keyExists = app.exists({ key: 'foo' })                      // keyExists is false
 
     // Check the specified scope for the specified key
     var keyExists = app.exists({
@@ -2247,6 +2247,16 @@ Optionally, you can override the `resetOnAccess` attribute when retrieving a cac
       scope: 'site messages'
     });
 
+    // Retrieve a cached file
+    var welcomeMessage = app.retrieve({
+      file: '/path/to/articles.txt'
+    });
+
+    // Retrieve a cached file with its custom key
+    var welcomeMessage = app.retrieve({
+      file: 'articles'
+    });
+
 
 ### clear(options)
 
@@ -2277,8 +2287,8 @@ Clear a cache object using a key or a scope.
     // Clear all messages from the cache using their custom scope
     app.clear({ scope: 'site messages' });
 
-    // Clear the articles cache from the default app scope
-    app.clear({ key: '/path/to/articles.txt' });
+    // Clear the articles cache from the file scope
+    app.clear({ file: '/path/to/articles.txt' });
 
 
 `clear()` can also be used to remove cached routes and controllers from their respective caches.
@@ -2320,6 +2330,9 @@ Clear a cache object using a key or a scope.
 
     // Clear the entire route scope
     app.clear({ scope: 'routes' });
+
+    // Clear the entire file scope
+    app.clear({ scope: 'files' });
 
     // Clear the entire app scope
     app.clear({ scope: 'app' });

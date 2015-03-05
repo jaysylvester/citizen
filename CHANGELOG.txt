@@ -1,9 +1,18 @@
+[0.6.2]
+  * Fixed a bug in controller caching that threw a server error
+  * Updated the readme to reflect breaking changes introduced in 0.6.0 that I somehow missed.
+
 [0.6.1]
   * Added ETag and Cache-Control headers to cached routes and static files. See "Client-Side Caching" in the readme.
   * Minor breaking change due to a bug fix: the app's urlPath (config.urlPaths.app) is now removed from params.route.filePath for static resources to provide an accurate file path from your public web root. The appropriate replacement is params.route.pathname, which includes the entire path after your site's domain.
 
 [0.6.0]
   * BREAKING CHANGE: The nesting syntax for the cache directive has changed slightly, but updating your code will be easy (mostly copy/paste of your existing cache directives). See "Caching Routes and Controllers" in the readme.
+  * BREAKING CHANGE: File cache retrieval syntax has changed. You must now specify the file attribute rather than the key attribute:
+    app.exists({ file: '/path/to/file.txt' });
+    app.retrieve({ file: '/path/to/file.txt' });
+    app.exists({ file: 'myCustomKey' });
+    app.retrieve({ file: 'myCustomKey' });
   * gzip support added for both dynamic and static resources. See configuration options in the readme.
   * Static asset caching added. See configuration options in the readme.
 
