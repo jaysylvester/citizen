@@ -41,7 +41,7 @@ program
           useStrict: useStrict,
           main: {
             header: 'Hello, world!',
-            text: 'Awesome, now what?'
+            text: 'How easy was that?'
           }
         }),
         view = buildView({
