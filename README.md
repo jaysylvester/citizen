@@ -1,26 +1,23 @@
 # citizen
 
-citizen is an event-driven MVC framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a Jenga tower made out of 20 different packages.
-
-Favoring convention over configuration, citizen's purpose is to handle server-side routing, view rendering, file serving, and caching, while providing some useful helpers to get you on your way. It takes the pain out of building a Node web app, but doesn't stop you from using native Node methods.
-
-Future plans include tight integration with client-side rendering through a custom JS library that shares MVC patterns between the client and server, but this will be optional.
-
-citizen is reliable, but the API is not yet stable. Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Your comments, criticisms, and (pull) requests are appreciated. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it.
-
-Have questions? Need help? [Send me an e-mail](http://jaysylvester.com/contact).
+citizen is an event-driven MVC and caching framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a Jenga tower made out of 20 different packages. Use it as a foundation for a traditional server-side web application, a modular single-page app, or a RESTful API to be consumed by your front end framework.
 
 
 ## Benefits
 
 - Very high performance (even without caching)
-- Zero-configuration dynamic routing with SEO-friendly URLs
-- Optional in-memory caching of entire routes, individual controllers, and objects
+- Zero-configuration server-side routing with SEO-friendly URLs
+- Serve HTML, JSON, and JSONP from the same controller/view with a single URL flag
+- Optional in-memory caching of entire routes, individual controllers, files, and objects
 - Directives that make it easy to set cookies, sessions, redirects, caches, and more
-- Serve HTML, JSON, or JSONP from the same controller/view with a single URL flag
 - Easily chain controllers or include controllers within other controllers
 - Do it all on the server or roll in your favorite client-side templating engine
 - Support for Jade and Handlebars templates with more on the way
+
+
+__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it.
+
+Have questions, suggestions, or need help? [Send me an e-mail](http://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
 
 
 ## Quick Start
@@ -70,7 +67,7 @@ For configuration options, see [Configuration](#configuration). For more utiliti
 
 ### Configuration
 
-citizen follows convention over configuration, but some things are best handled by a config file.
+citizen prefers convention over configuration, but some things are best handled by a config file.
 
 The `config` directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
@@ -94,6 +91,19 @@ The following represents citizen's default configuration, which is extended by y
           "secureCookies":    true
         },
         "connectionQueue":    undefined,
+        "format": {
+          "html": {
+            "pretty":         true
+          },
+          "json": {
+            "notation":       "-",
+            "pretty":         2
+          },
+          "jsonp": {
+            "notation":       "-",
+            "pretty":         2
+          }
+        },
         "gzip": {
           "enable":           false,
           "force":            false,
@@ -108,6 +118,7 @@ The following represents citizen's default configuration, which is extended by y
         "sessionTimeout":     1200000,
         "requestTimeout":     30000,
         "prettyHTML":         true,
+        "prettyJSON":         2,
         "log": {
           "toConsole":        false,
           "toFile":           false,
@@ -284,8 +295,18 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
+    <td colspan="3">
+      citizen.format
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.format.html
+    </td>
+  </tr>
+  <tr>
     <td>
-      <code>prettyHTML</code>
+      <code>pretty</code>
     </td>
     <td>
       <p>
@@ -297,6 +318,80 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       By default, rendered HTML sourced from Jade templates includes the original whitespace and line breaks. Change this setting to <code>false</code> to remove whitespace and minimize file size.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.format.json
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>pretty</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>2</code>
+      </p>
+    </td>
+    <td>
+      JSON output is pretty by default. This setting controls how many spaces to use for indentations. Set it to <code>false</code> to remove whitespace from JSON output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>urlDelimiter</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>-</code>
+      </p>
+    </td>
+    <td>
+      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See "JSON and JSONP" for details.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.format.jsonp
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>pretty</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>2</code>
+      </p>
+    </td>
+    <td>
+      JSONP output is pretty by default. This setting controls how many spaces to use for indentations. Set it to <code>false</code> to remove whitespace from JSON output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>urlDelimiter</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>-</code>
+      </p>
+    </td>
+    <td>
+      When using the <code>output</code> URL parameter, this setting determines how to parse a JSONP request. See "JSON and JSONP" for details.
     </td>
   </tr>
   <tr>
@@ -974,6 +1069,11 @@ To make a controller private—inaccessible via HTTP, but accessible within your
           article.js   // Accessible via www.cleverna.me/article
 
 
+#### Cross domain requests
+
+If you want to make a controller available to third party sites, see the [CORS section](#cross-origin-resource-sharing-cors).
+
+
 
 ### Models
 
@@ -1034,9 +1134,9 @@ In `article.jade`, you can reference objects you placed within the `content` obj
 citizen sends HTML to the client by default, but you can also return JSON and JSONP with no extra work on your part.
 
 
-#### JSON
+#### JSON and JSONP
 
-You don't need a custom view just for JSON. You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter.
+You don't need a custom view just for JSON. You can tell a controller to return its content as plain text JSON by adding the `format` URL parameter, letting the same resource act as both a complete HTML view and JSON for AJAX requests and RESTful APIs.
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
 
@@ -1045,23 +1145,48 @@ Returns...
     {
       "title": "My Clever Article Title",
       "summary": "Am I not terribly clever?",
-      "text": "Second page content"
+      "pages": {
+        "1": "First page content",
+        "2": "Second page content",
+        "3": "Third page content"
+      },
+      "last modified": "2015 Mar 03"
     }
 
-Whatever you've added to the controller's emitter `content` object will be returned. (The line breaks are just for readability. The actual output is compressed.)
+Whatever you've added to the controller's emitter `content` object will be returned.
 
 You can also specify specific top-level nodes to return instead of returning the entire content object by using the `output` URL parameter:
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/text
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/pages
 
 Returns...
 
-    { "text": "Second page content" }
+    {
+      "1": "First page content",
+      "2": "Second page content",
+      "3": "Third page content"
+    }
 
 
-#### JSONP
+Use dash notation in the output parameter to go deeper into the node tree:
 
-JSONP is pretty much the same. Use `format` and `callback` in the URL:
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/pages-2
+
+Returns...
+
+    Second page content
+
+
+The output parameter can be URL-encoded, allowing for dashes in your keys or whitespace characters if necessary:
+
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/last%20modified
+
+Returns...
+
+    2015 Mar 03
+
+
+For JSONP, use `format` paired with `callback` in the URL:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/format/jsonp/callback/foo
 
@@ -1070,26 +1195,67 @@ Returns:
     foo({
       "title": "My Clever Article Title",
       "summary": "Am I not terribly clever?",
-      "text": "Second page content"
+      "pages": {
+        "1": "First page content",
+        "2": "Second page content",
+        "3": "Third page content"
+      },
+      "last modified": "2015 Mar 03"
     });
+
 
 The `output` URL parameter works with JSONP as well.
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo/output/text
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo/output/pages-2
 
 Returns...
 
-    foo({ "text": "Second page content" });
+    foo("Second page content");
+
+
+Do you always want a particular controller action to return JSON without the URL flag? Simple:
+
+    function handler(params, context, emitter) {
+
+      // All requests handled by this controller action will output JSON
+      params.route.format = 'json';
+
+      emitter.emit('ready');
+    }
+
+
+Are you building a RESTful API and want every request to return JSON? Also simple:
+
+    // File: /app/on/request.js
+    // All requests will be returned in JSON format because this function runs
+    // at the beginning of every request. Learn more in the "Application Events
+    // and the Context Argument" section.
+
+    function start(params, context, emitter) {
+      params.route.format = 'json';
+      emitter.emit('ready');
+    }
+
+
+To remove whitespace from JSON or JSONP output, use the `pretty` config setting:
+
+    {
+      "citizen": {
+        "format": {
+          "json": {
+            "pretty": false
+          },
+          "jsonp": {
+            "pretty": false
+          }
+        }
+      }
+    }
 
 
 ### Rendering alternate views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your emitter](#alternate-views).
-
-
-### Cross domain requests
-
-If you want to make a controller available to third party sites, see the [CORS section](#cross-origin-resource-sharing-cors).
 
 
 
@@ -1275,9 +1441,52 @@ If you haven't enabled sessions, citizen falls back to creating a cookie named `
 
 
 
-### Include Patterns
+### Including Controllers
 
-citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse because each has its own controller, model, and view(s).
+citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse because each has its own controller, model, and view(s). Here's the syntax:
+
+    function handler(params, context, emitter) {
+      emitter.emit('ready', {
+        include: {
+
+          // The include name referenced in your view gets its name from the
+          // property name. This include calls the _header controller with the
+          // default action and view.
+          header: {
+            controller: '_header'
+          },
+
+          // This include calls the _footer controller using the "myAction" action.
+          footer: {
+            controller: '_footer',
+            action: 'myAction'
+          },
+
+          // This include calls the _login-form controller using the "myAction"
+          // action and "myView" view.
+          loginForm: {
+            controller: '_login-form',
+            action: 'myAction',
+            view: 'myView'
+          },
+
+          // This include calls the index controller, but processes it as if it
+          // had been requested from a different URL. In this case, the include
+          // will return JSON.
+          index: {
+            route: '/index/format/json/output/myNode'
+          },
+
+          // This include calls the index controller, but processes it as if it
+          // had been requested from a different URL and uses an alternate view.
+          index: {
+            route: '/index/format/json/output/myNode',
+            view: 'myView'
+          }
+        }
+      });
+    }
+
 
 Let's say our article pattern's Jade template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
 
@@ -1341,12 +1550,12 @@ When the article controller is fired, it has to tell citizen which includes it n
       emitter.emit('ready', {
         content: article,
         include: {
-          _head: {
+          head: {
             // If only the controller is specified, the default action handler() is
             // called and the default view is rendered (_head.jade in this case).
             controller: '_head'
           },
-          _header: {
+          header: {
             controller: '_header',
             // If the username cookie exists, use the authenticated action. If not,
             // use handler.
@@ -1419,9 +1628,9 @@ The rendered includes are stored in the `include` scope. The `include` object co
 
     doctype html
     html
-      != include._head
+      != include.head
       body
-        != include._header
+        != include.header
         main
           h1 #{title} - Page #{url.page}
           p#summary #{summary}
@@ -1445,30 +1654,6 @@ Perhaps you'd have it return meta data as JSON for the article pattern:
       }
     }
 
-Here's an example of the `_head` controller written as both an include and a handler of direct requests:
-
-    // _head controller
-
-    module.exports = {
-      handler: handler
-    };
-
-    function handler(params, context, emitter) {
-      var metaData = {},
-          // If the article URL param exists, use that. Otherwise, assume _head is
-          // being used as an include and use the requested route.
-          getMetaDataFor = params.url.article || params.route.controller;
-
-      if ( app.models[getMetaDataFor] && app.models[getMetaDataFor].getMetaData ) {
-        metaData = app.models[getMetaDataFor].getMetaData();
-      }
-
-      emitter.emit('ready', {
-        content: {
-          metaData: metaData
-        }
-      });
-    }
 
 Of course, if you don't write the controller in a manner to accept direct requests and return content, it'll return nothing (or throw an error). When accessed via HTTP, the controller has access to all emitter directives.
 
@@ -1481,6 +1666,7 @@ Of course, if you don't write the controller in a manner to accept direct reques
           _head.js     // Accessible via www.cleverna.me/_head
           article.js   // Accessible via www.cleverna.me/article
 
+
 #### Should I use a citizen include or a Jade include/Handlebars partial?
 
 citizen includes provide rich functionality, but they do have limitations and can be overkill in certain situations.
@@ -1489,6 +1675,7 @@ citizen includes provide rich functionality, but they do have limitations and ca
 * **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with Handlebars partials or Jade includes.
 * **Do you need the ability to render different includes based on logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using Handlebars partials or Jade includes would require registering multiple partials and putting the logic in the view template.
 * **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
+
 
 ### Controller Handoff
 
@@ -1907,14 +2094,14 @@ We already looked at setting Cache-Control for routes above. To do it for static
         "cache": {
           "static":                true,
           "control": {
-            "/path/to/styles.css": "max-age=86400",
-            "/path/to/scripts.js": "max-age=86400"
+            "/styles.css": "max-age=86400",
+            "/scripts.js": "max-age=86400"
           }
         }
       }
     }
 
-The key name is the pathname that points to the static asset in your web directory. The value is the Cache-Control header value you want to assign to that asset.
+The key name is the pathname that points to the static asset in your web directory. If your app's URL path is `/my/app`, then this value should be something like `/my/app/styles.css`. The value is the Cache-Control header value you want to assign to that asset.
 
 Here's [a great tutorial on client-side caching](https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching) to help explain ETag and Cache-Control headers.
 
@@ -1965,7 +2152,7 @@ citizen uses [formidable](https://www.npmjs.com/package/formidable) to parse for
       }
     }
 
-If it's a multipart form containing a file, the file is uploaded to your operating system's temp directory by default. The form object passed to your controller will look something like this:
+If it's a multipart form containing a file, the form object passed to your controller will look something like this:
 
     {
       foo: 'bar',
@@ -2174,7 +2361,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
 
 This is a way to check for the existence of a given key or scope in the cache without resetting the cache timer on that item. Returns `false` if a match isn't found.
 
-    // Check the default scope (app) for the specified key
+    // Check for the existence of the specified key
     var keyExists = app.exists({ key: 'welcome message' })          // keyExists is true
     var keyExists = app.exists({ file: '/path/to/articles.txt' })   // keyExists is true
     var keyExists = app.exists({ file: 'articles' })                // keyExists is true
@@ -2248,12 +2435,12 @@ Optionally, you can override the `resetOnAccess` attribute when retrieving a cac
     });
 
     // Retrieve a cached file
-    var welcomeMessage = app.retrieve({
+    var articles = app.retrieve({
       file: '/path/to/articles.txt'
     });
 
     // Retrieve a cached file with its custom key
-    var welcomeMessage = app.retrieve({
+    var articles = app.retrieve({
       file: 'articles'
     });
 

@@ -1,3 +1,9 @@
+[0.6.4]
+  * BREAKING CHANGE: The JSON/JSONP output parameter can now return nodes more than one level deep. See "JSON" in the readme for details. The breakage occurs due to how the JSON is returned; if you specify only the first top-level node, just the value of that node is returned within an envelope. Previously, the envelope contained a single key (the top-level node name) containing the value of the node.
+  * JSON/JSONP output is now pretty by default. Remove whitespace by setting "pretty" to false in the config.
+  * Fixed PUT/PATCH/DELETE methods to process payloads consisting of JSON or form data
+  * Controller includes can now be specified via a "route" option, making it possible to call includes with different parameters than the parent controller. See "Including Controllers" in the readme.
+
 [0.6.3]
   * Fixed another bug in controller caching. Dur.
 

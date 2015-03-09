@@ -21,10 +21,15 @@ program
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
         templates = {
+          application: fs.readFileSync(scaffoldPath + '/templates/on/application.js'),
+          request: fs.readFileSync(scaffoldPath + '/templates/on/request.js'),
+          response: fs.readFileSync(scaffoldPath + '/templates/on/response.js'),
+          session: fs.readFileSync(scaffoldPath + '/templates/on/session.js'),
+          start: fs.readFileSync(scaffoldPath + '/templates/start.js'),
           error: fs.readdirSync(scaffoldPath + '/templates/error')
         },
         format = options.format || 'jade',
-        useStrict = options.useStrict ? "'use strict';\n\n" : '',
+        useStrict = options.useStrict ? "'use strict';\n" : '',
         controller = buildController({
           pattern: 'index',
           appName: 'app',
@@ -33,7 +38,11 @@ program
         model = buildModel({
           pattern: 'index',
           appName: 'app',
-          useStrict: useStrict
+          useStrict: useStrict,
+          main: {
+            header: 'Hello, world!',
+            text: 'Awesome, now what?'
+          }
         }),
         view = buildView({
           pattern: 'index',
@@ -43,13 +52,21 @@ program
           mode: options.mode,
           port: options.networkPort
         }),
-        application = "// application events\n\n// This module optionally exports the following methods:\n// start(context, emitter) - Called when the application starts\n// end(context, emitter) - Called when the application shuts down (not functional yet)\n// error(e, context, emitter) - Called on every application error\n\n// If you have no use for this file, you can delete it.\n\n" + useStrict + "module.exports = {\n  start: start,\n  end: end,\n  error: error\n};\n\n\nfunction start(context, emitter) {\n  emitter.emit('ready');\n}\n\n\nfunction end(context, emitter) {\n  emitter.emit('ready');\n}\n\n\nfunction error(e, params, context, emitter) {\n  emitter.emit('ready');\n}\n",
-        request = "// request events\n\n// This module optionally exports the following methods:\n// start(params, context, emitter) - Called at the beginning of every request\n// end(params, context, emitter) - Called at the end of every request\n\n// If you have no use for this file, you can delete it.\n\n" + useStrict + "module.exports = {\n  start: start,\n  end: end\n};\n\n\nfunction start(params, context, emitter) {\n  emitter.emit('ready');\n}\n\n\nfunction end(params, context, emitter) {\n  emitter.emit('ready');\n}\n",
-        response = "// response events\n\n// This module optionally exports the following methods:\n// start(params, context, emitter) - Called at the beginning of every response\n// end(params, context, emitter) - Called at the end of every response (after the response has been sent to the client)\n\n// If you have no use for this file, you can delete it.\n\n" + useStrict + "module.exports = {\n  start: start,\n  end: end\n};\n\n\nfunction start(params, context, emitter) {\n  emitter.emit('ready');\n}\n\n\nfunction end(params, context, emitter) {\n  emitter.emit('ready');\n}\n",
-        session = "// session events\n\n// This module optionally exports the following methods:\n// start(params, context, emitter) - Called at the beginning of every user session\n// end(params, context, emitter) - Called at the end of every user session\n\n// If you have no use for this file, you can delete it.\n\n" + useStrict + "module.exports = {\n  start: start,\n  end: end\n};\n\n\nfunction start(params, context, emitter) {\n  emitter.emit('ready');\n}\n\n\nfunction end(params, context, emitter) {\n  emitter.emit('ready');\n}\n";
+        application = templates.application.toString(),
+        request = templates.request.toString(),
+        response = templates.response.toString(),
+        session = templates.session.toString(),
+        start = templates.start.toString();
+
+    application = application.replace(/\[useStrict\]/g, useStrict);
+    request = request.replace(/\[useStrict\]/g, useStrict);
+    response = response.replace(/\[useStrict\]/g, useStrict);
+    session = session.replace(/\[useStrict\]/g, useStrict);
+
+    start = start.replace(/\[useStrict\]/g, useStrict);
 
     fs.mkdirSync(appPath);
-    fs.writeFileSync(appPath + '/start.js', "// app start\n\n" + useStrict + "global.app = require('citizen');\n\napp.start();\n");
+    fs.writeFileSync(appPath + '/start.js', start);
     fs.mkdirSync(appPath + '/config');
     fs.writeFileSync(appPath + '/config/' + config.name, config.contents);
     fs.mkdirSync(appPath + '/logs');
@@ -138,7 +155,7 @@ program
   .action( function (pattern, options) {
     var appName = options.appName || 'app',
         format = options.format || 'jade',
-        useStrict = options.useStrict ? "'use strict';\n\n" : '',
+        useStrict = options.useStrict ? "'use strict';\n" : '',
         controller = buildController({
           pattern: pattern,
           appName: appName,
@@ -194,7 +211,8 @@ program.parse(process.argv);
 
 
 function buildController(options) {
-  var pattern = options.pattern,
+  var template = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
+      pattern = options.pattern,
       appName = options.appName,
       isPrivate = options.private || false,
       useStrict = options.useStrict,
@@ -204,27 +222,34 @@ function buildController(options) {
     name = '+' + name;
   }
 
+  template = template.toString();
+  template = template.replace(/\[pattern\]/g, pattern);
+  template = template.replace(/\[useStrict\]/g, useStrict);
+  template = template.replace(/\[appName\]/g, appName);
+
   return {
     name: name,
-    contents: "// " + pattern + " controller\n\n" + useStrict + "module.exports = {\n  handler: handler\n};\n\n\n// default action\nfunction handler(params, context, emitter) {\n\n  " + appName + ".listen({\n    content: function (emitter) {\n      " + appName + ".models." + pattern + ".content(emitter);\n    }\n  }, function (output) {\n  \n    emitter.emit('ready', {\n      content: output.content\n    });\n    \n  });\n\n}\n"
+    contents: template
   };
 }
 
 
 function buildModel(options) {
-  var pattern = options.pattern,
-      appName = options.appName,
-      isPrivate = options.private || false,
+  var template = fs.readFileSync(scaffoldPath + '/templates/model.js'),
+      pattern = options.pattern,
       useStrict = options.useStrict,
-      title = pattern;
+      header = options.main && options.main.header ? options.main.header : pattern + ' pattern template',
+      text = options.main && options.main.text ? options.main.text : 'This is a template for the ' + pattern + ' pattern.';
 
-  if ( isPrivate ) {
-    title = '+' + title;
-  }
+  template = template.toString();
+  template = template.replace(/\[pattern\]/g, pattern);
+  template = template.replace(/\[useStrict\]/g, useStrict);
+  template = template.replace(/\[header\]/g, header);
+  template = template.replace(/\[text\]/g, text);
 
   return {
     name: pattern + '.js',
-    contents: "// " + pattern + " model\n\n" + useStrict + "module.exports = {\n  content: content\n};\n\n\nfunction content(emitter) {\n\n  " + appName + ".listen({\n    metaData: function (emitter) {\n      emitter.emit('ready', {\n        title: '" + title + " pattern template',\n        description: 'An example of a citizen MVC pattern',\n        keywords: 'citizen, mvc, template'\n      });\n    },\n    main: function (emitter) {\n      emitter.emit('ready', {\n        header: '" + title + " pattern',\n        text: 'This is a template for the " + title + " pattern.'\n      });\n    }\n  }, function (output) {\n  \n    emitter.emit('ready', output);\n    \n  });\n\n}\n"
+    contents: template
   };
 }
 
@@ -233,41 +258,35 @@ function buildView(options) {
   var pattern = options.pattern,
       isPrivate = options.private || false,
       format = options.format || 'jade',
+      template = fs.readFileSync(scaffoldPath + '/templates/view.' + format),
       directory = pattern,
-      name = pattern + '.' + format,
-      contents = '';
+      name = pattern + '.' + format;
 
   if ( isPrivate ) {
     directory = '+' + directory;
     name = '+' + name;
   }
 
-  switch ( format ) {
-    case 'hbs':
-      contents = '<!doctype html>\n<html>\n  <head>\n    <meta charsate="utf-8">\n    <title>{{metaData.title}}</title>\n    <meta name="description" content="{{metaData.description}}">\n    <meta name="keywords" content="{{metaData.keywords}}">\n  </head>\n  <body>\n    <main>\n      <h1>{{main.header}}</h1>\n      <p>{{main.text}}</p>\n    </main>\n  </body>\n</html>\n';
-      break;
-    case 'html':
-      contents = '<!doctype html>\n<html>\n  <head>\n    <meta charsate="utf-8">\n    <title>Page Title</title>\n    <meta name="description" content="Meta description.">\n    <meta name="keywords" content="keyword, list">\n  </head>\n  <body>\n    <main>\n      <h1>Static Page</h1>\n      <p>This is a static HTML view.</p>\n    </main>\n  </body>\n</html>\n';
-      break;
-    case 'jade':
-      contents = '//- ' + pattern + ' view\n\ndoctype html\nhtml\n  head\n    meta(charset="utf-8")\n    title #{metaData.title}\n    meta(name="description" content="#{metaData.description}")\n    meta(name="keywords" content="#{metaData.keywords}")\n  body\n    main\n      h1 #{main.header}\n      p #{main.text}';
-  }
-
   return {
     directory: directory,
     name: name,
-    contents: contents
+    contents: template.toString()
   };
 }
 
 
 function buildConfig(options) {
-  var port = options.port || 80,
+  var template = fs.readFileSync(scaffoldPath + '/templates/config.json'),
       mode = options.mode || 'production',
+      port = options.port || 80,
       name = options.name || 'citizen';
+
+  template = template.toString();
+  template = template.replace(/\[mode\]/g, mode);
+  template = template.replace(/\[port\]/g, port);
 
   return {
     name: name + '.json',
-    contents: '{\n  "citizen": {\n    "mode":             "' + mode + '",\n    "http": {\n      "port":           ' + port + '\n    }\n  }\n}\n'
+    contents: template
   };
 }
