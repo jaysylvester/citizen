@@ -96,11 +96,11 @@ The following represents citizen's default configuration, which is extended by y
             "pretty":         true
           },
           "json": {
-            "notation":       "-",
+            "urlDelimiter":   "-",
             "pretty":         2
           },
           "jsonp": {
-            "notation":       "-",
+            "urlDelimiter":   "-",
             "pretty":         2
           }
         },
@@ -1278,9 +1278,8 @@ By default, the server renders the view whose name matches that of the controlle
       var article = app.models.article.getArticle(params.url.article, params.url.page);
 
       emitter.emit('ready', {
-        content: {
-          article: article
-        },
+        content: article,
+
         // This tells the server to render app/patterns/views/article/edit.jade
         view: 'edit'
       });
@@ -1745,10 +1744,10 @@ The layout controller handles the includes, follows your custom directive, and r
         // citizen keeps track of the article pattern's request context throughout
         // the handoff process.
         include: {
-          _head: {
+          head: {
             controller: '_head'
           },
-          _header: {
+          header: {
             controller: '_header',
             action: params.cookie.username ? 'authenticated' : 'handler'
           }
@@ -1766,7 +1765,7 @@ You can use `handoff` to chain requests across as many controllers as you want, 
     [
       { controller: 'article',
         action: 'handler',
-        view: 'articles',
+        view: 'article',
         viewContent: '<h1>My Article Title</h1><p id="summary">The article summary.</p><div id="text">The article text.</div>'
       },
       { controller: '+_layout',
@@ -1781,15 +1780,13 @@ You can loop over this object to render all the chained views:
 
     doctype html
     html
-      != include._head
+      != include.head
       body
-        != include._header
+        != include.header
         main
           // Loop over each controller in the chain and incorporate its rendered view
           each controller in route.chain
-            if controller.viewContent
-              | <!-- controller: #{controller.controller}, action: #{controller.action}, view: #{controller.view} -->
-              != controller.viewContent
+            != controller.viewContent
 
 
 It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
