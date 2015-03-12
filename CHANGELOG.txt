@@ -1,6 +1,6 @@
 [0.6.5]
   * Added an error event to the listen() emitter. Any methods that rely on emitters (including your controllers) can now emit errors with HTTP status codes and error messages. See "Controllers" and "listen()" in the readme.
-  * listen() now reports status in its output (output.listen) for individual methods. Combine this with the emitter's error event to help track and recover from errors in each method. See "listen()" in the readme.
+  * listen() now reports status in its output (output.listen) for individual methods. Combine this with the emitter's error event to help track and recover from errors in asynchronous function calls. See "listen()" in the readme.
   * The redirect directive now accepts a URL string as shorthand for a temporary redirect using the Location header
 
 [0.6.4]
