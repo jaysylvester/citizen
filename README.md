@@ -15,12 +15,12 @@ citizen is an event-driven MVC and caching framework for Node.js web application
 - Support for Jade and Handlebars templates with more on the way
 
 
-__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it.
+__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading.
 
 Have questions, suggestions, or need help? [Send me an e-mail](http://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
 
 
-## Quick Start
+## Quick Start (Recommended)
 
 These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen with the web server listening on port 8080 (you can change the port to whatever you want):
 
@@ -34,13 +34,15 @@ If everything went well, you'll see confirmation in the console that citizen is 
 
 For configuration options, see [Configuration](#configuration). For more utilities, see [Utilities](#utilities).
 
+__Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it, which breaks all these nice links I've created for you.__
 
 
 ### App Directory Structure
 
     app/
-      config/               // Optional configs for different environments
-        local.json
+      config/
+        citizen.json        // Optional default config
+        local.json          // Optional configs for different environments
         qa.json
         production.json
       logs/                 // Log files created by citizen and your app
@@ -56,10 +58,14 @@ For configuration options, see [Configuration](#configuration). For more utiliti
           index.js
         models/
           index.js          // Optional for each controller
-        views/
+        views/              // You can use Jade (.jade), Handlebars (.hbs), or HTML files
+          error/            // Optional views for error handling
+            404.jade
+            500.jade
+            error.jade      // Default error template
           index/
-            index.jade      // You can use Jade (.jade), Handlebars (.hbs), or HTML files
-            index-alt.jade  // Optional alternate view
+            index.jade      // Default index view
+            index-alt.jade  // Optional alternate index view
       start.js
     web/                    // public static assets
 
@@ -1057,6 +1063,45 @@ Alternate actions can be requested using the `action` URL parameter. For example
 
 The second argument in `emitter.emit` is an object containing any data you want to pass back to citizen. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the [Emitter Directives](#emitter-directives) section). You can even add your own objects to the request context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
 
+
+#### Throwing Errors
+
+The emitter has an `error` event so you can trigger citizen's error handling mechanism. citizen already does a pretty good job of catching your application's errors without crashing, but the `error` event gives you more control over how the error is handled.
+
+    // article controller
+
+    module.exports = {
+      handler: handler
+    };
+
+    function handler(params, context, emitter) {
+      // Get the article content
+      var article = app.models.article.getArticle(params.url.article, params.url.page);
+
+      // If everything is fine, emit ready
+      if ( article ) {
+        emitter.emit('ready', {
+          content: article
+        });
+
+      // If there's a problem, throw an error
+      } else {
+        emitter.emit('error', {
+
+          // Optional. Default status code is 500 (server error).
+          statusCode: 404,
+
+          // Optional message you want to display, which overrides citizen's messaging
+          message: 'The requested article does not exist.'
+        });
+      }
+      
+    };
+
+
+The app skeleton created by the [scaffold utility](#scaffold) includes optional error view templates for common errors, but you can create templates for any HTTP error code (more in the [Views section](#views).
+
+
 #### Private controllers
 
 To make a controller private—inaccessible via HTTP, but accessible within your app—add a plus sign (`+`) to the beginning of the file name:
@@ -1253,10 +1298,23 @@ To remove whitespace from JSON or JSONP output, use the `pretty` config setting:
     }
 
 
-### Rendering alternate views
+#### Rendering alternate views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your emitter](#alternate-views).
 
+
+#### Error Views
+
+To create custom error views for server errors, create a directory called `/app/patterns/views/error` and populate it with templates named after the HTTP response code or Node.js error code (or just use the [scaffold utility](#scaffold) to create your app, whose boilerplate includes some error templates to start with).
+
+    app/
+      patterns/
+        views/
+          error/
+            404.jade        // Handles 404 errors
+            500.jade        // Handles 500 errors
+            ENOENT.jade     // Handles bad file read operations
+            error.jade      // Handles any error without its own template
 
 
 ## Emitter Directives
@@ -1413,21 +1471,19 @@ Like cookies, session variables you've just assigned aren't available during the
 
 You can pass redirect instructions to the server that will be initiated after the request is complete. Redirects using this method within the controller are not immediate, so the controller will do everything it's been asked to do before the redirect is processed.
 
-The `redirect` object takes three properties: `statusCode`, `url`, and `refresh`. If you don't provide a status code, citizen uses 302 (temporary redirect). The `refresh` option determines whether the redirect uses a [Location header](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.30) or the non-standard [Refresh header](https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Refresh).
+The `redirect` object takes a URL string in its shorthand version, or three options: `statusCode`, `url`, and `refresh`. If you don't provide a status code, citizen uses 302 (temporary redirect). The `refresh` option determines whether the redirect uses a [Location header](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.30) or the non-standard [Refresh header](https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Refresh).
 
     // Initiate a temporary redirect using the Location header
     emitter.emit('ready', {
-      redirect: {
-        url: 'http://cleverna.me/login'
-      }
+      redirect: 'http://cleverna.me/login'
     });
 
     // Initiate a permanent redirect using the Refresh header, delaying the redirect
     // by 5 seconds
     emitter.emit('ready', {
       redirect: {
-        statusCode: 301,
         url: 'http://cleverna.me/new-url',
+        statusCode: 301,
         refresh: 5
       }
     });
@@ -2136,9 +2192,7 @@ citizen uses [formidable](https://www.npmjs.com/package/formidable) to parse for
 
         emitter.emit('ready', {
           cookie: cookie,
-          redirect: {
-            url: '/'
-          }
+          redirect: '/'
         });
       } else {
         emitter.emit('ready', {
@@ -2261,7 +2315,7 @@ Here's an example of a request module that checks for a username cookie at the b
       var redirect = {};
 
       if ( !params.cookie.username && params.route.controller !== 'login' ) {
-        redirect.url = '/login';
+        redirect = '/login';
       }
 
       emitter.emit('ready', {
@@ -2528,6 +2582,7 @@ The article example we've been using has only simple methods that return static 
 
 `listen()` takes up to three arguments: the type of flow control you'd like to use (optional), an object containing one or more methods you want to call, and a callback to process the output. `listen()` requires that your asynchronous functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
 
+
 #### Parallel function calls
 
 `listen()` defaults to parallel processing. It fires all the functions you provide, then returns the output of all functions in a single output object. This is the option to use if none of the functions you're calling depend on each other in any way, but you need all of them to return before proceeding.
@@ -2549,23 +2604,45 @@ Let's say our article controller needs to call several methods that hit the data
         }
       }, function (output) {
 
-        // This callback fires after both functions emit 'ready'.
+        // This callback fires after both functions' emitters fire.
         // Access the returned data via the output argument:
         //
-        // output.article
-        // output.viewers
+        // output.listen    - Contains status of all methods in listen()
+        //                    Each method's status can be 'ready', 'timeout', or 'error'
+        //
+        //                    {
+        //                      success: true,
+        //                      status: {
+        //                        article: 'ready',
+        //                        viewers: 'ready'
+        //                      }
+        //                    }
+        //
+        // output.article   - Contains output from the article method
+        // output.viewers   - Contains output from the viewers method
 
       });
+
 
 And the model:
 
     // Methods called via listen() must be written to accept the emitter
     function getArticle(article, page, emitter) {
-      app.db.article({ article: article, page: page }, function (data) {
+      app.db.article({ article: article, page: page }, function (err, data) {
 
-        // When the database returns the data, emit `ready` and pass the
-        // data back to listen()
-        emitter.emit('ready', data);
+        if ( err ) {
+
+          // If there's an error, use the emitter's error event
+          emitter.emit('error', err);
+
+        } else {
+
+          // When the database returns the data, emit `ready` and pass the
+          // data back to listen()
+          emitter.emit('ready', data);
+
+        }
+        
       });
     };
 
