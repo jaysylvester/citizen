@@ -1,6 +1,7 @@
 [0.6.5]
   * Added an error event to the listen() emitter. Any methods that rely on emitters (including your controllers) can now emit errors with HTTP status codes and error messages. See "Controllers" and "listen()" in the readme.
   * listen() now reports status in its output (output.listen) for individual methods. Combine this with the emitter's error event to help track and recover from errors in each method. See "listen()" in the readme.
+  * The redirect directive now accepts a URL string as shorthand for a temporary redirect using the Location header
 
 [0.6.4]
   * BREAKING CHANGE: The JSON/JSONP output parameter can now return nodes more than one level deep. See "JSON" in the readme for details. The breakage occurs due to how the JSON is returned; if you specify only the first top-level node, just the value of that node is returned within an envelope. Previously, the envelope contained a single key (the top-level node name) containing the value of the node.
