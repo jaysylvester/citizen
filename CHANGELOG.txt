@@ -1,3 +1,8 @@
+[0.6.6]
+  * Error handling has been further improved. See "Handling Errors" in the readme. Changes include:
+    * Error response formats now match the requested route format (HTML, JSON, or JSONP), which is potentially a breaking change depending on how you've been handling errors up to this point.
+    * The listen() error and timeout events no longer throw errors themselves, which is potentially a breaking change if you were relying on these thrown errors previously. You should now use the listen() status output (output.listen) for dealing with the results of these events.
+
 [0.6.5]
   * Added an error event to the listen() emitter. Any methods that rely on emitters (including your controllers) can now emit errors with HTTP status codes and error messages. See "Controllers" and "listen()" in the readme.
   * listen() now reports status in its output (output.listen) for individual methods. Combine this with the emitter's error event to help track and recover from errors in asynchronous function calls. See "listen()" in the readme.
