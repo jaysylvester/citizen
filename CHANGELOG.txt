@@ -1,3 +1,6 @@
+[0.6.7]
+  * Further stabilization of the error API.
+
 [0.6.6]
   * Error handling has been further improved. See "Handling Errors" in the readme. Changes include:
     * Error response formats now match the requested route format (HTML, JSON, or JSONP), which is potentially a breaking change depending on how you've been handling errors up to this point.

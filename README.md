@@ -1115,7 +1115,7 @@ If you use the [listen()](#listen) method for asynchronous functional calls, the
         }
       }, function (output) {
 
-        if ( output.listen.success ) {
+        if ( output.listen.success && output.article ) {
 
           emitter.emit('ready', {
             content: output.article
@@ -2690,6 +2690,8 @@ And the model:
 
 
 After `getArticle()` and `getViewers()` both emit ready, the callback is fired.
+
+If the `listen()` emitter syntax in the model example looks familiar, it should, because it's the same emitter syntax you use in your controller to pass the request context to the server. citizen uses `listen()` internally for this event.
 
 
 #### Series function calls
