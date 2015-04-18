@@ -1,3 +1,8 @@
+[0.6.8]
+  * The listen() error event has been returned to its previous behavior of throwing its own error. Without this, debugging is pretty much impossible. citizen's behavior remains the same, however (errors are not allowed to bubble up to the node process, so the app doesn't crash). You should still be using listen.success and listen.status to handle errors properly though.
+  * BREAKING CHANGE: All URL parameters are now cast as strings, including numeric values. There are too many complicating factors in JavaScript's handling of numbers (floats, large integers) for citizen to make assumptions regarding the desired type. For example, "0123" is numeric and would have been stored as "123" under the previous convention; if your app was expecting the leading zero to remain intact, that would be bad. New convenience functions have been added (isInteger and isFloat) to assist in dealing with numbers.
+  * The dashes() helper has been deprecated. It's still there, but will be gone in version 0.7.0. There are much more fully-featured URL slug packages available, and since citizen doesn't use this helper internally, there's no sense in keeping it.
+
 [0.6.7]
   * Further stabilization of the error API.
 

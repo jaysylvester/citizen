@@ -931,7 +931,7 @@ Models and views are optional and don't necessarily need to be associated with a
 
 ### Controllers
 
-Each controller requires at least one public action/function. The default action is named `handler()`, which is called by citizen when no action is specified in the URL.
+A citizen controller is just a Node module. Each controller requires at least one public method to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
 
     // article controller
 
@@ -939,12 +939,11 @@ Each controller requires at least one public action/function. The default action
       handler: handler
     };
 
-    // Required
+    // Required if no action is specified in the route
     function handler(params, context, emitter) {
 
       // do some stuff
 
-      // Required
       emitter.emit('ready', {
         // content and directives for the server
       });
@@ -999,8 +998,14 @@ For example, based on the previous article URL...
 
     {
       article: 'My-Clever-Article-Title',
-      page: 2
+      page: '2'
     }
+
+Note that "numeric" URL parameters are stored as strings in the `url` scope; this is because there are too many factors for citizen to make a reasonable assumption regarding your app's expectations. For example:
+
+    http://www.cleverna.me/user/activationCode/023498721250
+
+Your app would likely expect the leading zero to remain intact in this case, but this value is technically numeric in JavaScript, and if stored as a number would see the zero dropped. Large integers beyond what JavaScript can accurately represent also present issues. Use the provided convenience functions (isNumeric, isInteger, and isFloat) to assist in dealing with numbers.
 
 The controller name becomes a property in the URL scope that contains the descriptor, which makes it well-suited for use as a unique identifier. This content is also available in the `route` object as `route.descriptor`.
 
@@ -1066,7 +1071,7 @@ The second argument in `emitter.emit` is an object containing any data you want 
 
 #### Handling Errors
 
-The emitter has an `error` event so you can trigger citizen's error handling mechanism. citizen already does a pretty good job of catching your application's errors without crashing, but the `error` event gives you more control over how the error is handled. Note that using the `error` event does not throw a JavaScript error; you use it to handle an error that's already been thrown or a condition that would bring about an error.
+The emitter has an `error` event that gives you more control over how errors are handled. The `error` event throws a JavaScript error to enable debugging; citizen prevents the error from bubbling up to the Node process, however, so your app won't crash.
 
     // article controller
 
