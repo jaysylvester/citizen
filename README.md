@@ -1100,7 +1100,7 @@ The emitter has an `error` event that gives you more control over how errors are
           message: 'The requested article does not exist.'
         });
       }
-      
+
     };
 
 
@@ -2649,7 +2649,7 @@ Let's say our article controller needs to call several methods that hit the data
         // Access the returned data via the output argument:
         //
         // output.listen    - Contains status of all methods in listen()
-        //                    Each method's status can be 'waiting', 'ready', 'timeout', or 'error'
+        //                    Each method's status can be 'waiting', 'ready', 'timeout', 'skipped', or 'error'
         //
         //                    {
         //                      success: true,
@@ -2683,7 +2683,7 @@ And the model:
           emitter.emit('ready', data);
 
         }
-        
+
       });
     };
 
@@ -2757,6 +2757,123 @@ Use `waterfall` to fire and return functions in order and then pass all previous
         // output.article
         // output.viewers
         // output.details
+
+    });
+
+
+#### Flow control
+
+You use the `skip`, `end`, and `error` emitter events to control the flow of embedded listen() methods in series and waterfall executions.
+
+
+##### skip (series and waterfall only)
+
+Use `skip` to skip the next method in the chain. If the next method is the last method, the callback is fired. In the following example, secondMethod uses the output from firstMethod to determine whether to execute thirdMethor skip it.
+
+    app.listen('waterfall', {
+      firstMethod: function (emitter) {
+        var something = doSomething();
+
+        emitter.emit('ready', something);
+      },
+      secondMethod: function (previous, emitter) {
+        var somethingElse;
+
+        // If firstMethod provides something, fire thirdMethod
+        if ( previous.something ) {
+          somethingElse = doSomethingElse();
+          emitter.emit('ready', somethingElse);
+        // If there's no result from firstMethod, skip thirdMethod
+        } else {
+          emitter.emit('skip', somethingElse);
+        }
+      },
+      thirdMethod: function (previous, emitter) {
+        var lastThing = lastThing();
+
+        emitter.emit('ready', lastThing);
+      }
+    }, function (output) {
+
+      output.listen.success;              // true
+      output.listen.status.firstMethod;   // 'ready'
+      output.listen.status.secondMethod;  // 'ready'
+      output.listen.status.thirdMethod;   // 'skipped'
+
+    });
+
+
+##### end (series and waterfall only)
+
+Use `end` to skip all remaining methonds and fire the callback. In the following example, firstMethod tells listen() to go straight to the callback, skipping secondMethod and thirdMethod.
+
+    app.listen('waterfall', {
+      firstMethod: function (emitter) {
+        var something = doSomething();
+
+        if ( something ) {
+          emitter.emit('ready', something);
+        } else {
+          emitter.emit('end');
+        }
+
+      },
+      secondMethod: function (previous, emitter) {
+        var somethingElse = doSomethingElse();
+
+        emitter.emit('ready', somethingElse);
+      },
+      thirdMethod: function (previous, emitter) {
+        var lastThing = lastThing();
+
+        emitter.emit('ready', lastThing);
+      }
+    }, function (output) {
+
+      output.listen.success;              // true
+      output.listen.status.firstMethod;   // 'ready'
+      output.listen.status.secondMethod;  // 'skipped'
+      output.listen.status.thirdMethod;   // 'skipped'
+
+    });
+
+
+##### error
+
+Use `error` to throw an error and fire the callback, which is responsible for handling the error. In series and waterfall executions, emitting `error` skips the remaining methods in the chain. In parallel executions, there's no way to stop the remaining methods from firing. In the following example, firstMethod fires, but secondMethod throws an error, skipping thirdMethod.
+
+    app.listen('waterfall', {
+      firstMethod: function (emitter) {
+        var something = doSomething();
+
+        if ( something ) {
+          emitter.emit('ready', something);
+        } else {
+          emitter.emit('end');
+        }
+
+      },
+      secondMethod: function (previous, emitter) {
+        var somethingElse = doSomethingElse();
+
+        if ( somethingElse ) {
+          emitter.emit('ready', somethingElse);
+        } else {
+          emitter.emit('error');
+        }
+
+      },
+      thirdMethod: function (previous, emitter) {
+        var lastThing = lastThing();
+
+        emitter.emit('ready', lastThing);
+      }
+    }, function (output) {
+
+      output.listen.success;              // false
+      output.listen.status.firstMethod;   // 'ready'
+      output.listen.status.secondMethod;  // 'error'
+      output.listen.status.thirdMethod;   // 'skipped'
 
     });
 
