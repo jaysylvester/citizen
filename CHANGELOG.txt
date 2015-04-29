@@ -1,3 +1,15 @@
+[0.7.0]
+  * Added cluster support. Sessions are not shared across cluster workers, so if your app relies upon session variables, you shouldn't enable a cluster. Config settings are cluster.enabled (false by default) and cluster.cap (unlimited by default).
+  * Cache methods have been renamed and moved to their own namespace (app.cache). The old calls and their new equivalents are:
+    * app.cache()    -> app.cache.set()
+    * app.retrieve() -> app.cache.get()
+    * app.exists()   -> app.cache.exists()
+    * app.clear()    -> app.cache.clear()
+  * All config options can now be overwritten at app startup. This breaks the few http- and https-specific overwrite options that were available previously.
+  * HTTPS key/cert/pfx files should now be passed as a string representing the path to the file, not the contents of the files themselves. citizen reads these files itself now (synchronously).
+  * Added ability to end a specific user session based on a session property key/value pair using app.session.end('key', 'value')
+  * All citizen-scoped cookie and session variables (starting with "ctzn") have been changed to "ctzn_camelCase" format (ctznReferer is now ctzn_referer).
+
 [0.6.9]
   * Added listen() skip and end events to the readme.
   * Methods skipped in listen() by a previous method throwing an error now have their statuses correctly set to "skipped" in output.listen.status

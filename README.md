@@ -1481,7 +1481,7 @@ Cookie variables you set within your controller aren't immediately available wit
 
 If sessions are enabled, you can access session variables via `params.session` in your controller or simply `session` within views. These local scopes reference the current user's session without having to pass a session ID.
 
-By default, a session has four properties: `id`, `started`, `expires`, and `timer`. The session ID is also sent to the client as a cookie called `ctznSessionID`.
+By default, a session has four properties: `id`, `started`, `expires`, and `timer`. The session ID is also sent to the client as a cookie called `ctzn_sessionID`.
 
 Setting session variables is pretty much the same as setting cookie variables:
 
@@ -1531,9 +1531,9 @@ The `redirect` object takes a URL string in its shorthand version, or three opti
 
 Unlike the Location header, if you use the `refresh` option, citizen will send a rendered view to the client because the redirect occurs client-side.
 
-Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctznReferer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctznReferer` so you can send them there instead of the page containing the link to the secure page.
+Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctzn_referer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctzn_referer` so you can send them there instead of the page containing the link to the secure page.
 
-If you haven't enabled sessions, citizen falls back to creating a cookie named `ctznReferer` instead.
+If you haven't enabled sessions, citizen falls back to creating a cookie named `ctzn_referer` instead.
 
 
 
