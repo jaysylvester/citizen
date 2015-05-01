@@ -1,11 +1,12 @@
 [0.7.0]
-  * Added cluster support. Sessions are not shared across cluster workers, so if your app relies upon session variables, you shouldn't enable a cluster. Config settings are cluster.enable (false by default) and cluster.cap (unlimited by default).
+  * [Aspirational] Added cluster support. Sessions are not shared across cluster workers, so if your app relies upon session variables, you shouldn't enable a cluster. Config settings are cluster.enable (false by default) and cluster.cap (unlimited by default).
   * Cache methods have been renamed and moved to their own namespace (app.cache). The old calls and their new equivalents are:
     * app.cache()    -> app.cache.set()
     * app.retrieve() -> app.cache.get()
     * app.exists()   -> app.cache.exists()
     * app.clear()    -> app.cache.clear()
   * All config options can now be overwritten at app startup. This breaks the few http- and https-specific overwrite options that were available previously.
+  * By default, app.start() starts an HTTP server. To start an HTTPS server, you must enable it manually inline or via a config file and provide key/cert/pfx files. You can disable HTTP entirely via config as well. Consult the readme for details.
   * HTTPS key/cert/pfx files should now be passed as a string representing the path to the file, not the contents of the files themselves. citizen reads these files itself now (synchronously).
   * Added ability to end a specific user session based on a session property key/value pair using app.session.end('key', 'value')
   * All citizen-scoped cookie and session variables (starting with "ctzn") have been changed to "ctzn_camelCase" format (ctznReferer is now ctzn_referer).
