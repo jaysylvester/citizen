@@ -97,6 +97,10 @@ The following represents citizen's default configuration, which is extended by y
           "secureCookies":    true
         },
         "connectionQueue":    undefined,
+        "layout": {
+          "controller":       "",
+          "view":             ""
+        },
         "format": {
           "html": {
             "pretty":         true
@@ -298,6 +302,43 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       Determines how long the server will wait for a response from your controllers before timing out, in milliseconds.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.layout
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>controller</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: (empty)
+      </p>
+    </td>
+    <td>
+      If you use a global layout controller, you can specify the name of that controller here instead of using the handoff directive in all your controllers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>view</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: (empty)
+      </p>
+    </td>
+    <td>
+      By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
     </td>
   </tr>
   <tr>
@@ -1854,6 +1895,18 @@ The layout controller handles the includes, follows your custom directive, and r
 
     function doSomething() {
       // do something
+    }
+
+
+As mentioned in the config section at the beginning of this document, you can specify a default layout controller in your config so you don't have to specify it in every controller:
+
+    {
+      "citizen": {
+        "layout": {
+          "controller": "+_layout",
+          "view":       "+_layout"
+        }
+      }
     }
 
 
