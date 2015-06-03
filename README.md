@@ -2674,7 +2674,7 @@ Clear a cache object using a key or a scope.
 
 The article example we've been using has only simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
-`listen()` takes up to three arguments: the type of flow control you'd like to use (optional), an object containing one or more methods you want to call, and a callback to process the output. `listen()` requires that your asynchronous functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
+`listen()` takes up to three arguments: the type of flow control you'd like to use (optional), an object containing one or more methods you want to call, and a callback to process the output (optional). `listen()` requires that your asynchronous functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
 
 
 #### Parallel function calls
