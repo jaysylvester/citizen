@@ -97,6 +97,10 @@ The following represents citizen's default configuration, which is extended by y
           "secureCookies":    true
         },
         "connectionQueue":    undefined,
+        "layout": {
+          "controller":       "",
+          "view":             ""
+        },
         "format": {
           "html": {
             "pretty":         true
@@ -298,6 +302,43 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       Determines how long the server will wait for a response from your controllers before timing out, in milliseconds.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.layout
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>controller</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: (empty)
+      </p>
+    </td>
+    <td>
+      If you use a global layout controller, you can specify the name of that controller here instead of using the handoff directive in all your controllers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>view</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: (empty)
+      </p>
+    </td>
+    <td>
+      By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
     </td>
   </tr>
   <tr>
@@ -1857,6 +1898,18 @@ The layout controller handles the includes, follows your custom directive, and r
     }
 
 
+As mentioned in the config section at the beginning of this document, you can specify a default layout controller in your config so you don't have to specify it in every controller:
+
+    {
+      "citizen": {
+        "layout": {
+          "controller": "+_layout",
+          "view":       "+_layout"
+        }
+      }
+    }
+
+
 You can use `handoff` to chain requests across as many controllers as you want, with each controller's directives added to the request context. All controllers in the chain are stored in the `route` object as an array called `route.chain`:
 
     [
@@ -2621,7 +2674,7 @@ Clear a cache object using a key or a scope.
 
 The article example we've been using has only simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
-`listen()` takes up to three arguments: the type of flow control you'd like to use (optional), an object containing one or more methods you want to call, and a callback to process the output. `listen()` requires that your asynchronous functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
+`listen()` takes up to three arguments: the type of flow control you'd like to use (optional), an object containing one or more methods you want to call, and a callback to process the output (optional). `listen()` requires that your asynchronous functions be written to accept an `emitter` argument, which is how your function notifies `listen()` that it's ready.
 
 
 #### Parallel function calls

@@ -5,9 +5,11 @@
     * app.retrieve() -> app.cache.get()
     * app.exists()   -> app.cache.exists()
     * app.clear()    -> app.cache.clear()
+  * Added layout pattern setting to the config, which allows you to specify a default controller/view pairing as a layout controller and skip the handoff directive in the requested controller
   * All config options can now be overwritten at app startup. This breaks the few http- and https-specific overwrite options that were available previously.
   * By default, app.start() starts an HTTP server. To start an HTTPS server, you must enable it manually inline or via a config file and provide key/cert/pfx files. You can disable HTTP entirely via config as well. Consult the readme for details.
-  * HTTPS key/cert/pfx files should now be passed as a string representing the path to the file, not the contents of the files themselves. citizen reads these files itself now (synchronously).
+  * HTTPS key/cert/pfx files should now be passed as a string representing the path to the file, not the contents of the files themselves. citizen reads these files itself now.
+  * listen() now accepts a single argument consisting of an object containing functions (flow and callback are optional)
   * Added ability to end a specific user session based on a session property key/value pair using app.session.end('key', 'value')
   * All citizen-scoped cookie and session variables (starting with "ctzn") have been changed to "ctzn_camelCase" format (ctznReferer is now ctzn_referer).
 
