@@ -11,6 +11,7 @@
   * HTTPS key/cert/pfx files should now be passed as a string representing the path to the file, not the contents of the files themselves. citizen reads these files itself now.
   * listen() now accepts a single argument consisting of an object containing functions (flow and callback are optional)
   * Added ability to end a specific user session based on a session property key/value pair using app.session.end('key', 'value')
+  * Specifying { view: false } in a controller's emitter during a handoff skips rendering of that controller's default view
   * All citizen-scoped cookie and session variables (starting with "ctzn") have been changed to "ctzn_camelCase" format (ctznReferer is now ctzn_referer).
 
 [0.6.9]

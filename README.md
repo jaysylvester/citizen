@@ -1941,6 +1941,18 @@ You can loop over this object to render all the chained views:
 
 It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
 
+You can skip rendering a controller's view in the handoff chain by setting view to false:
+
+    // article controller
+    
+    emitter.emit('ready', {
+      // Don't render the article controller's view as part of the chain
+      view: false,
+      handoff: {
+        controller: 'next-controller'
+      }
+    });
+
 
 ## Performance
 
