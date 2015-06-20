@@ -853,10 +853,10 @@ When starting an HTTPS server, in addition to the `hostname` and `port` options,
   </tr>
   <tr>
     <td>
-      <code>app.cache()</code><br />
-      <code>app.exists()</code><br />
-      <code>app.retrieve()</code><br />
-      <code>app.clear()</code><br />
+      <code>app.cache.set()</code><br />
+      <code>app.cache.exists()</code><br />
+      <code>app.cache.get()</code><br />
+      <code>app.cache.clear()</code><br />
       <code>app.listen()</code><br />
       <code>app.copy()</code><br />
       <code>app.extend()</code><br />
@@ -2239,7 +2239,7 @@ By caching static assets in memory, you speed up file serving considerably. To e
       }
     }
 
-Any static files citizen serves will be cached, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [app.clear()](#clear-options) or restart the app.
+Any static files citizen serves will be cached, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [app.cache.clear()](#clear-options) or restart the app.
 
 
 ### Client-Side Caching
@@ -2466,7 +2466,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
 
     // Cache a string in the default app scope for the life of the application. Keys
     // must be unique within a given scope.
-    app.cache({
+    app.cache.set({
       key: 'welcome message',
       value: 'Welcome to my site.'
     });
@@ -2474,7 +2474,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
     // Cache a string for the life of the application, and overwrite the
     // existing key. The overwrite property is required any time you want to
     // write to an existing key. This prevents accidental overwrites.
-    app.cache({
+    app.cache.set({
       key: 'welcome message',
       value: 'Welcome to our site.',
       overwrite: true
@@ -2483,7 +2483,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
     // Cache a string under a custom scope, which is used for retrieving or clearing
     // multiple cache items at once. Keys must be unique within a given scope.
     // Reserved scope names are "app", "controllers", and "routes".
-    app.cache({
+    app.cache.set({
       key: 'welcome message',
       scope: 'site messages',
       value: 'Welcome to our site.'
@@ -2493,7 +2493,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
     // fs.readFile and fs.readFileSync paired with citizen's cache function.
     // Optionally, tell citizen to perform a synchronous file read operation and
     // use an encoding different from the default (UTF-8).
-    app.cache({
+    app.cache.set({
       file: '/path/to/articles.txt',
       synchronous: true,
       encoding: 'CP-1252'
@@ -2503,7 +2503,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
     // parsed object in the cache instead of the raw buffer. Expire the cache
     // after 60000 ms (60 seconds), but reset the timer whenever the key is
     // retrieved.
-    app.cache({
+    app.cache.set({
       file: '/path/to/articles.json',
       key: 'articles',
       parseJSON: true,
@@ -2519,39 +2519,39 @@ You can store any object in citizen's cache. The primary benefits of using cache
 This is a way to check for the existence of a given key or scope in the cache without resetting the cache timer on that item. Returns `false` if a match isn't found.
 
     // Check for the existence of the specified key
-    var keyExists = app.exists({ key: 'welcome message' })          // keyExists is true
-    var keyExists = app.exists({ file: '/path/to/articles.txt' })   // keyExists is true
-    var keyExists = app.exists({ file: 'articles' })                // keyExists is true
-    var keyExists = app.exists({ key: 'foo' })                      // keyExists is false
+    var keyExists = app.cache.exists({ key: 'welcome message' })          // keyExists is true
+    var keyExists = app.cache.exists({ file: '/path/to/articles.txt' })   // keyExists is true
+    var keyExists = app.cache.exists({ file: 'articles' })                // keyExists is true
+    var keyExists = app.cache.exists({ key: 'foo' })                      // keyExists is false
 
     // Check the specified scope for the specified key
-    var keyExists = app.exists({
+    var keyExists = app.cache.exists({
       scope: 'site messages',
       key: 'welcome message'
     });
     // keyExists is true
 
     // Check if the specified scope exists and contains items
-    var scopeExists = app.exists({
+    var scopeExists = app.cache.exists({
       scope: 'site messages'
     });
     // scopeExists is true
 
     // Check if the controller cache has any instances of the specified controller
-    var controllerExists = app.exists({
+    var controllerExists = app.cache.exists({
       controller: 'article'
     });
 
     // Check if the controller cache has any instances of the specified controller
     // and action
-    var controllerExists = app.exists({
+    var controllerExists = app.cache.exists({
       controller: 'article',
       action: 'edit'
     });
 
     // Check if the controller cache has any instances of the specified controller,
     // action, and view
-    var controllerExists = app.exists({
+    var controllerExists = app.cache.exists({
       controller: 'article',
       action: 'edit',
       view: 'edit'
@@ -2559,7 +2559,7 @@ This is a way to check for the existence of a given key or scope in the cache wi
 
     // Check if the controller cache has an instance of the specified controller,
     // action, and view for a given route
-    var controllerExists = app.exists({
+    var controllerExists = app.cache.exists({
       controller: 'article',
       action: 'edit',
       view: 'edit',
@@ -2574,30 +2574,30 @@ Retrieve an individual key or an entire scope. Returns `false` if the requested 
 Optionally, you can override the `resetOnAccess` attribute when retrieving a cache item by specifying it inline.
 
     // Retrieve the specified key from the default (app) scope
-    var welcomeMessage = app.retrieve({
+    var welcomeMessage = app.cache.get({
       key: 'welcome message'
     });
 
     // Retrieve the specified key from the specified scope and reset its cache timer
     // even if resetOnAccess was initially set to false when it was stored
-    var welcomeMessage = app.retrieve({
+    var welcomeMessage = app.cache.get({
       scope: 'site messages',
       key: 'welcome message',
       resetOnAccess: true
     });
 
     // Retrieve all keys from the specified scope
-    var siteMessages = app.retrieve({
+    var siteMessages = app.cache.get({
       scope: 'site messages'
     });
 
     // Retrieve a cached file
-    var articles = app.retrieve({
+    var articles = app.cache.get({
       file: '/path/to/articles.txt'
     });
 
     // Retrieve a cached file with its custom key
-    var articles = app.retrieve({
+    var articles = app.cache.get({
       file: 'articles'
     });
 
@@ -2608,61 +2608,61 @@ Clear a cache object using a key or a scope.
 
     // Store some cache items
 
-    app.cache({
+    app.cache.set({
       key: 'welcome message',
       scope: 'site messages',
       value: 'Welcome to our site.'
     });
 
-    app.cache({
+    app.cache.set({
       key: 'goodbye message',
       scope: 'site messages',
       value: 'Thanks for visiting!'
     });
 
-    app.cache({
+    app.cache.set({
       file: '/path/to/articles.txt',
       synchronous: true
     });
 
     // Clear the welcome message from its custom scope cache
-    app.clear({ scope: 'site messages', key: 'welcome message' });
+    app.cache.clear({ scope: 'site messages', key: 'welcome message' });
 
     // Clear all messages from the cache using their custom scope
-    app.clear({ scope: 'site messages' });
+    app.cache.clear({ scope: 'site messages' });
 
     // Clear the articles cache from the file scope
-    app.clear({ file: '/path/to/articles.txt' });
+    app.cache.clear({ file: '/path/to/articles.txt' });
 
 
 `clear()` can also be used to remove cached routes and controllers from their respective caches.
 
     // Clear the specified route from the cache
-    app.clear({
+    app.cache.clear({
       route: '/article/My-Article/page/2/action/edit'
     });
 
     // Clear the specified controller from the cache, including all actions and views
-    app.clear({
+    app.cache.clear({
       controller: 'article'
     });
 
     // Clear the specified controller/action pairing from the cache. All cached views
     // related to this pairing will be deleted.
-    app.clear({
+    app.cache.clear({
       controller: 'article',
       action: 'edit'
     });
 
     // Clear the specified controller/action/view combination from the cache
-    app.clear({
+    app.cache.clear({
       controller: 'article',
       action: 'edit',
       view: 'edit'
     });
 
     // Clear the specified controller/action/view/route combination from the cache
-    app.clear({
+    app.cache.clear({
       controller: 'article',
       action: 'edit',
       view: 'edit',
@@ -2670,16 +2670,16 @@ Clear a cache object using a key or a scope.
     });
 
     // Clear the entire controller scope
-    app.clear({ scope: 'controllers' });
+    app.cache.clear({ scope: 'controllers' });
 
     // Clear the entire route scope
-    app.clear({ scope: 'routes' });
+    app.cache.clear({ scope: 'routes' });
 
     // Clear the entire file scope
-    app.clear({ scope: 'files' });
+    app.cache.clear({ scope: 'files' });
 
     // Clear the entire app scope
-    app.clear({ scope: 'app' });
+    app.cache.clear({ scope: 'app' });
 
 
 ### listen()
