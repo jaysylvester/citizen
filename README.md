@@ -120,6 +120,7 @@ The following represents citizen's default configuration, which is extended by y
           "mimeTypes":        "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
         },
         "cache": {
+          "enable":           true,
           "static":           false,
           "control":          {},
           "invalidUrlParams": "warn"
@@ -494,6 +495,22 @@ Here's a complete rundown of citizen's settings and what they mean:
   <tr>
     <td colspan="3">
       citizen.cache
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods. Set this to <code>false</code> to disable the cache when in production mode, which is useful for debugging when not in debug mode.
     </td>
   </tr>
   <tr>
