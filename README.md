@@ -120,7 +120,7 @@ The following represents citizen's default configuration, which is extended by y
           "mimeTypes":        "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
         },
         "cache": {
-          "enable":           true,
+          "application":      true,
           "static":           false,
           "control":          {},
           "invalidUrlParams": "warn"
@@ -134,7 +134,15 @@ The following represents citizen's default configuration, which is extended by y
           "toConsole":        false,
           "toFile":           false,
           "path":             "/absolute/path/to/app/logs",
-          "defaultFile":      "citizen.txt"
+          "defaultFile":      "citizen.txt",
+          "application": {
+            "status":         true,
+            "errors":         true
+          },
+          "static": {
+            "status":         true,
+            "errors":         true
+          }
         },
         "debug": {
           "output":           "console",
@@ -631,6 +639,70 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
+    <td>
+      <code>application.status</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      If logging is enabled, all application events considered status updates are logged. To disable status logging, set this to <code>false</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>application.errors</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      If logging is enabled, all application events flagged as errors are logged. To disable error logging, set this to <code>false</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>static.status</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      If logging is enabled, all events related to serving static assets considered status updates are logged. To disable status logging, set this to <code>false</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>static.errors</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      If logging is enabled, all events related to serving static assets flagged as errors are logged. To disable error logging, set this to <code>false</code>.
+    </td>
+  </tr>
+  <tr>
     <td colspan="3">
       citizen.debug
     </td>
@@ -1063,7 +1135,7 @@ Note that "numeric" URL parameters are stored as strings in the `url` scope; thi
 
     http://www.cleverna.me/user/activationCode/023498721250
 
-Your app would likely expect the leading zero to remain intact in this case, but this value is technically numeric in JavaScript, and if stored as a number would see the zero dropped. Large integers beyond what JavaScript can accurately represent also present issues. Use the provided convenience functions (isNumeric, isInteger, and isFloat) to assist in dealing with numbers.
+Your app would likely expect the leading zero to remain intact in this case, but this value is technically numeric in JavaScript, and if stored as a number would see the zero dropped. Large integers beyond what JavaScript can accurately represent also present issues.
 
 The controller name becomes a property in the URL scope that contains the descriptor, which makes it well-suited for use as a unique identifier. This content is also available in the `route` object as `route.descriptor`.
 
@@ -3011,6 +3083,9 @@ Makes it easy to log comments to either the console or a file (or both) in a way
 When citizen is in production or development mode, log() does nothing by default. In debug mode, log() will log whatever you pass to it. This means you can place it throughout your application's code and it will only write to the log in debug mode. You can override this behavior globally with the `toConsole` and `toFile` settings in your config file or inline with the `toConsole` or `toFile` options when calling log().
 
     app.log({
+      // Optional. Valid settings are "status" (default) or "error".
+      type: 'error',
+
       // Optional string. Applies a label to your log item.
       label: 'Log output',
 
