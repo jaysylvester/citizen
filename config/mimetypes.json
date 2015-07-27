@@ -112,6 +112,8 @@
   "msm":           "application/octet-stream",
   "safariextz":    "application/octet-stream",
   "css":           "text/css",
+  "scss":          "text/css",
+  "less":          "text/css",
   "html":          "text/html",
   "htm":           "text/html",
   "shtml":         "text/html",
