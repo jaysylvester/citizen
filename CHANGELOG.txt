@@ -5,8 +5,11 @@
     * app.retrieve() -> app.cache.get()
     * app.exists()   -> app.cache.exists()
     * app.clear()    -> app.cache.clear()
-  * Added layout pattern setting to the config, which allows you to specify a default controller/view pairing as a layout controller and skip the handoff directive in the requested controller
+  * Cache lifespan should now be specified in minutes instead of milliseconds -> app.cache.set({ key: 'myKey', lifespan: 15 })
+  * Config settings for sessionTimeout and requestTimeout should now be specified in minutes instead of milliseconds -> sessionTimeout: 20
+  * Cookie expiration should now be specified in minutes instead of milliseconds
   * Added global cache setting to enable/disable cache in any mode
+  * Added layout pattern setting to the config, which allows you to specify a default controller/view pairing as a layout controller and skip the handoff directive in the requested controller
   * Added individual settings for application and static asset error and status logging. For example, you can now log application error messages in production mode without also logging static errors (404) or the typically verbose framework status messages.
   * All config options can now be overwritten at app startup. This breaks the few http- and https-specific overwrite options that were available previously.
   * By default, app.start() starts an HTTP server. To start an HTTPS server, you must enable it manually inline or via a config file and provide key/cert/pfx files. You can disable HTTP entirely via config as well. Consult the readme for details.
@@ -15,6 +18,7 @@
   * Added ability to end a specific user session based on a session property key/value pair using app.session.end('key', 'value')
   * Specifying { view: false } in a controller's emitter during a handoff skips rendering of that controller's default view
   * All citizen-scoped cookie and session variables (starting with "ctzn") have been changed to "ctzn_camelCase" format (ctznReferer is now ctzn_referer).
+  * isInteger() and isFloat() have been removed from helpers. There are libraries better suited for this.
 
 [0.6.9]
   * Added listen() skip and end events to the readme.

@@ -126,8 +126,8 @@ The following represents citizen's default configuration, which is extended by y
           "invalidUrlParams": "warn"
         },
         "sessions":           false,
-        "sessionTimeout":     1200000,
-        "requestTimeout":     30000,
+        "sessionTimeout":     20,
+        "requestTimeout":     0.5,
         "prettyHTML":         true,
         "prettyJSON":         2,
         "log": {
@@ -290,11 +290,11 @@ Here's a complete rundown of citizen's settings and what they mean:
         Positive integer
       </p>
       <p>
-        Default: <code>1200000</code>
+        Default: <code>20</code>
       </p>
     </td>
     <td>
-      If sessions are enabled, this number represents the length of a user's session in milliseconds. Sessions automatically expire once this time limit is reached.
+      If sessions are enabled, this number represents the length of a user's session in minutes. Sessions automatically expire once this time limit is reached.
     </td>
   </tr>
   <tr>
@@ -306,11 +306,11 @@ Here's a complete rundown of citizen's settings and what they mean:
         Positive integer
       </p>
       <p>
-        Default: <code>30000</code>
+        Default: <code>0.5</code> (30 seconds)
       </p>
     </td>
     <td>
-      Determines how long the server will wait for a response from your controllers before timing out, in milliseconds.
+      Determines how long the server will wait for a response from your controllers before timing out, in minutes.
     </td>
   </tr>
   <tr>
@@ -1527,7 +1527,7 @@ Here's an example of a complete cookie object's default values:
       // 'now' - deletes an existing cookie
       // 'never' - current time plus 30 years, so effectively never
       // 'session' - expires at the end of the browser session (default)
-      // [time in milliseconds] - added to current time for a specific expiration date
+      // [time in minutes] - expires this many minutes from now
       expires: 'session',
 
       // By default, a cookie's path is the same as the app path in your config
@@ -1543,7 +1543,7 @@ Here's an example of a complete cookie object's default values:
       secure: false
     }
 
-The following sample login controller tells the server to set `username` and `passwordHash` cookies that never expire:
+The following sample login controller tells the server to set `username` and `passwordHash` cookies that expire in 20 minutes:
 
     // login controller
 
@@ -1566,11 +1566,11 @@ The following sample login controller tells the server to set `username` and `pa
           // The cookie gets its name from the property name
           username: {
             value: authenticate.username,
-            expires: 'never'
+            expires: 20
           },
           passwordHash: {
             value: authenticate.passwordHash,
-            expires: 'never'
+            expires: 20
           }
         };
       }
@@ -1622,7 +1622,7 @@ Setting session variables is pretty much the same as setting cookie variables:
       }
     });
 
-Sessions expire based on the `sessionTimeout` config property, which represents the length of a session in milliseconds. The default is 1200000 (20 minutes). The `timer` is reset with each request from the user. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client. Remember that the browser's session is separate from the server's session, so any cookies you've set with an expiration of `session` are untouched if the user's session expires on the server. You need to clear those cookies manually at the start of the next server session if you don't want them hanging around.
+Sessions expire based on the `sessionTimeout` config property, which represents the length of a session in minutes. The default is 20 minutes. The `timer` is reset with each request from the user. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client. Remember that the browser's session is separate from the server's session, so any cookies you've set with an expiration of `session` are untouched if the user's session expires on the server. You need to clear those cookies manually at the start of the next server session if you don't want them hanging around.
 
 To forcibly clear and expire the current user's session:
 
@@ -2121,9 +2121,9 @@ The example above is shorthand for default cache settings. The `cache.route` dir
           // caching of malformed URLs.
           urlParams: ['article', 'page'],
 
-          // Optional. Life of cached item in milliseconds. Default is the life of
-          // the application (no expiration).
-          lifespan: 600000,
+          // Optional. Life of cached item in minutes. Default is the life of the
+          // application (no expiration).
+          lifespan: 15,
 
           // Optional. Reset the cached item's expiration timer whenever the item is
           // accessed, keeping it in the cache until traffic subsides.
@@ -2161,7 +2161,7 @@ If a given route chain will vary across requests, you can still cache individual
 
           // These options function the same as in route caching (see above)
           urlParams: ['article', 'page'],
-          lifespan: 600000,
+          lifespan: 15,
           resetOnAccess: true
         }
     });
@@ -2279,14 +2279,14 @@ If you want directives to persist within the cache, include them in the `directi
 
 ##### `lifespan`
 
-This setting determines how long the route or controller should remain in the cache, in milliseconds.
+This setting determines how long the route or controller should remain in the cache, in minutes.
 
     emitter.emit('ready', {
       cache: {
         route: {
 
           // This route cache will expire in 10 minutes
-          lifespan: 600000
+          lifespan: 10
         }
     });
 
@@ -2300,8 +2300,8 @@ Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the ro
         route: {
 
           // This route cache will expire in 10 minutes, but if a request accesses it
-          // before then, the cache timer will be reset to 10 minutes again
-          lifespan: 600000,
+          // before then, the cache timer will be reset to 10 minutes from now
+          lifespan: 10,
           resetOnAccess: true
         }
     });
@@ -2313,7 +2313,7 @@ As mentioned previously, if you use the handoff directive to call a series of co
 
 When caching an include controller, the view directive doesn't work. Set the view within the include directive of the calling controller.
 
-citizen's cache is a RAM cache stored in the heap, so be careful with your caching strategy. You could find yourself out of memory. Use the lifespan option so URLs that aren't receiving a ton of traffic naturally fall out of the cache and free up resources for frequently accessed pages.
+citizen's cache is a RAM cache stored in the heap, so be careful with your caching strategy. Use the lifespan option so URLs that aren't receiving regular traffic naturally fall out of the cache and free up resources for frequently accessed pages.
 
 
 ### Caching Static Assets
@@ -2328,7 +2328,7 @@ By caching static assets in memory, you speed up file serving considerably. To e
       }
     }
 
-Any static files citizen serves will be cached, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [app.cache.clear()](#clear-options) or restart the app.
+Any static files citizen serves will be cached, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
 
 
 ### Client-Side Caching
@@ -2549,7 +2549,7 @@ For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) a
 citizen has helper functions that it uses internally, but might be of use to you, so it returns them for public use.
 
 
-### cache(options)
+### cache.set(options)
 
 You can store any object in citizen's cache. The primary benefits of using cache() over storing content in your own global app variables are built-in timeout functionality and wrappers for reading, parsing, and storing file content.
 
@@ -2571,7 +2571,7 @@ You can store any object in citizen's cache. The primary benefits of using cache
 
     // Cache a string under a custom scope, which is used for retrieving or clearing
     // multiple cache items at once. Keys must be unique within a given scope.
-    // Reserved scope names are "app", "controllers", and "routes".
+    // Reserved scope names are "app", "controllers", "routes", and "files".
     app.cache.set({
       key: 'welcome message',
       scope: 'site messages',
@@ -2590,20 +2590,19 @@ You can store any object in citizen's cache. The primary benefits of using cache
 
     // Cache a file with a custom key. Optionally, parse the JSON and store the
     // parsed object in the cache instead of the raw buffer. Expire the cache
-    // after 60000 ms (60 seconds), but reset the timer whenever the key is
-    // retrieved.
+    // after 10 minutes, but reset the timer whenever the key is retrieved.
     app.cache.set({
       file: '/path/to/articles.json',
       key: 'articles',
       parseJSON: true,
-      lifespan: 60000,
+      lifespan: 10,
       resetOnAccess: true
     });
 
-`controllers`, `routes`, and `app` are reserved scope names, so don't use them for your own custom scopes.
+`app`, `controllers`, `routes`, and `files` are reserved scope names, so you can't use them for your own custom scopes.
 
 
-### exists(options)
+### cache.exists(options)
 
 This is a way to check for the existence of a given key or scope in the cache without resetting the cache timer on that item. Returns `false` if a match isn't found.
 
@@ -2656,7 +2655,7 @@ This is a way to check for the existence of a given key or scope in the cache wi
     });
 
 
-### retrieve(options)
+### cache.get(options)
 
 Retrieve an individual key or an entire scope. Returns `false` if the requested item doesn't exist. If `resetOnAccess` was true when the item was cached, using retrieve() will reset the cache clock and extend the life of the cached item. If a scope is retrieved, all items in that scope will have their cache timers reset.
 
@@ -2691,7 +2690,7 @@ Optionally, you can override the `resetOnAccess` attribute when retrieving a cac
     });
 
 
-### clear(options)
+### cache.clear(options)
 
 Clear a cache object using a key or a scope.
 
