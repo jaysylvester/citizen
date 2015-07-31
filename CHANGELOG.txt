@@ -5,6 +5,7 @@
     * app.retrieve() -> app.cache.get()
     * app.exists()   -> app.cache.exists()
     * app.clear()    -> app.cache.clear()
+  * Fixe a bug in cache.get() that returned the parent of the specified scope rather than the scope itself when requesting an entire scope. This will break existing calls to cache.get({ scope: 'myScopeName' })
   * Cache lifespan should now be specified in minutes instead of milliseconds -> app.cache.set({ key: 'myKey', lifespan: 15 })
   * Config settings for sessionTimeout and requestTimeout should now be specified in minutes instead of milliseconds -> sessionTimeout: 20
   * Cookie expiration should now be specified in minutes instead of milliseconds
