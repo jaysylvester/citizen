@@ -1,5 +1,4 @@
 [0.7.0]
-  * [Aspirational] Added cluster support. Sessions are not shared across cluster workers, so if your app relies upon session variables, you shouldn't enable a cluster. Config settings are cluster.enable (false by default) and cluster.cap (number of cores by default).
   * Cache methods have been renamed and moved to their own namespace (app.cache). The old calls and their new equivalents are:
     * app.cache()    -> app.cache.set()
     * app.retrieve() -> app.cache.get()
