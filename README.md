@@ -15,7 +15,7 @@ citizen is an event-driven MVC and caching framework for Node.js web application
 - Support for Jade and Handlebars templates with more on the way
 
 
-__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading.
+__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Version 0.7.0 has many breaking changes.
 
 Have questions, suggestions, or need help? [Send me an e-mail](http://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
 
@@ -34,7 +34,7 @@ If everything went well, you'll see confirmation in the console that citizen is 
 
 For configuration options, see [Configuration](#configuration). For more utilities, see [Utilities](#utilities).
 
-__Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it, which breaks all these nice links I've created for you.__
+Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it, which breaks all these nice links I've created for you.
 
 
 ### App Directory Structure
@@ -113,6 +113,10 @@ The following represents citizen's default configuration, which is extended by y
             "urlDelimiter":   "-",
             "pretty":         2
           }
+        },
+        "forms": {
+          "global": {},
+          "controller": {}
         },
         "gzip": {
           "enable":           false,
@@ -395,6 +399,53 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       JSON output is pretty by default. This setting controls how many spaces to use for indentations. Set it to <code>false</code> to remove whitespace from JSON output.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.forms
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.forms.global
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>{ options }</code>
+    </td>
+    <td>
+      <p>
+        Object
+      </p>
+      <p>
+        Default: Same as formidable
+      </p>
+    </td>
+    <td>
+      citizen uses <a href="https://www.npmjs.com/package/formidable">formidable</a> to parse form data. The defaults match that of formidable. Provide settings in <code>citizen.forms.global</code> to set global settings for all your forms. See <a href="#forms">Forms</a> for details.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.forms.controller
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>{ "controllerName": { "controllerAction": { { options } } }</code>
+    </td>
+    <td>
+      <p>
+        Object
+      </p>
+      <p>
+        Default: <code>citizen.forms.global</code>
+      </p>
+    </td>
+    <td>
+      Use this setting to set different options for formidable for a specific controller action, overriding the global settings. See <a href="#forms">Forms</a> for details.
     </td>
   </tr>
   <tr>
@@ -2413,19 +2464,29 @@ If it's a multipart form containing a file, the form object passed to your contr
       }
     }
 
-The `path` key tells you where the file was uploaded. File uploads are saved to your operating system's tmp directory by default, where you can read their contents and then move or manipulate them. To change the default upload directory, use the `uploadDir` setting under the `forms` node in your config file:
+See the [formidable documentation](https://www.npmjs.com/package/formidable) for available form settings. You can pass form settings via `citizen.forms` in the config. Set global form settings via `citizen.forms.global` and options for individual controller form actions via `citizen.forms.global.controller`.
+
+The following config sets the upload directory for all forms to the path specified. It also sets the `maxFieldsSize` setting for the editForm() action in the article controller to 5MB:
 
     {
       "citizen": {
         "forms": {
-          "uploadDir":  '/absolute/path/to/upload/directory'
+          "global": {
+            "uploadDir":  '/absolute/path/to/upload/directory'
+          },
+          "controller": {
+            "article": {
+              "editForm": {
+                "maxFieldsSize": 5
+              }
+            }
+          }
         }
       }
     }
 
-Make sure the user account running your Node process has write permissions for this directory.
+Unlike formidable, the `maxFieldsSize` option includes images in a multipart form in its calculations. citizen includes this enhancement because formidable provides no built-in way of limiting file upload sizes.
 
-See the [formidable documentation](https://www.npmjs.com/package/formidable) for other form settings.
 
 
 ### AJAX form submissions

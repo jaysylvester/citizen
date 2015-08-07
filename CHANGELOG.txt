@@ -11,6 +11,7 @@
   * Cookie expiration should now be specified in minutes instead of milliseconds
   * Added global cache setting to enable/disable cache in any mode
   * Added layout pattern setting to the config, which allows you to specify a default controller/view pairing as a layout controller and skip the handoff directive in the requested controller
+  * Added per-controller form settings in the config, which breaks the previous form config method.
   * Added individual settings for application and static asset error and status logging. For example, you can now log application error messages in production mode without also logging static errors (404) or the typically verbose framework status messages.
   * All config options can now be overwritten at app startup. This breaks the few http- and https-specific overwrite options that were available previously.
   * By default, app.start() starts an HTTP server. To start an HTTPS server, you must enable it manually inline or via a config file and provide key/cert/pfx files. You can disable HTTP entirely via config as well. Consult the readme for details.
