@@ -1,3 +1,6 @@
+[0.7.1]
+  * Fixed a bug in the cache module that caused an error when attempting to clear the file cache
+
 [0.7.0]
   * Cache methods have been renamed and moved to their own namespace (app.cache). The old calls and their new equivalents are:
     * app.cache()    -> app.cache.set()
