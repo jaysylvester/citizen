@@ -2381,6 +2381,10 @@ By caching static assets in memory, you speed up file serving considerably. To e
 
 Any static files citizen serves will be cached, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
 
+To clear a file from the cache in a running app:
+
+    app.cache.clear({ file: '/absolute/path/to/file.jpg' });
+
 
 ### Client-Side Caching
 
