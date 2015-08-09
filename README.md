@@ -71,27 +71,40 @@ Please see Github for [the complete readme](https://github.com/jaysylvester/citi
 
 
 
+### Initializing citizen and starting the web server
+
+The start.js file in your app directory can be as simple as this:
+
+    // start.js
+
+    global.app = require('citizen');
+
+    app.start();
+
+
+Run start.js from the command line:
+
+    $ node start.js
+
+
+
 ### Configuration
 
-citizen prefers convention over configuration, but some things are best handled by a config file.
+citizen prefers convention over configuration, but sometimes configuration is a necessity. citizen has a default configuration and accepts your configuration as an extension of its own, based on a config file and/or passed inline via `app.start()`.
 
-The `config` directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
-
-1. citizen parses each JSON file looking for a `hostname` key that matches the machine's hostname. If it finds one, it loads that configuration.
-2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
-3. If it can't find citizen.json or you don't have a `config` directory, it runs under its default configuration.
-
-The following represents citizen's default configuration, which is extended by your configuration file:
+The following represents citizen's default configuration, which is extended by your configuration:
 
     {
       "hostname":             "",
       "citizen": {
         "mode":               "production",
         "http": {
+          "enable":          true,
           "hostname":         "127.0.0.1",
           "port":             80
         },
         "https": {
+          "enable":          false,
           "hostname":         "127.0.0.1",
           "port":             443,
           "secureCookies":    true
@@ -132,8 +145,6 @@ The following represents citizen's default configuration, which is extended by y
         "sessions":           false,
         "sessionTimeout":     20,
         "requestTimeout":     0.5,
-        "prettyHTML":         true,
-        "prettyJSON":         2,
         "log": {
           "toConsole":        false,
           "toFile":           false,
@@ -168,31 +179,6 @@ The following represents citizen's default configuration, which is extended by y
         }
       }
     }
-
-These settings are exposed publicly via `app.config.hostname` and `app.config.citizen`.
-
-**Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
-
-Let's say you want to run an app on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
-
-    {
-      "hostname":             "My-MacBook-Pro.local",
-      "citizen": {
-        "mode":               "development",
-        "http": {
-          "port":             8080
-        }
-      },
-      "db": {
-        "server":             "localhost",
-        "username":           "dbuser",
-        "password":           "dbpassword"
-      }
-    }
-
-This config would extend the default configuration only when running on your local machine; you'll never accidentally push a test config to production again ;)
-
-The database settings would be accessible within your app via `app.config.db`. **The citizen and hostname nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
 
 Here's a complete rundown of citizen's settings and what they mean:
 
@@ -855,6 +841,22 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      This setting controls the HTTP server, which is enabled by default.
+    </td>
+  </tr>
+  <tr>
+    <td>
       <code>hostname</code>
     </td>
     <td>
@@ -888,6 +890,22 @@ Here's a complete rundown of citizen's settings and what they mean:
   <tr>
     <td colspan="3">
       citizen.https
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      This setting controls the HTTPS server, which is disabled by default.
     </td>
   </tr>
   <tr>
@@ -941,48 +959,97 @@ Here's a complete rundown of citizen's settings and what they mean:
 </table>
 
 
+These settings are exposed publicly via `app.config.hostname` and `app.config.citizen`.
 
-### Initializing citizen and starting the web server
+**Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
 
-The start.js file in your app directory can be as simple as this:
 
-    // start.js
+#### Config files
 
-    global.app = require('citizen');
+The config directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
-    app.start();
+1. citizen parses each JSON file looking for a `hostname` key that matches the machine's hostname. If it finds one, it loads that configuration.
+2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
+3. If it can't find citizen.json or you don't have a config directory, it runs under its default configuration.
 
-Run start.js from the command line:
+Let's say you want to run an app on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
 
-    $ node start.js
+    {
+      "hostname":             "My-MacBook-Pro.local",
+      "citizen": {
+        "mode":               "development",
+        "http": {
+          "port":             8080
+        }
+      },
+      "db": {
+        "server":             "localhost",
+        "username":           "dbuser",
+        "password":           "dbpassword"
+      }
+    }
 
-Other ways to use `app.start()`:
+This config would extend the default configuration only when running on your local machine; you'll never accidentally push a test config to production again ;)
 
-    // Start an HTTP server with inline hostname and port, overriding the config
+The database settings would be accessible within your app via `app.config.db`. **The citizen and hostname nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
+
+
+#### Inline config
+
+You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
+
+    // Start an HTTP server on port 8080 accepting requests at a specific host
     app.start({
-      hostname: 'www.mysite.com',
-      port: 8282
+      citizen: {
+        hostname: 'www.mysite.com',
+        port: 8080
+      }
     });
 
     // Start an HTTPS server with key and cert PEM files
     app.start({
-      key: fs.readFileSync('key.pem'),
-      cert: fs.readFileSync('cert.pem')
+      citizen: {
+        http: {
+          enable: false
+        },
+        https: {
+          enable: true,
+          key: '/absolute/path/to/key.pem',
+          cert: '/absolute/path/to/cert.pem'
+        }
+      }
     });
 
-    // Start an HTTPS server with a PFX file running on port 3000
+    // Start an HTTPS server with a PFX file running on port 3000,
+    // and add a custom namespace for your app's database config
     app.start({
-      port: 3000,
-      pfx: fs.readFileSync('mysite.pfx')
+      citizen: {
+        http: {
+          enable: false
+        },
+        https: {
+          enable: true,
+          port:   3000,
+          pfx:    '/absolute/path/to/site.pfx'
+        }
+      },
+      db: {
+        server:   "localhost",  // app.config.db.server
+        username: "dbuser",     // app.config.db.username
+        password: "dbpassword"  // app.config.db.password
+      }
     });
 
-If you pass `app.start()` either a key/cert pair or PFX file, it assumes you want HTTPS.
+#### HTTPS
 
-When starting an HTTPS server, in addition to the `hostname` and `port` options, `app.start()` takes the same options as [Node's https.createServer()](http://nodejs.org/api/https.html#https_https_createserver_options_requestlistener) (which takes the same options as [tls.createServer()](http://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener)).
+When starting an HTTPS server, in addition to the `hostname` and `port` options, citizen takes the same options as [Node's https.createServer()](http://nodejs.org/api/https.html#https_https_createserver_options_requestlistener) (which takes the same options as [tls.createServer()](http://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener)).
 
+The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
+
+
+### citizen methods and objects
 
 <table>
-  <caption>Objects created by citizen</caption>
   <tr>
     <td>
       <code>app.start()</code>
@@ -1003,7 +1070,6 @@ When starting an HTTPS server, in addition to the `hostname` and `port` options,
       <code>app.isNumeric()</code><br />
       <code>app.size()</code>
       <code>app.log()</code><br />
-      <code>app.dashes()</code><br />
     </td>
     <td>
       <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful
@@ -1011,10 +1077,12 @@ When starting an HTTPS server, in addition to the `hostname` and `port` options,
   </tr>
   <tr>
     <td>
+      <code>app.controllers</code>
       <code>app.models</code>
+      <code>app.views</code>
     </td>
     <td>
-      Contains models from your supplied patterns, which you can use instead of <code>require</code>. Controllers and views aren't exposed this way because you don't need to access them directly.
+      Contains your supplied patterns, which you can use instead of <code>require</code>.
     </td>
   </tr>
   <tr>

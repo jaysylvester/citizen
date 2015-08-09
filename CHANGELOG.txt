@@ -1,3 +1,9 @@
+[0.7.3]
+  * BREAKING CHANGES (These were intended for 0.7.0, but were lost in the merge and I missed it. Sorry for the breakage in a point release.):
+    * All config options can now be overwritten at app startup, including config settings in your own namespaces. This breaks the HTTP and HTTPS overwrite options that were available previously.
+    * By default, app.start() starts an HTTP server. To start an HTTPS server, you must enable it manually inline or via a config file and provide key/cert/pfx files. You can disable HTTP entirely via config as well. Consult the readme for details.
+    * HTTPS key/cert/pfx files should now be passed as a string representing the path to the file, not the contents of the files themselves. citizen reads these files itself now.
+
 [0.7.2]
   * Removed errant console.log() from the server module
 
@@ -22,7 +28,7 @@
   * Added ability to end a specific user session based on a session property key/value pair using app.session.end('key', 'value')
   * Specifying { view: false } in a controller's emitter during a handoff skips rendering of that controller's default view
   * All citizen-scoped cookie and session variables (starting with "ctzn") have been changed to "ctzn_camelCase" format (ctznReferer is now ctzn_referer).
-  * isInteger() and isFloat() have been removed from helpers. There are libraries better suited for this.
+  * dashes(), isInteger(), and isFloat() have been removed from helpers. There are libraries better suited for this.
 
 [0.6.9]
   * Added listen() skip and end events to the readme.
