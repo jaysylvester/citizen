@@ -137,8 +137,19 @@ The following represents citizen's default configuration, which is extended by y
           "mimeTypes":        "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
         },
         "cache": {
-          "application":      true,
-          "static":           false,
+          "application": {
+            "enable":         true,
+            "lifespan":       15,
+            "resetOnAccess":  true,
+            "overwrite":      false,
+            "encoding":       "utf-8",
+            "synchronous":    false
+          },
+          "static": {
+            "enable":         false,
+            "lifespan":       15,
+            "resetOnAccess":  true
+          },
           "control":          {},
           "invalidUrlParams": "warn"
         },
@@ -543,6 +554,11 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
+    <td colspan="3">
+      citizen.cache.application
+    </td>
+  </tr>
+  <tr>
     <td>
       <code>enable</code>
     </td>
@@ -560,7 +576,92 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td>
-      <code>static</code>
+      <code>lifespan</code>
+    </td>
+    <td>
+      <p>
+        Number (minutes)
+      </p>
+      <p>
+        Default: <code>15</code>
+      </p>
+    </td>
+    <td>
+      The length of time a cached application asset remains in memory, in minutes.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>resetOnAccess</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      Determines whether to reset the cache timer on a cached application asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>overwrite</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Determines whether a call to cache.set() will overwrite an existing cache key. By default, an error is thrown if the cache key already exists. You can either pass the overwrite flag as an option in cache.set() or set this to <code>true</code> to always overwrite.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>encoding</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>utf-8</code>
+      </p>
+    </td>
+    <td>
+      When you pass a file path to cache.set(), the encoding setting determines what encoding should be used when reading the file.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>synchronous</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      When you pass a file path to cache.set(), this setting determines whether the file should be read synchronously or asynchronously. By default, file reads are asynchronous.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.cache.static
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
     </td>
     <td>
       <p>
@@ -572,6 +673,38 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to <code>true</code>, which enables the static file cache.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>lifespan</code>
+    </td>
+    <td>
+      <p>
+        Number (minutes)
+      </p>
+      <p>
+        Default: <code>15</code>
+      </p>
+    </td>
+    <td>
+      The length of time a cached static asset remains in memory, in minutes.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>resetOnAccess</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      Determines whether to reset the cache timer on a cached static asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
     </td>
   </tr>
   <tr>

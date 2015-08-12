@@ -1,3 +1,7 @@
+[0.7.4]
+  * BREAKING CHANGE: Added default cache config options for both application and static asset caches, breaking previous config settings. The new defaults enable a reasonable cache lifespan (15 minutes), preventing issues like cached static assets from growing over time and taking up memory even if they're not being accessed regularly. Previously, enabling the static cache kept all static assets in memory for the life of the application. Consult the readme for details.
+  * Improved server error handling, making apps more resilient to fatal errors and avoiding app crashes
+
 [0.7.3]
   * BREAKING CHANGES (These were intended for 0.7.0, but were lost in the merge and I missed it. Sorry for the breakage in a point release.):
     * All config options can now be overwritten at app startup, including config settings in your own namespaces. This breaks the HTTP and HTTPS overwrite options that were available previously.
