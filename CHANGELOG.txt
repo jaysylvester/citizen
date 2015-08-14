@@ -1,3 +1,6 @@
+[0.7.5]
+  * Improved cache and session performance by getting rid of the creation of new timers with every request or cache hit and using a lastAccessed attribute for the existing timer to validate against (see https://github.com/jaysylvester/citizen/issues/31)
+
 [0.7.4]
   * BREAKING CHANGE: Added default cache config options for both application and static asset caches, breaking previous config settings. The new defaults enable a reasonable cache lifespan (15 minutes), preventing issues like cached static assets from growing over time and taking up memory even if they're not being accessed regularly. Previously, enabling the static cache kept all static assets in memory for the life of the application. Consult the readme for details.
   * Improved server error handling, making apps more resilient to fatal errors and avoiding app crashes
