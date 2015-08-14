@@ -1,3 +1,6 @@
+[0.7.6]
+  * Fixed a bug that always enabled the static cache (introduced in 0.7.4 with the new cache config defaults)
+
 [0.7.5]
   * Improved cache and session performance by getting rid of the creation of new timers with every request or cache hit and using a lastAccessed attribute for the existing timer to validate against (see https://github.com/jaysylvester/citizen/issues/31)
 
