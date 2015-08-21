@@ -1,3 +1,6 @@
+[0.7.7]
+  * The server now throws an error if the view specified in a controller handoff doesn't exist. Previously, it failed silently and rendered the final view without the handoff view contents.
+
 [0.7.6]
   * Fixed a bug that always enabled the static cache (introduced in 0.7.4 with the new cache config defaults)
 

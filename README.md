@@ -1718,6 +1718,13 @@ To remove whitespace from JSON or JSONP output, use the `pretty` config setting:
     }
 
 
+##### JSON security risks
+
+Having a simple URL flag to enable JSON output is very convenient, but it can present a security risk. The JSON output from any controller action is driven by the emitter's content object. Anything you place in the content object will be present in the JSON output — whether it's present in the HTML view or not.
+
+**Take care not to place sensitive data in the content object thinking it will never be exposed because you don't reference it in your view template, because it WILL show up in your JSON.**
+
+
 #### Rendering alternate views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your emitter](#alternate-views).
