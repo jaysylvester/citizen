@@ -2369,7 +2369,7 @@ The example above is shorthand for default cache settings. The `cache.route` dir
         route: {
           // Optional. Set the HTTP Cache-Control header for this route, caching it
           // on the client for the specified time in seconds.
-          control: 86400,
+          control: 'max-age=86400',
 
           // Optional. This setting lets the server respond with a 304 Not Modified
           // status if the cache content hasn't been updated since the client last
@@ -2603,16 +2603,34 @@ We already looked at setting Cache-Control for routes above. To do it for static
     {
       "citizen": {
         "cache": {
-          "static":                true,
+          "static":             true,
           "control": {
-            "/styles.css": "max-age=86400",
-            "/scripts.js": "max-age=86400"
+            "/css/global.css":  "max-age=86400",
+            "/css/index.css":   "max-age=86400",
+            "/js/global.js":    "max-age=86400",
+            "/js/index.js":     "max-age=86400",
+            "/images/logo.png": "max-age=31536000"
           }
         }
       }
     }
 
 The key name is the pathname that points to the static asset in your web directory. If your app's URL path is `/my/app`, then this value should be something like `/my/app/styles.css`. The value is the Cache-Control header value you want to assign to that asset.
+
+You can use strings that match the exact pathname like above, or you can also use regular expressions. Mixing the two is fine:
+
+    {
+      "citizen": {
+        "cache": {
+          "static":             true,
+          "control": {
+            "/css/*":           "max-age=86400",
+            "/js/*":            "max-age=86400",
+            "/images/logo.png": "max-age=31536000"
+          }
+        }
+      }
+    }
 
 Here's [a great tutorial on client-side caching](https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching) to help explain ETag and Cache-Control headers.
 

@@ -1,3 +1,7 @@
+[0.7.8]
+  * Cache-Control headers specified in the config (cache.control) now support regular expressions. You can provide either an exact match to the resource's pathname (the previous functionality) or a regex that matches many assets. You can mix the two. Also corrected the readme, which had an incorrect example for route Cache-Control.
+  * Server errors now include the remote host
+
 [0.7.7]
   * The server now throws an error if the view specified in a controller handoff doesn't exist. Previously, it failed silently and rendered the final view without the handoff view contents.
 
