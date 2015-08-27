@@ -1,3 +1,6 @@
+[0.7.9]
+  * The server requestStart event now fires before the sessionStart event, which is a more logical execution order. A 404 (missing controller and/or action) initiated by a third party referrer will no longer create an orphaned session, for example. This also allows custom handling of missing controllers and actions in the request.js start() action (like issuing a permanent redirect to a different controller or action, for example).
+
 [0.7.8]
   * Cache-Control headers specified in the config (cache.control) now support regular expressions. You can provide either an exact match to the resource's pathname (the previous functionality) or a regex that matches many assets. You can mix the two. Also corrected the readme, which had an incorrect example for route Cache-Control.
   * Server errors now include the remote host
