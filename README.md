@@ -2844,20 +2844,13 @@ citizen has helper functions that it uses internally, but might be of use to you
 
 You can store any object in citizen's cache. The primary benefits of using cache() over storing content in your own global app variables are built-in timeout functionality and wrappers for reading, parsing, and storing file content.
 
-    // Cache a string in the default app scope for the life of the application. Keys
+citizen's default cache time is 15 minutes, which you can change in the config (see [Configuration](#configuration)). Cached item lifespans are extended whenever they are accessed unless you pass `resetOnAccess: false` or change that setting in the config.
+
+    // Cache a string in the default app scope for 15 minutes (default). Keys
     // must be unique within a given scope.
     app.cache.set({
       key: 'welcome message',
       value: 'Welcome to my site.'
-    });
-
-    // Cache a string for the life of the application, and overwrite the
-    // existing key. The overwrite property is required any time you want to
-    // write to an existing key. This prevents accidental overwrites.
-    app.cache.set({
-      key: 'welcome message',
-      value: 'Welcome to our site.',
-      overwrite: true
     });
 
     // Cache a string under a custom scope, which is used for retrieving or clearing
@@ -2867,6 +2860,23 @@ You can store any object in citizen's cache. The primary benefits of using cache
       key: 'welcome message',
       scope: 'site messages',
       value: 'Welcome to our site.'
+    });
+
+    // Cache a string for the life of the application.
+    app.cache.set({
+      key: 'welcome message',
+      value: 'Welcome to my site.',
+      lifespan: 'application'
+    });
+
+    // Cache a string for the life of the application, and overwrite the
+    // existing key. The overwrite property is required any time you want to
+    // write to an existing key. This prevents accidental overwrites.
+    app.cache.set({
+      key: 'welcome message',
+      value: 'Welcome to our site.',
+      lifespan: 'application',
+      overwrite: true
     });
 
     // Cache a file buffer using the file path as the key. This is a wrapper for
@@ -2881,13 +2891,13 @@ You can store any object in citizen's cache. The primary benefits of using cache
 
     // Cache a file with a custom key. Optionally, parse the JSON and store the
     // parsed object in the cache instead of the raw buffer. Expire the cache
-    // after 10 minutes, but reset the timer whenever the key is retrieved.
+    // after 10 minutes, regardless of whether the cache is accessed or not.
     app.cache.set({
       file: '/path/to/articles.json',
       key: 'articles',
       parseJSON: true,
       lifespan: 10,
-      resetOnAccess: true
+      resetOnAccess: false
     });
 
 `app`, `controllers`, `routes`, and `files` are reserved scope names, so you can't use them for your own custom scopes.
