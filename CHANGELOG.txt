@@ -1,3 +1,6 @@
+[0.7.12]
+  * Fixed a bug masked by the previous cache bug, which caused a timer to be set even if lifespan was set to "application"
+
 [0.7.11]
   * Fixed a bug that caused a cache error when lifespan is set to "application" and tweaked the readme to reflect new cache defaults
 
