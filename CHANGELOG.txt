@@ -1,3 +1,6 @@
+[0.7.14]
+  * Fixed app crashes caused by non-request related errors (packages running in the background, for example)
+
 [0.7.13]
   * Added the session scope to the beginning of the request chain, making it available within the application request event
 
