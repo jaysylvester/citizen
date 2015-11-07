@@ -1,3 +1,6 @@
+[0.7.15]
+  * Added referrer ("referer") to error log, because it's helpful
+
 [0.7.14]
   * Fixed app crashes caused by non-request related errors (packages running in the background, for example)
 
