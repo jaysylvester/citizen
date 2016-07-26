@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.7.15",
+  "version": "0.8.0",
   "description": "A server-side MVC and caching framework for Node.js web applications.",
   "keywords": [
     "citizen",
@@ -32,11 +32,11 @@
   "dependencies": {
     "commander": "~2.8.1",
     "formidable": "~1.0.17",
-    "handlebars": "~3.0.3",
-    "jade": "~1.11.0"
+    "handlebars": "~4.0.5",
+    "pug": "2.0.0-beta4"
   },
   "engines": {
-    "node": ">= 0.12.x"
+    "node": ">=4.x"
   },
   "license": "MIT"
 }

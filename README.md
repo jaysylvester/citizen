@@ -12,7 +12,7 @@ citizen is an event-driven MVC and caching framework for Node.js web application
 - Directives that make it easy to set cookies, sessions, redirects, caches, and more
 - Easily chain controllers or include controllers within other controllers
 - Do it all on the server or roll in your favorite client-side templating engine
-- Support for Jade and Handlebars templates with more on the way
+- Support for Pug and Handlebars templates
 
 
 __citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Version 0.7.0 has many breaking changes.
@@ -58,14 +58,14 @@ Please see Github for [the complete readme](https://github.com/jaysylvester/citi
           index.js
         models/
           index.js          // Optional for each controller
-        views/              // You can use Jade (.jade), Handlebars (.hbs), or HTML files
+        views/              // You can use Pug (.pug), Handlebars (.hbs), or HTML files
           error/            // Optional views for error handling
-            404.jade
-            500.jade
-            error.jade      // Default error template
+            404.pug
+            500.pug
+            error.pug      // Default error template
           index/
-            index.jade      // Default index view
-            index-alt.jade  // Optional alternate index view
+            index.pug      // Default index view
+            index-alt.pug  // Optional alternate index view
       start.js
     web/                    // public static assets
 
@@ -174,7 +174,7 @@ The following represents citizen's default configuration, which is extended by y
           "output":           "console",
           "depth":            2,
           "disableCache":     true,
-          "jade":             false
+          "pug":             false
         },
         "urlPaths": {
           "app":              "/"
@@ -374,7 +374,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      By default, rendered HTML sourced from Jade templates includes the original whitespace and line breaks. Change this setting to <code>false</code> to remove whitespace and minimize file size.
+      By default, rendered HTML sourced from Pug templates includes the original whitespace and line breaks. Change this setting to <code>false</code> to remove whitespace and minimize file size.
     </td>
   </tr>
   <tr>
@@ -932,7 +932,7 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td>
-      <code>jade</code>
+      <code>pug</code>
     </td>
     <td>
       <p>
@@ -943,7 +943,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      Jade's template debugging is quite verbose, so it's disabled by default, but you can enable it with this setting if citizen is failing to start due to template parsing errors and you need additional info.
+      Pug's template debugging is quite verbose, so it's disabled by default, but you can enable it with this setting if citizen is failing to start due to template parsing errors and you need additional info.
     </td>
   </tr>
   <tr>
@@ -1228,10 +1228,10 @@ The only difference is how you pass key files. As you can see in the examples ab
   </tr>
   <tr>
     <td>
-      <code>app.jade</code>
+      <code>app.pug</code>
     </td>
     <td>
-      A pointer to the citizen Jade global
+      A pointer to the citizen Pug global
     </td>
   </tr>
   <tr>
@@ -1302,8 +1302,8 @@ citizen relies on a simple model-view-controller convention. The article pattern
           article.js
         views/
           article/        // Matches the controller name
-            article.jade  // Matches the controller name, making it the default view
-            edit.jade     // Secondary view for editing an article
+            article.pug  // Matches the controller name, making it the default view
+            edit.pug     // Secondary view for editing an article
 
 At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory. More on views in the [Views section](#views).
 
@@ -1440,7 +1440,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
       // Get the article content
       var article = app.models.article.getArticle(params.url.article, params.url.page);
 
-      // Use the /patterns/views/article/edit.jade view for this action (more on
+      // Use the /patterns/views/article/edit.pug view for this action (more on
       // alternate views in later sections).
       emitter.emit('ready', {
         content: article,
@@ -1580,13 +1580,13 @@ Here's a simple static model for the article pattern (just an example, because s
 
 ### Views
 
-citizen supports [Jade](https://www.npmjs.org/package/jade) and [Handlebars](https://npmjs.org/package/handlebars) templates, as well as good old HTML. You can even mix and match Jade, Handlebars, and HTML templates as you see fit; just use the appropriate file extensions (.jade, .hbs, or .html) and citizen will compile and render each view with the appropriate engine.
+citizen supports [Pug](https://www.npmjs.org/package/pug) and [Handlebars](https://npmjs.org/package/handlebars) templates, as well as good old HTML. You can even mix and match Pug, Handlebars, and HTML templates as you see fit; just use the appropriate file extensions (.pug, .hbs, or .html) and citizen will compile and render each view with the appropriate engine.
 
-You have direct access to each engine's methods via `app.handlebars` and `app.jade`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Jade objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
+You have direct access to each engine's methods via `app.handlebars` and `app.pug`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Pug objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
 
-In `article.jade`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
+In `article.pug`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
-    // article.jade
+    // article.pug
 
     doctype html
     html
@@ -1738,10 +1738,10 @@ To create custom error views for server errors, create a directory called `/app/
       patterns/
         views/
           error/
-            404.jade        // Handles 404 errors
-            500.jade        // Handles 500 errors
-            ENOENT.jade     // Handles bad file read operations
-            error.jade      // Handles any error without its own template
+            404.pug        // Handles 404 errors
+            500.pug        // Handles 500 errors
+            ENOENT.pug     // Handles bad file read operations
+            error.pug      // Handles any error without its own template
 
 
 These error views are only used when citizen is in `production` mode. In `development` and `debug` modes, citizen dumps the error directly.
@@ -1768,7 +1768,7 @@ By default, the server renders the view whose name matches that of the controlle
       emitter.emit('ready', {
         content: article,
 
-        // This tells the server to render app/patterns/views/article/edit.jade
+        // This tells the server to render app/patterns/views/article/edit.pug
         view: 'edit'
       });
     }
@@ -1973,7 +1973,7 @@ citizen lets you use complete MVC patterns as includes. These includes are more 
     }
 
 
-Let's say our article pattern's Jade template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
+Let's say our article pattern's Pug template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
 
     doctype html
     html
@@ -2014,12 +2014,12 @@ It probably makes sense to use includes for the head section and header because 
           article.js
         views/
           _head/
-            _head.jade
+            _head.pug
           _header/
-            _header.jade
-            _header-authenticated.jade // A different header for logged in users
+            _header.pug
+            _header-authenticated.pug // A different header for logged in users
           article/
-            article.jade
+            article.pug
 
 When the article controller is fired, it has to tell citizen which includes it needs. We do that with the `include` directive, which we pass via the context in the emitter:
 
@@ -2037,7 +2037,7 @@ When the article controller is fired, it has to tell citizen which includes it n
         include: {
           head: {
             // If only the controller is specified, the default action handler() is
-            // called and the default view is rendered (_head.jade in this case).
+            // called and the default view is rendered (_head.pug in this case).
             controller: '_head'
           },
           header: {
@@ -2081,7 +2081,7 @@ Here's what our header controller looks like:
 
 And the header views:
 
-    // _header view (/patterns/views/_header/_header.jade)
+    // _header view (/patterns/views/_header/_header.pug)
 
     header
       a#logo Home page
@@ -2094,7 +2094,7 @@ And the header views:
 
 
 
-    // _header-authenticated view  (/patterns/views/_header/_header-authenticated.jade)
+    // _header-authenticated view  (/patterns/views/_header/_header-authenticated.pug)
 
     header
       a#logo Home page
@@ -2109,7 +2109,7 @@ And the header views:
             a(href="/admin") Site Administration
 
 
-The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`!=` in Jade, `{{{...}}}` in Handlebars):
+The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`!=` in Pug, `{{{...}}}` in Handlebars):
 
     doctype html
     html
@@ -2152,13 +2152,13 @@ Of course, if you don't write the controller in a manner to accept direct reques
           article.js   // Accessible via www.cleverna.me/article
 
 
-#### Should I use a citizen include or a Jade include/Handlebars partial?
+#### Should I use a citizen include or a Pug include/Handlebars partial?
 
 citizen includes provide rich functionality, but they do have limitations and can be overkill in certain situations.
 
-* **Do you only need to share a chunk of markup across different views?** Use a standard Handlebars partial, Jade template, or HTML document. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
-* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with Handlebars partials or Jade includes.
-* **Do you need the ability to render different includes based on logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using Handlebars partials or Jade includes would require registering multiple partials and putting the logic in the view template.
+* **Do you only need to share a chunk of markup across different views?** Use a standard Handlebars partial, Pug template, or HTML document. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
+* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with Handlebars partials or Pug includes.
+* **Do you need the ability to render different includes based on logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using Handlebars partials or Pug includes would require registering multiple partials and putting the logic in the view template.
 * **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
 
 
@@ -2202,9 +2202,9 @@ A common use case for `handoff` would be to create a layout controller that serv
     }
 
 
-The view of the originally requested controller (article.jade in this case) is rendered and stored in the `route.chain` object:
+The view of the originally requested controller (article.pug in this case) is rendered and stored in the `route.chain` object:
 
-    // article.jade, which is stored in the route.chain scope
+    // article.pug, which is stored in the route.chain scope
 
     h1 #{title}
     p#summary #{summary}
@@ -2274,7 +2274,7 @@ You can use `handoff` to chain requests across as many controllers as you want, 
 
 You can loop over this object to render all the chained views:
 
-    // +_layout.jade
+    // +_layout.pug
 
     doctype html
     html
@@ -2292,7 +2292,7 @@ It's assumed the last controller in the chain provides the master view, so it ha
 You can skip rendering a controller's view in the handoff chain by setting view to false:
 
     // article controller
-    
+
     emitter.emit('ready', {
       // Don't render the article controller's view as part of the chain
       view: false,
@@ -2355,8 +2355,8 @@ Let's say you chain the article controller with the layout controller like we di
 
 Each of the following routes would generate its own cache item:
 
-http://cleverna.me/article  
-http://cleverna.me/article/My-Article  
+http://cleverna.me/article
+http://cleverna.me/article/My-Article
 http://cleverna.me/article/My-Article/page/2
 
 Note that if you put the `cache.route` directive *anywhere* in your controller chain, the route will be cached.
@@ -2479,13 +2479,13 @@ The `urlParams` property helps protect against invalid cache items (or worse: an
 
 If we used the example above in our article controller, the following URLs would be cached because the "article" and "page" URL parameters are permitted:
 
-http://cleverna.me/article  
-http://cleverna.me/article/My-Article-Title  
+http://cleverna.me/article
+http://cleverna.me/article/My-Article-Title
 http://cleverna.me/article/My-Article-Title/page/2
 
 The following URLs wouldn't be cached, which is a good thing because it wouldn't take long for an attacker's script to loop over a URL and flood the cache:
 
-http://cleverna.me/article/My-Article-Title/dosattack/1  
+http://cleverna.me/article/My-Article-Title/dosattack/1
 http://cleverna.me/article/My-Article-Title/dosattack/2
 
 "page" is valid, but "dosattack" isn't, so this URL wouldn't be cached either:
@@ -3499,12 +3499,12 @@ Resulting file structure:
           index.js
         views/
           error/
-            404.jade
-            500.jade
-            ENOENT.jade
-            error.jade
+            404.pug
+            500.pug
+            ENOENT.pug
+            error.pug
           index/
-            index.jade
+            index.pug
       start.js
     web/
 

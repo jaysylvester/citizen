@@ -1,3 +1,7 @@
+[0.8.0]
+  * BREAKING CHANGE: Updated jade (deprecated) to pug 2.0.0-beta4
+  * Updated Handlebars to 4.0.5
+
 [0.7.15]
   * Added referrer ("referer") to error log, because it's helpful
 

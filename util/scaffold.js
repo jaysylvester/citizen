@@ -15,7 +15,7 @@ program
 program
   .command('skeleton')
   .option('-n, --network-port [port number]', 'Default HTTP port is 80, but if that\'s taken, use this option to set your config')
-  .option('-f, --format [format]', 'Set the view template format (jade, hbs, or html)')
+  .option('-f, --format [format]', 'Set the view template format (pug, hbs, or html)')
   .option('-m, --mode [mode]', 'Set the config mode to debug, development, or production (default)')
   .option('-U, --no-use-strict', 'Don\'t include the \'use strict\'; statement in any of the modules')
   .action( function (options) {
@@ -28,7 +28,7 @@ program
           start: fs.readFileSync(scaffoldPath + '/templates/start.js'),
           error: fs.readdirSync(scaffoldPath + '/templates/error')
         },
-        format = options.format || 'jade',
+        format = options.format || 'pug',
         useStrict = options.useStrict ? "'use strict';\n" : '',
         controller = buildController({
           pattern: 'index',
@@ -86,7 +86,7 @@ program
     fs.mkdirSync(appPath + '/patterns/views/error');
     templates.error.forEach( function (file, index, array) {
       var template,
-          viewRegex = new RegExp(/.+\.(hbs|jade|html)$/);
+          viewRegex = new RegExp(/.+\.(hbs|pug|html)$/);
 
       if ( viewRegex.test(file) ) {
         template = fs.readFileSync(scaffoldPath + '/templates/error/' + file);
@@ -129,12 +129,12 @@ program
       console.log('          index.js');
       console.log('        views/');
       console.log('          error/');
-      console.log('            404.jade');
-      console.log('            500.jade');
-      console.log('            ENOENT.jade');
-      console.log('            error.jade');
+      console.log('            404.pug');
+      console.log('            500.pug');
+      console.log('            ENOENT.pug');
+      console.log('            error.pug');
       console.log('          index/');
-      console.log('            index.jade');
+      console.log('            index.pug');
       console.log('      start.js');
       console.log('');
       console.log('  After creating the skeleton:');
@@ -147,14 +147,14 @@ program
 program
   .command('pattern [pattern]')
   .option('-a, --app-name [name]', 'Specify a custom global app variable name (default is "app")')
-  .option('-f, --format [format]', 'Set the view template format (jade, hbs, or html)')
+  .option('-f, --format [format]', 'Set the view template format (pug, hbs, or html)')
   .option('-p, --private', 'Make the controller private (inaccessible via HTTP)')
   .option('-U, --no-use-strict', 'Don\'t include the \'use strict\'; statement in the controller and model')
   .option('-M, --no-model', 'Skip creation of the model')
   .option('-T, --no-view-template', 'Skip creation of the view')
   .action( function (pattern, options) {
     var appName = options.appName || 'app',
-        format = options.format || 'jade',
+        format = options.format || 'pug',
         useStrict = options.useStrict ? "'use strict';\n" : '',
         controller = buildController({
           pattern: pattern,
@@ -203,7 +203,7 @@ program
       console.log('          foo.js');
       console.log('        views/');
       console.log('          foo/');
-      console.log('            foo.jade');
+      console.log('            foo.pug');
       console.log('');
     });
 
@@ -257,7 +257,7 @@ function buildModel(options) {
 function buildView(options) {
   var pattern = options.pattern,
       isPrivate = options.private || false,
-      format = options.format || 'jade',
+      format = options.format || 'pug',
       template = fs.readFileSync(scaffoldPath + '/templates/view.' + format),
       directory = pattern,
       name = pattern + '.' + format;
