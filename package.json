@@ -30,13 +30,13 @@
   },
   "main": "./lib/citizen.js",
   "dependencies": {
-    "commander": "~2.8.1",
+    "commander": "~2.9.0",
     "formidable": "~1.0.17",
-    "handlebars": "~4.0.5",
-    "pug": "2.0.0-beta4"
+    "handlebars": "~4.0.6",
+    "pug": "~2.0.0-beta6"
   },
   "engines": {
-    "node": ">=4.x"
+    "node": ">=6.x"
   },
   "license": "MIT"
 }

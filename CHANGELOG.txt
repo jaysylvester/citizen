@@ -1,6 +1,8 @@
 [0.8.0]
-  * BREAKING CHANGE: Updated jade (deprecated) to pug 2.0.0-beta4
-  * Updated Handlebars to 4.0.5
+  * BREAKING CHANGE: Updated jade (deprecated) to pug ~2.0.x. See syntax changes here:
+    https://github.com/pugjs/pug/issues/2305
+  * Updated Handlebars to ~4.0.x
+  * Updated commander to ~2.9.x
 
 [0.7.15]
   * Added referrer ("referer") to error log, because it's helpful

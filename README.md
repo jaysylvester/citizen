@@ -2694,7 +2694,7 @@ If it's a multipart form containing a file, the form object passed to your contr
       }
     }
 
-See the [formidable documentation](https://www.npmjs.com/package/formidable) for available form settings. You can pass form settings via `citizen.forms` in the config. Set global form settings via `citizen.forms.global` and options for individual controller form actions via `citizen.forms.global.controller`.
+See the [formidable documentation](https://www.npmjs.com/package/formidable) for available form settings. You can pass form settings via `citizen.forms` in the config. Set global form settings via `citizen.forms.global` and options for individual controller form actions via `citizen.forms.controller`.
 
 The following config sets the upload directory for all forms to the path specified. It also sets the `maxFieldsSize` setting for the editForm() action in the article controller to 5MB:
 
