@@ -2292,7 +2292,7 @@ It's assumed the last controller in the chain provides the master view, so it ha
 You can skip rendering a controller's view in the handoff chain by setting view to false:
 
     // article controller
-    
+
     emitter.emit('ready', {
       // Don't render the article controller's view as part of the chain
       view: false,
@@ -2355,8 +2355,8 @@ Let's say you chain the article controller with the layout controller like we di
 
 Each of the following routes would generate its own cache item:
 
-http://cleverna.me/article  
-http://cleverna.me/article/My-Article  
+http://cleverna.me/article
+http://cleverna.me/article/My-Article
 http://cleverna.me/article/My-Article/page/2
 
 Note that if you put the `cache.route` directive *anywhere* in your controller chain, the route will be cached.
@@ -2479,13 +2479,13 @@ The `urlParams` property helps protect against invalid cache items (or worse: an
 
 If we used the example above in our article controller, the following URLs would be cached because the "article" and "page" URL parameters are permitted:
 
-http://cleverna.me/article  
-http://cleverna.me/article/My-Article-Title  
+http://cleverna.me/article
+http://cleverna.me/article/My-Article-Title
 http://cleverna.me/article/My-Article-Title/page/2
 
 The following URLs wouldn't be cached, which is a good thing because it wouldn't take long for an attacker's script to loop over a URL and flood the cache:
 
-http://cleverna.me/article/My-Article-Title/dosattack/1  
+http://cleverna.me/article/My-Article-Title/dosattack/1
 http://cleverna.me/article/My-Article-Title/dosattack/2
 
 "page" is valid, but "dosattack" isn't, so this URL wouldn't be cached either:
@@ -3222,7 +3222,7 @@ You use the `skip`, `end`, and `error` emitter events to control the flow of emb
 
 ##### skip (series and waterfall only)
 
-Use `skip` to skip the next method in the chain. If the next method is the last method, the callback is fired. In the following example, secondMethod uses the output from firstMethod to determine whether to execute thirdMethor skip it.
+Use `skip` to skip the next method in the chain. If the next method is the last method, the callback is fired. In the following example, secondMethod uses the output from firstMethod to determine whether to execute thirdMethd or skip it.
 
     app.listen('waterfall', {
       firstMethod: function (emitter) {

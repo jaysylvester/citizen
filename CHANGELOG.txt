@@ -1,3 +1,6 @@
+[0.7.16]
+  * Expanded compression support to include deflate and provide more options
+
 [0.7.15]
   * Added referrer ("referer") to error log, because it's helpful
 
