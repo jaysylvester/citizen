@@ -114,7 +114,7 @@ The following represents citizen's default configuration, which is extended by y
           "controller":       "",
           "view":             ""
         },
-        "format": {
+        "formats": {
           "html": {
             "enable":         true
           },
@@ -353,12 +353,12 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format
+      citizen.formats
     </td>
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format.html
+      citizen.formats.html
     </td>
   </tr>
   <tr>
@@ -379,7 +379,7 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format.json
+      citizen.formats.json
     </td>
   </tr>
   <tr>
@@ -416,7 +416,7 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format.jsonp
+      citizen.formats.jsonp
     </td>
   </tr>
   <tr>
