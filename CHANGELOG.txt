@@ -1,3 +1,6 @@
+[0.7.17]
+  * Opinion: requiring minor version bumps because of readme updates is stupid.
+
 [0.7.16]
   * The accepting-encoding parser has been rewritten to be conformant
   * The compression engine has been rewritten to support deflate
