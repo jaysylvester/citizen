@@ -1,5 +1,9 @@
 [0.7.16]
-  * Expanded compression support to include deflate and provide more options
+  * The accepting-encoding parser has been rewritten to be conformant
+  * The compression engine has been rewritten to support deflate
+  * A potentially breaking change: The default configuration has been changed to disable JSON and JSONP global output by default, which is safer. You can enable each one individually in the global config, causing all controllers to allow output in those formats, or enable JSON or JSONP output at the controller level using the new "formats" parameter
+  * HTML output can now be disabled completely at the global config level or controller level
+  * Pretty output for HTML and JSON is now driven by the framework mode rather than config values. In debug and development modes, output is pretty. In production mode, output is ugly (minified).
 
 [0.7.15]
   * Added referrer ("referer") to error log, because it's helpful
