@@ -2317,33 +2317,33 @@ You can skip rendering a controller's view in the handoff chain by setting view 
 
 ## Performance
 
-citizen provides several ways for you to speed up your app's performance, most of which come at the cost of system resources (memory or CPU). You'll definitely want to do some performance monitoring to make sure the benefits are worth the cost.
+citizen provides several ways for you to improve your app's performance, most of which come at the cost of system resources (memory or CPU). You'll definitely want to do some performance monitoring to make sure the benefits are worth the cost.
 
 
-### gzip
+### Compression
 
-Both dynamic routes and static assets can be served with gzip compression. To enable gzip compression for clients that support it:
+Both dynamic routes and static assets can be compressed before sending them to the browser. To enable compression for clients that support it:
 
     {
       "citizen": {
-        "gzip": {
+        "compression": {
           "enable": true
         }
       }
     }
 
-Proxies, firewalls, and other network circumstances can strip the request header that tells the server to use gzipped assets. You can force gzip for all clients like this:
+Proxies, firewalls, and other network circumstances can strip the request header that tells the server to provide compressed assets. You can force gzip or deflate for all clients like this:
 
     {
       "citizen": {
-        "gzip": {
+        "compression": {
           "enable": true,
-          "force":  true
+          "force":  "gzip"
         }
       }
     }
 
-If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original and compressed version of the route will be cached, so your cache's memory utilization will increase.
+If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original and compressed versions of the route will be cached, so your cache's memory utilization will increase.
 
 
 ### Caching Dynamic Requests (Controllers and Routes)

@@ -1,3 +1,6 @@
+[0.7.18]
+  * Opinion: See 0.7.17.
+
 [0.7.17]
   * Opinion: requiring minor version bumps because of readme updates is stupid.
 
