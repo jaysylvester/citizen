@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.7.18",
+  "version": "0.7.19",
   "description": "A server-side MVC framework for Node.js web applications. Includes serving, caching, and other helpful methods.",
   "keywords": [
     "citizen",
@@ -36,7 +36,7 @@
     "jade": "~1.11.0"
   },
   "engines": {
-    "node": ">= 0.12.x"
+    "node": ">= 6.11.x"
   },
   "license": "MIT"
 }

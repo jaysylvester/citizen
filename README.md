@@ -545,7 +545,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      A space-delimited list of MIME types that should be gzipped if gzip is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the list in its entirety.
+      A space-delimited list of MIME types that should be compressed if compression is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the list in its entirety.
     </td>
   </tr>
   <tr>
@@ -2824,7 +2824,9 @@ Here's an example of a request module that checks for a username cookie at the b
 
 
 
-## Cross-Origin Resource Sharing (CORS)
+## Cross-Origin Resource Sharing (CORS) _[deprecated]_
+
+_Note: this method for enabling CORS has been deprecated and will be removed from v0.8.0. It will be replaced with a similar method of setting headers that can be specified within each controller action for more granular control._
 
 citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. This includes POST requests, which makes any controller that accepts form input safe from cross-site form submissions.
 
