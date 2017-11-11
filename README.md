@@ -95,21 +95,30 @@ citizen prefers convention over configuration, but sometimes configuration is a 
 The following represents citizen's default configuration, which is extended by your configuration:
 
     {
-      "hostname":             "",
+      "host":                 "",
       "citizen": {
         "mode":               "production",
         "http": {
-          "enable":          true,
+          "enable":           true,
           "hostname":         "127.0.0.1",
           "port":             80
         },
         "https": {
-          "enable":          false,
+          "enable":           false,
           "hostname":         "127.0.0.1",
           "port":             443,
           "secureCookies":    true
         },
-        "connectionQueue":    undefined,
+        "connectionQueue":    null,
+        "fallbackController": "",
+        "compression": {
+          "enable":           false,
+          "force":            false,
+          "mimeTypes":        "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
+        },
+        "sessions":           false,
+        "sessionTimeout":     20, // 20 minutes
+        "requestTimeout":     0.5, // 30 seconds
         "layout": {
           "controller":       "",
           "view":             ""
@@ -123,6 +132,7 @@ The following represents citizen's default configuration, which is extended by y
             "pretty":         2
           },
           "jsonp": {
+            "enable":         false,
             "urlDelimiter":   "-",
             "pretty":         2
           }
@@ -130,11 +140,6 @@ The following represents citizen's default configuration, which is extended by y
         "forms": {
           "global": {},
           "controller": {}
-        },
-        "gzip": {
-          "enable":           false,
-          "force":            false,
-          "mimeTypes":        "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
         },
         "cache": {
           "application": {
@@ -150,16 +155,13 @@ The following represents citizen's default configuration, which is extended by y
             "lifespan":       15,
             "resetOnAccess":  true
           },
-          "control":          {},
-          "invalidUrlParams": "warn"
+          "invalidUrlParams": "warn",
+          "control": {}
         },
-        "sessions":           false,
-        "sessionTimeout":     20,
-        "requestTimeout":     0.5,
         "log": {
           "toConsole":        false,
           "toFile":           false,
-          "path":             "/absolute/path/to/app/logs",
+          "path":             path.join(appPath, "/logs"),
           "defaultFile":      "citizen.txt",
           "application": {
             "status":         true,
@@ -176,17 +178,17 @@ The following represents citizen's default configuration, which is extended by y
           "disableCache":     true,
           "pug":             false
         },
-        "urlPaths": {
+        "urlPaths":  {
           "app":              "/"
         },
-        directories: {
-          "app":              "(resolved based on location of start.js)",
-          "logs":             "(directories.app)/logs",
-          "on":               "(directories.app)/on",
-          "controllers":      "(directories.app)/patterns/controllers",
-          "models":           "(directories.app)/patterns/models",
-          "views":            "(directories.app)/patterns/views",
-          "web":              "(up one directory from directories.app)/web"
+        "directories":  {
+          "app":              "[resolved based on location of start.js]",
+          "logs":             "[directories.app]/logs",
+          "on":               "[directories.app]/on",
+          "controllers":      "[directories.app]/patterns/controllers",
+          "models":           "[directories.app]/patterns/models",
+          "views":            "[directories.app]/patterns/views",
+          "web":              "[parent directory of directories.app]/web"
         }
       }
     }
@@ -210,7 +212,7 @@ Here's a complete rundown of citizen's settings and what they mean:
   </thead>
   <tr>
     <td>
-      <code>hostname</code>
+      <code>host</code>
     </td>
     <td>
       <p>
@@ -218,7 +220,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>hostname</code> key that matches the server's hostname, it chooses that config file. This is different from the HTTP hostname setting under the <code>citizen</code> node (see below).
+      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is different from the HTTP hostname setting under the <code>citizen</code> node (see below).
     </td>
   </tr>
   <tr>
@@ -1001,7 +1003,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. Don't confuse this with the host machine's <code>hostname</code> setting above, which is different.
+      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname. Don't confuse this with the host machine's <code>host</code> setting above, which is different.
     </td>
   </tr>
   <tr>
@@ -1054,7 +1056,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      The hostname at which your app can be accessed via HTTPS. You need to configure your server's DNS settings to support this setting. Don't confuse this with the host machine's <code>hostname</code> setting above, which is different.
+      The hostname at which your app can be accessed via HTTPS. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname. Don't confuse this with the host machine's <code>host</code> setting above, which is different.
     </td>
   </tr>
   <tr>
@@ -1092,7 +1094,7 @@ Here's a complete rundown of citizen's settings and what they mean:
 </table>
 
 
-These settings are exposed publicly via `app.config.hostname` and `app.config.citizen`.
+These settings are exposed publicly via `app.config.host` and `app.config.citizen`.
 
 **Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
 
@@ -1101,14 +1103,14 @@ These settings are exposed publicly via `app.config.hostname` and `app.config.ci
 
 The config directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
-1. citizen parses each JSON file looking for a `hostname` key that matches the machine's hostname. If it finds one, it loads that configuration.
-2. If it can't find a matching hostname key, it looks for a file named citizen.json and loads that configuration.
+1. citizen parses each JSON file looking for a `host` key that matches the machine's hostname. If it finds one, it loads that configuration.
+2. If it can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
 3. If it can't find citizen.json or you don't have a config directory, it runs under its default configuration.
 
 Let's say you want to run an app on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
 
     {
-      "hostname":             "My-MacBook-Pro.local",
+      "host":                 "My-MacBook-Pro.local",
       "citizen": {
         "mode":               "development",
         "http": {
@@ -1124,14 +1126,14 @@ Let's say you want to run an app on port 8080 in your local dev environment and 
 
 This config would extend the default configuration only when running on your local machine; you'll never accidentally push a test config to production again ;)
 
-The database settings would be accessible within your app via `app.config.db`. **The citizen and hostname nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
+The database settings would be accessible within your app via `app.config.db`. **The `citizen` and `host` nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
 
 
 #### Inline config
 
 You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
 
-    // Start an HTTP server on port 8080 accepting requests at a specific host
+    // Start an HTTP server on port 8080 accepting requests at www.mysite.com
     app.start({
       citizen: {
         hostname: 'www.mysite.com',

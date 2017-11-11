@@ -1,8 +1,29 @@
 [0.8.0]
-  * BREAKING CHANGE: Updated jade (deprecated) to pug ~2.0.x. See syntax changes here:
-    https://github.com/pugjs/pug/issues/2305
+  * BREAKING CHANGES:
+    * Updated jade (deprecated) to pug ~2.0.x. See syntax changes here: https://github.com/pugjs/pug/issues/2305
+    * Config change: the server "hostname" setting has been changed to "host" so as to avoid confusion with the HTTP/HTTPS server hostname settings
   * Updated Handlebars to ~4.0.x
   * Updated commander to ~2.9.x
+
+[0.7.19]
+  * Deprecations (these items will no longer be supported by citizen as of v0.8.0):
+    * The "access" module export that enables CORS support at the controller level will be replaced with a "headers" directive that works at the controller action level.
+    * The developers of Jade have renamed the project to Pug with all new updates being performed under the Pug name. citizen will drop support for Jade and replace it with the new Pug engine. There are a few breaking changes in Pug: https://github.com/pugjs/pug/issues/2305
+  * Fixed an issue where "Accept-Encoding: gzip;q=0" would still provide gzip encoding because it was the only encoding specified (encoding now defaults to identity)
+  * Official minimum node version has been bumped to 6.11.x
+
+[0.7.18]
+  * Opinion: See 0.7.17.
+
+[0.7.17]
+  * Opinion: requiring minor version bumps because of readme updates is stupid.
+
+[0.7.16]
+  * The accepting-encoding parser has been rewritten to be conformant
+  * The compression engine has been rewritten to support deflate
+  * A potentially breaking change: The default configuration has been changed to disable JSON and JSONP global output by default, which is safer. You can enable each one individually in the global config, causing all controllers to allow output in those formats, or enable JSON or JSONP output at the controller level using the new "formats" parameter.
+  * HTML output can now be disabled completely at the global config level or controller level
+  * Pretty output for HTML and JSON is now driven by the framework mode rather than config values. In debug and development modes, output is pretty. In production mode, output is ugly (minified).
 
 [0.7.15]
   * Added referrer ("referer") to error log, because it's helpful
