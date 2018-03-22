@@ -123,18 +123,17 @@ The following represents citizen's default configuration, which is extended by y
           "controller":       "",
           "view":             ""
         },
-        "format": {
+        "formats": {
           "html": {
-            "pretty":         true
+            "enable":         true
           },
           "json": {
-            "urlDelimiter":   "-",
-            "pretty":         2
+            "enable":         false,
+            "urlDelimiter":   "-"
           },
           "jsonp": {
-            "enable":         false,
-            "urlDelimiter":   "-",
-            "pretty":         2
+            "enable":         false
+            "urlDelimiter":   "-"
           }
         },
         "forms": {
@@ -355,17 +354,17 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format
+      citizen.formats
     </td>
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format.html
+      citizen.formats.html
     </td>
   </tr>
   <tr>
     <td>
-      <code>pretty</code>
+      <code>enable</code>
     </td>
     <td>
       <p>
@@ -381,23 +380,76 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
-      citizen.format.json
+      citizen.formats.json
     </td>
   </tr>
   <tr>
     <td>
-      <code>pretty</code>
+      <code>enable</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
       <p>
-        Default: <code>2</code>
+        Default: <code>false</code>
       </p>
     </td>
     <td>
-      JSON output is pretty by default. This setting controls how many spaces to use for indentations. Set it to <code>false</code> to remove whitespace from JSON output.
+      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>urlDelimiter</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>-</code>
+      </p>
+    </td>
+    <td>
+      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See "JSON and JSONP" for details.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.formats.jsonp
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>urlDelimiter</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>-</code>
+      </p>
+    </td>
+    <td>
+      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See "JSON and JSONP" for details.
     </td>
   </tr>
   <tr>
@@ -448,61 +500,8 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td>
-      <code>urlDelimiter</code>
-    </td>
-    <td>
-      <p>
-        String
-      </p>
-      <p>
-        Default: <code>-</code>
-      </p>
-    </td>
-    <td>
-      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See "JSON and JSONP" for details.
-    </td>
-  </tr>
-  <tr>
     <td colspan="3">
-      citizen.format.jsonp
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>pretty</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>2</code>
-      </p>
-    </td>
-    <td>
-      JSONP output is pretty by default. This setting controls how many spaces to use for indentations. Set it to <code>false</code> to remove whitespace from JSON output.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>urlDelimiter</code>
-    </td>
-    <td>
-      <p>
-        String
-      </p>
-      <p>
-        Default: <code>-</code>
-      </p>
-    </td>
-    <td>
-      When using the <code>output</code> URL parameter, this setting determines how to parse a JSONP request. See "JSON and JSONP" for details.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="3">
-      citizen.gzip
+      citizen.compression
     </td>
   </tr>
   <tr>
@@ -518,7 +517,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      Enables gzip compression for rendered views and static assets. Compression occurs on the fly, but compressed routes can be cached with the cache directive, and static assets can be cached using the cache setting below.
+      Enables gzip and deflate compression for rendered views and static assets. Compression occurs on the fly, but compressed routes can be cached with the cache directive, and static assets can be cached using the cache setting below.
     </td>
   </tr>
   <tr>
@@ -534,7 +533,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      Forces gzip encoding for all clients, even if they don't report accepting gzip. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since pretty much all modern clients support gzip, it's probably safe to force it by setting this to <code>true</code>.
+      Forces gzip or deflate encoding for all clients, even if they don't report accepting compressed formats. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since all modern clients support gzip, it's usually safe to force it by setting this to <code>gzip</code>, but you can also force <code>deflate</code>.
     </td>
   </tr>
   <tr>
@@ -547,7 +546,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      A space-delimited list of MIME types that should be gzipped if gzip is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the list in its entirety.
+      A space-delimited list of MIME types that should be compressed if compression is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the list in its entirety.
     </td>
   </tr>
   <tr>
@@ -1622,6 +1621,16 @@ Returns...
 
 Whatever you've added to the controller's emitter `content` object will be returned.
 
+To enable JSON output at the controller level:
+
+    emitter.emit('ready', {
+      formats: {
+        json: {
+          enable: true
+        }
+      }
+    });
+
 You can also specify specific top-level nodes to return instead of returning the entire content object by using the `output` URL parameter:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/pages
@@ -1670,6 +1679,15 @@ Returns:
       "last modified": "2015 Mar 03"
     });
 
+To enable JSONP output at the controller level:
+
+    emitter.emit('ready', {
+      formats: {
+        jsonp: {
+          enable: true
+        }
+      }
+    });
 
 The `output` URL parameter works with JSONP as well.
 
@@ -1687,11 +1705,17 @@ Do you always want a particular controller action to return JSON without the URL
       // All requests handled by this controller action will output JSON
       params.route.format = 'json';
 
-      emitter.emit('ready');
+      emitter.emit('ready', {
+        formats: {
+          json: {
+            enable: true
+          }
+        }
+      });
     }
 
 
-Are you building a RESTful API and want every request to return JSON? Also simple:
+Are you building a RESTful API and want every request to return JSON without using the URL flag? Also simple:
 
     // File: /app/on/request.js
     // All requests will be returned in JSON format because this function runs
@@ -1700,29 +1724,17 @@ Are you building a RESTful API and want every request to return JSON? Also simpl
 
     function start(params, context, emitter) {
       params.route.format = 'json';
+
       emitter.emit('ready');
     }
 
+For this to work without manually enabling JSON or JSONP in every controller action, you can enable them in the global config with `citizen.formats.json.enable` and `citizen.formats.jsonp.enable`.
 
-To remove whitespace from JSON or JSONP output, use the `pretty` config setting:
-
-    {
-      "citizen": {
-        "format": {
-          "json": {
-            "pretty": false
-          },
-          "jsonp": {
-            "pretty": false
-          }
-        }
-      }
-    }
 
 
 ##### JSON security risks
 
-Having a simple URL flag to enable JSON output is very convenient, but it can present a security risk. The JSON output from any controller action is driven by the emitter's content object. Anything you place in the content object will be present in the JSON output — whether it's present in the HTML view or not.
+The JSON output from any controller action is driven by the emitter's content object. Anything you place in the content object will be present in the JSON output -- whether it's present in the HTML view or not.
 
 **Take care not to place sensitive data in the content object thinking it will never be exposed because you don't reference it in your view template, because it WILL show up in your JSON.**
 
@@ -2306,33 +2318,33 @@ You can skip rendering a controller's view in the handoff chain by setting view 
 
 ## Performance
 
-citizen provides several ways for you to speed up your app's performance, most of which come at the cost of system resources (memory or CPU). You'll definitely want to do some performance monitoring to make sure the benefits are worth the cost.
+citizen provides several ways for you to improve your app's performance, most of which come at the cost of system resources (memory or CPU). You'll definitely want to do some performance monitoring to make sure the benefits are worth the cost.
 
 
-### gzip
+### Compression
 
-Both dynamic routes and static assets can be served with gzip compression. To enable gzip compression for clients that support it:
+Both dynamic routes and static assets can be compressed before sending them to the browser. To enable compression for clients that support it:
 
     {
       "citizen": {
-        "gzip": {
+        "compression": {
           "enable": true
         }
       }
     }
 
-Proxies, firewalls, and other network circumstances can strip the request header that tells the server to use gzipped assets. You can force gzip for all clients like this:
+Proxies, firewalls, and other network circumstances can strip the request header that tells the server to provide compressed assets. You can force gzip or deflate for all clients like this:
 
     {
       "citizen": {
-        "gzip": {
+        "compression": {
           "enable": true,
-          "force":  true
+          "force":  "gzip"
         }
       }
     }
 
-If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original and compressed version of the route will be cached, so your cache's memory utilization will increase.
+If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original and compressed versions of the route will be cached, so your cache's memory utilization will increase.
 
 
 ### Caching Dynamic Requests (Controllers and Routes)
@@ -2813,7 +2825,9 @@ Here's an example of a request module that checks for a username cookie at the b
 
 
 
-## Cross-Origin Resource Sharing (CORS)
+## Cross-Origin Resource Sharing (CORS) _[deprecated]_
+
+_Note: this method for enabling CORS has been deprecated and will be removed from v0.8.0. It will be replaced with a similar method of setting headers that can be specified within each controller action for more granular control._
 
 citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. This includes POST requests, which makes any controller that accepts form input safe from cross-site form submissions.
 
@@ -3224,13 +3238,15 @@ You use the `skip`, `end`, and `error` emitter events to control the flow of emb
 
 ##### skip (series and waterfall only)
 
-Use `skip` to skip the next method in the chain. If the next method is the last method, the callback is fired. In the following example, secondMethod uses the output from firstMethod to determine whether to execute thirdMethor skip it.
+Use `skip` to skip the next method in the chain. If the next method is the last method, the callback is fired. In the following example, secondMethod uses the output from firstMethod to determine whether to execute thirdMethod or skip it.
 
     app.listen('waterfall', {
       firstMethod: function (emitter) {
         var something = doSomething();
 
-        emitter.emit('ready', something);
+        emitter.emit('ready', {
+          something: something
+        });
       },
       secondMethod: function (previous, emitter) {
         var somethingElse;
@@ -3238,16 +3254,25 @@ Use `skip` to skip the next method in the chain. If the next method is the last 
         // If firstMethod provides something, fire thirdMethod
         if ( previous.something ) {
           somethingElse = doSomethingElse();
-          emitter.emit('ready', somethingElse);
+
+          emitter.emit('ready', {
+            somethingElse: somethingElse
+          });
         // If there's no result from firstMethod, skip thirdMethod
         } else {
-          emitter.emit('skip', somethingElse);
+          emitter.emit('skip');
         }
       },
       thirdMethod: function (previous, emitter) {
-        var lastThing = lastThing();
+        var lastThing;
 
-        emitter.emit('ready', lastThing);
+        if ( previous.somethingElse ) {
+          lastThing = lastThing();
+        }
+
+        emitter.emit('ready', {
+          lastThing: lastThing
+        });
       }
     }, function (output) {
 
