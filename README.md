@@ -1,6 +1,8 @@
 # citizen
 
-citizen is an event-driven MVC and caching framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a Jenga tower made out of 20 different packages. Use it as a foundation for a traditional server-side web application, a modular single-page app, or a RESTful API to be consumed by your front end framework.
+citizen is an event-driven MVC and caching framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a Jenga tower made out of 20 different packages (of course, citizen's few dependencies install a myriad of packages themselves, but let's sidestep that).
+
+Use citizen as a foundation for a traditional server-side web application, a modular single-page app, or a RESTful API to be consumed by your front end framework.
 
 
 ## Benefits
@@ -1198,11 +1200,11 @@ The only difference is how you pass key files. As you can see in the examples ab
       <code>app.cache.exists()</code><br />
       <code>app.cache.get()</code><br />
       <code>app.cache.clear()</code><br />
-      <code>app.listen()</code><br />
-      <code>app.copy()</code><br />
-      <code>app.extend()</code><br />
-      <code>app.isNumeric()</code><br />
-      <code>app.size()</code>
+      <code>app.listen() **DEPRECATED**</code><br />
+      <code>app.copy() **DEPRECATED**</code><br />
+      <code>app.extend() **DEPRECATED**</code><br />
+      <code>app.isNumeric() **DEPRECATED**</code><br />
+      <code>app.size() **DEPRECATED**</code>
       <code>app.log()</code><br />
     </td>
     <td>
@@ -3087,7 +3089,9 @@ Clear a cache object using a key or a scope.
     app.cache.clear({ scope: 'app' });
 
 
-### listen()
+### listen() **DEPRECATED**
+
+**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 The article example we've been using has only simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
@@ -3359,21 +3363,27 @@ Use `error` to throw an error and fire the callback, which is responsible for ha
     });
 
 
-### copy(object)
+### copy(object) **DEPRECATED**
+
+**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Creates a deep copy of an object.
 
-    var myCopy = app.copy(myObject);
+    var objectCopy = app.copy(object);
 
 
-### extend(object, extension)
+### extend(object, extension) **DEPRECATED**
+
+**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Extends an object with another object, effectively merging the two objects. extend() creates a copy of the original before extending it, creating a new object. Nested objects are also merged, but properties in the original object containing arrays are overwritten by the extension (arrays aren't merged).
 
-    var newObject = app.extend(originalObject, extensionObject);
+    var mergedObject = app.extend(originalObject, extensionObject);
 
 
-### isNumeric(object)
+### isNumeric(object) **DEPRECATED**
+
+**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Returns `true` if the object is a number, `false` if not.
 
@@ -3384,16 +3394,11 @@ Returns `true` if the object is a number, `false` if not.
     }
 
 
-### dashes(string)
+### size(object) **DEPRECATED**
 
-Convert strings into SEO-friendly versions that you can use in your URLs.
+**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
 
-    var seoTitle = app.dashes("Won't You Read My Article?"); // 'Wont-You-Read-My-Article'
-
-
-### size(object)
-
-Returns the number of properties contained within an object literal. Uses `hasOwnProperty()` to return a valid count. If the provided object isn't an object literal, size() throws an error.
+Returns the number of properties contained within an object. Uses `hasOwnProperty()` to return a valid count. If the provided object isn't an object literal, size() throws an error.
 
     var cars = {
           first: 'Volkswagen',
