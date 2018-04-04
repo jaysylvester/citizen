@@ -31,9 +31,8 @@
   "main": "./lib/citizen.js",
   "dependencies": {
     "commander": "2.15.x",
-    "formidable": "1.0.x",
-    "handlebars": "4.0.x",
-    "pug": "2.0.x"
+    "consolidate": "0.15.x",
+    "formidable": "1.0.x"
   },
   "engines": {
     "node": ">=6.x"
