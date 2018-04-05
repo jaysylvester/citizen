@@ -1,0 +1,30 @@
+{
+  "env": {
+    "es6": true,
+    "node": true,
+    "browser": false
+  },
+  "globals": {
+    "app": true,
+    "CTZN": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 8
+  },
+  "rules": {
+    "linebreak-style": [
+      "error",
+      "unix"
+    ],
+    "quotes": [
+      "error",
+      "single"
+    ],
+    "semi": [
+      "error",
+      "never"
+    ],
+    "no-console": 0
+  }
+}

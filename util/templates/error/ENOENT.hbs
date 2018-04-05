@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charsate="utf-8">
+    <title>{{metaData.title}}</title>
+    <meta name="description" content="{{metaData.description}}">
+    <meta name="keywords" content="{{metaData.keywords}}">
+  </head>
+  <body data-controller="{{route.controller}}" data-action="{{route.action}}" data-view="{{route.view}}" data-renderer="{{route.renderer}}" data-rendered-view="{{route.renderedView}}" data-show="{{route.show}}" data-task="{{route.task}}" data-type="{{route.type}}" data-mode="{{config.citizen.mode}}">
+    <main>
+      <h1>File read error</h1>
+      <p>Attempting to read or write the following file failed because the file (or possibly the directory) doesn't exist:</p>
+      <pre>
+        <code>
+          {{error.raw.path}}
+        </code>
+      </pre>
+      <p>The complete error follows:</p>
+      <pre>
+        <code>
+          {{error.inspect}}
+        </code>
+      </pre>
+    </main>
+  </body>
+</html>

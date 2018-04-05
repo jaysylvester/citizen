@@ -4,27 +4,29 @@ citizen is an event-driven MVC and caching framework for Node.js web application
 
 Use citizen as a foundation for a traditional server-side web application, a modular single-page app, or a RESTful API to be consumed by your front end framework.
 
+I recommend [reading these docs on GitHub](https://github.com/jaysylvester/citizen) because npmjs.com has some wacky formatting.
+
 
 ## Benefits
 
-- Very high performance (even without caching)
+- High performance, with our without caching
 - Zero-configuration server-side routing with SEO-friendly URLs
-- Serve HTML, JSON, and JSONP from the same controller/view with a single URL flag
+- Full server-side session support
 - Optional in-memory caching of entire routes, individual controllers, files, and objects
 - Directives that make it easy to set cookies, sessions, redirects, caches, and more
-- Easily chain controllers or include controllers within other controllers
-- Do it all on the server or roll in your favorite client-side templating engine
-- Support for Pug and Handlebars templates
+- Controller-based includes and chaining for powerful code reuse options
+- HTML, JSON, and JSONP served from the same controller/view with a single URL flag
+- Support for many template engines
 
 
-__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Version 0.7.0 has many breaking changes.
+__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Version 0.8.0 has significant breaking changes.
 
 Have questions, suggestions, or need help? [Send me an e-mail](http://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
 
 
 ## Quick Start (Recommended)
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen with the web server listening on port 8080 (you can change the port to whatever you want):
+These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen with the web server listening on port 8080 (citizen defaults to port 80, but it's often in use already):
 
     $ mkdir mywebapp
     $ cd mywebapp
@@ -34,23 +36,20 @@ These commands will create a new directory for your web app, install citizen, us
 
 If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
 
-For configuration options, see [Configuration](#configuration). For more utilities, see [Utilities](#utilities).
+citizen installs Handlebars as its default template engine, but you can install any template engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and modify the default view templates accordingly. The extension for views is always `.html` regardless of the template engine used.
 
-Please see Github for [the complete readme](https://github.com/jaysylvester/citizen), because npmjs.com truncates it, which breaks all these nice links I've created for you.
+For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
 
 
 ### App Directory Structure
 
     app/
       config/
-        citizen.json        // Optional default config
-        local.json          // Optional configs for different environments
-        qa.json
-        production.json
+        citizen.json        // Default config (optional)
       logs/                 // Log files created by citizen and your app
         app.txt
         citizen.txt
-      on/                   // Optional application events
+      on/                   // Application events (optional)
         application.js
         request.js
         response.js
@@ -59,15 +58,12 @@ Please see Github for [the complete readme](https://github.com/jaysylvester/citi
         controllers/
           index.js
         models/
-          index.js          // Optional for each controller
-        views/              // You can use Pug (.pug), Handlebars (.hbs), or HTML files
-          error/            // Optional views for error handling
-            404.pug
-            500.pug
-            error.pug      // Default error template
+          index.js          // Models (optional)
+        views/
+          error/
+            error.html      // Default error template
           index/
-            index.pug      // Default index view
-            index-alt.pug  // Optional alternate index view
+            index.html      // Default index view
       start.js
     web/                    // public static assets
 
@@ -92,7 +88,86 @@ Run start.js from the command line:
 
 ### Configuration
 
-citizen prefers convention over configuration, but sometimes configuration is a necessity. citizen has a default configuration and accepts your configuration as an extension of its own, based on a config file and/or passed inline via `app.start()`.
+#### Config files
+
+The config directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
+
+1. citizen parses each JSON file looking for a `host` key that matches the machine's hostname. If it finds one, it loads that configuration.
+2. If it can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
+3. If it can't find citizen.json or you don't have a config directory, it runs under its default configuration.
+
+Let's say you want to run an app on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
+
+    {
+      "host":                 "My-MacBook-Pro.local",
+      "citizen": {
+        "mode":               "development",
+        "http": {
+          "port":             8080
+        }
+      },
+      "db": {
+        "server":             "localhost",
+        "username":           "dbuser",
+        "password":           "dbpassword"
+      }
+    }
+
+This config would extend the default configuration only when running on your local machine; you'll never accidentally push a test config to production again ;)
+
+The database settings would be accessible within your app via `app.config.db`. **The `citizen` and `host` nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
+
+
+#### Inline config
+
+You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
+
+    // Start an HTTP server on port 8080 accepting requests at www.mysite.com
+    app.start({
+      citizen: {
+        http: {
+          hostname: 'www.mysite.com',
+          port: 8080
+        }
+      }
+    });
+
+    // Start an HTTPS server with key and cert PEM files
+    app.start({
+      citizen: {
+        http: {
+          enable: false
+        },
+        https: {
+          enable: true,
+          key: '/absolute/path/to/key.pem',
+          cert: '/absolute/path/to/cert.pem'
+        }
+      }
+    });
+
+    // Start an HTTPS server with a PFX file running on port 3000,
+    // and add a custom namespace for your app's database config
+    app.start({
+      citizen: {
+        http: {
+          enable: false
+        },
+        https: {
+          enable: true,
+          port:   3000,
+          pfx:    '/absolute/path/to/site.pfx'
+        }
+      },
+      db: {
+        server:   "localhost",  // app.config.db.server
+        username: "dbuser",     // app.config.db.username
+        password: "dbpassword"  // app.config.db.password
+      }
+    });
+
+
+#### Default configuration
 
 The following represents citizen's default configuration, which is extended by your configuration:
 
@@ -125,6 +200,7 @@ The following represents citizen's default configuration, which is extended by y
           "controller":       "",
           "view":             ""
         },
+        "templateEngine":     "handlebars",
         "formats": {
           "html": {
             "enable":         true
@@ -176,8 +252,7 @@ The following represents citizen's default configuration, which is extended by y
         "debug": {
           "output":           "console",
           "depth":            2,
-          "disableCache":     true,
-          "pug":             false
+          "disableCache":     true
         },
         "urlPaths":  {
           "app":              "/"
@@ -193,6 +268,15 @@ The following represents citizen's default configuration, which is extended by y
         }
       }
     }
+
+#### HTTPS
+
+When starting an HTTPS server, in addition to the `hostname` and `port` options, citizen takes the same options as [Node's https.createServer()](http://nodejs.org/api/https.html#https_https_createserver_options_requestlistener) (which takes the same options as [tls.createServer()](http://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener)).
+
+The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
+
+
+#### Config settings
 
 Here's a complete rundown of citizen's settings and what they mean:
 
@@ -355,6 +439,22 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
+    <td>
+      citizen.templateEngine
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>handlebars</code>
+      </p>
+    </td>
+    <td>
+      citizen installs Handlebars by default, but you can change the template engine to any engine supported by <a href="https://github.com/tj/consolidate.js">consolidate.js</a>.
+    </td>
+  </tr>
+  <tr>
     <td colspan="3">
       citizen.formats
     </td>
@@ -377,7 +477,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      By default, rendered HTML sourced from Pug templates includes the original whitespace and line breaks. Change this setting to <code>false</code> to remove whitespace and minimize file size.
+      citizen provides HTML output by default based on your views. You can disable HTML entirely if you plan to use citizen for building an API that returns JSON or JSONP only.
     </td>
   </tr>
   <tr>
@@ -398,7 +498,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers.
+      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers. To enable JSON at the controller action level, see the <a href="#json-and-jsonp">formats directive</a>.
     </td>
   </tr>
   <tr>
@@ -414,7 +514,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See "JSON and JSONP" for details.
+      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See <a href="#json-and-jsonp">JSON and JSONP</a> for details.
     </td>
   </tr>
   <tr>
@@ -435,7 +535,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers.
+      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers. To enable JSONP at the controller action level, see the <a href="#json-and-jsonp">formats directive</a>.
     </td>
   </tr>
   <tr>
@@ -451,7 +551,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See "JSON and JSONP" for details.
+      When using the <code>output</code> URL parameter, this setting determines how to parse a JSON request. See <a href="#json-and-jsonp">JSON and JSONP</a> for details.
     </td>
   </tr>
   <tr>
@@ -528,7 +628,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       <p>
-        Boolean
+        String
       </p>
       <p>
         Default: <code>false</code>
@@ -934,22 +1034,6 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td>
-      <code>pug</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>false</code>
-      </p>
-    </td>
-    <td>
-      Pug's template debugging is quite verbose, so it's disabled by default, but you can enable it with this setting if citizen is failing to start due to template parsing errors and you need additional info.
-    </td>
-  </tr>
-  <tr>
     <td colspan="3">
       citizen.urlPaths
     </td>
@@ -1004,7 +1088,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname. Don't confuse this with the host machine's <code>host</code> setting above, which is different.
+      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname.
     </td>
   </tr>
   <tr>
@@ -1057,7 +1141,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      The hostname at which your app can be accessed via HTTPS. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname. Don't confuse this with the host machine's <code>host</code> setting above, which is different.
+      The hostname at which your app can be accessed via HTTPS. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname.
     </td>
   </tr>
   <tr>
@@ -1100,89 +1184,6 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
 **Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
 
 
-#### Config files
-
-The config directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
-
-1. citizen parses each JSON file looking for a `host` key that matches the machine's hostname. If it finds one, it loads that configuration.
-2. If it can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
-3. If it can't find citizen.json or you don't have a config directory, it runs under its default configuration.
-
-Let's say you want to run an app on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
-
-    {
-      "host":                 "My-MacBook-Pro.local",
-      "citizen": {
-        "mode":               "development",
-        "http": {
-          "port":             8080
-        }
-      },
-      "db": {
-        "server":             "localhost",
-        "username":           "dbuser",
-        "password":           "dbpassword"
-      }
-    }
-
-This config would extend the default configuration only when running on your local machine; you'll never accidentally push a test config to production again ;)
-
-The database settings would be accessible within your app via `app.config.db`. **The `citizen` and `host` nodes are reserved for the framework.** Create your own node(s) to store your custom settings.
-
-
-#### Inline config
-
-You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
-
-    // Start an HTTP server on port 8080 accepting requests at www.mysite.com
-    app.start({
-      citizen: {
-        hostname: 'www.mysite.com',
-        port: 8080
-      }
-    });
-
-    // Start an HTTPS server with key and cert PEM files
-    app.start({
-      citizen: {
-        http: {
-          enable: false
-        },
-        https: {
-          enable: true,
-          key: '/absolute/path/to/key.pem',
-          cert: '/absolute/path/to/cert.pem'
-        }
-      }
-    });
-
-    // Start an HTTPS server with a PFX file running on port 3000,
-    // and add a custom namespace for your app's database config
-    app.start({
-      citizen: {
-        http: {
-          enable: false
-        },
-        https: {
-          enable: true,
-          port:   3000,
-          pfx:    '/absolute/path/to/site.pfx'
-        }
-      },
-      db: {
-        server:   "localhost",  // app.config.db.server
-        username: "dbuser",     // app.config.db.username
-        password: "dbpassword"  // app.config.db.password
-      }
-    });
-
-#### HTTPS
-
-When starting an HTTPS server, in addition to the `hostname` and `port` options, citizen takes the same options as [Node's https.createServer()](http://nodejs.org/api/https.html#https_https_createserver_options_requestlistener) (which takes the same options as [tls.createServer()](http://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener)).
-
-The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
-
-
 ### citizen methods and objects
 
 <table>
@@ -1200,21 +1201,21 @@ The only difference is how you pass key files. As you can see in the examples ab
       <code>app.cache.exists()</code><br />
       <code>app.cache.get()</code><br />
       <code>app.cache.clear()</code><br />
-      <code>app.listen() **DEPRECATED**</code><br />
-      <code>app.copy() **DEPRECATED**</code><br />
-      <code>app.extend() **DEPRECATED**</code><br />
-      <code>app.isNumeric() **DEPRECATED**</code><br />
-      <code>app.size() **DEPRECATED**</code>
-      <code>app.log()</code><br />
+      <code>app.listen()</code>&nbsp;<strong>DEPRECATED</strong><br />
+      <code>app.copy()</code>&nbsp;<strong>DEPRECATED</strong><br />
+      <code>app.extend()</code>&nbsp;<strong>DEPRECATED</strong><br />
+      <code>app.isNumeric()</code>&nbsp;<strong>DEPRECATED</strong><br />
+      <code>app.size()</code>&nbsp;<strong>DEPRECATED</strong><br />
+      <code>app.log()</code>
     </td>
     <td>
-      <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful
+      <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful. Methods marked as deperecated will be removed in version 0.9.0.
     </td>
   </tr>
   <tr>
     <td>
-      <code>app.controllers</code>
-      <code>app.models</code>
+      <code>app.controllers</code><br />
+      <code>app.models</code><br />
       <code>app.views</code>
     </td>
     <td>
@@ -1223,34 +1224,10 @@ The only difference is how you pass key files. As you can see in the examples ab
   </tr>
   <tr>
     <td>
-      <code>app.handlebars</code>
-    </td>
-    <td>
-      A pointer to the citizen Handlebars global, allowing you full access to Handlebars methods such as <code>app.handlebars.registerHelper()</code>
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>app.pug</code>
-    </td>
-    <td>
-      A pointer to the citizen Pug global
-    </td>
-  </tr>
-  <tr>
-    <td>
       <code>app.config</code>
     </td>
     <td>
       The configuration settings you supplied at startup
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>CTZN</code>
-    </td>
-    <td>
-      The global namespace used by citizen for internal objects, user sessions, and cache. You should not access or modify this namespace directly; anything you might need in your application will be exposed by the server to your controllers through local scopes.
     </td>
   </tr>
 </table>
@@ -1305,8 +1282,8 @@ citizen relies on a simple model-view-controller convention. The article pattern
           article.js
         views/
           article/        // Matches the controller name
-            article.pug  // Matches the controller name, making it the default view
-            edit.pug     // Secondary view for editing an article
+            article.html  // Matches the controller name, making it the default view
+            edit.html     // Secondary view for editing an article
 
 At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory. More on views in the [Views section](#views).
 
@@ -1443,7 +1420,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
       // Get the article content
       var article = app.models.article.getArticle(params.url.article, params.url.page);
 
-      // Use the /patterns/views/article/edit.pug view for this action (more on
+      // Use the /patterns/views/article/edit.html view for this action (more on
       // alternate views in later sections).
       emitter.emit('ready', {
         content: article,
@@ -1583,21 +1560,22 @@ Here's a simple static model for the article pattern (just an example, because s
 
 ### Views
 
-citizen supports [Pug](https://www.npmjs.org/package/pug) and [Handlebars](https://npmjs.org/package/handlebars) templates, as well as good old HTML. You can even mix and match Pug, Handlebars, and HTML templates as you see fit; just use the appropriate file extensions (.pug, .hbs, or .html) and citizen will compile and render each view with the appropriate engine.
+citizen installs [Handlebars](https://npmjs.org/package/handlebars) by default, but you can install any engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and set the `templateEngine` config setting accordingly. Regardless of the template engine you use, all views should have a `.html` extension.
 
-You have direct access to each engine's methods via `app.handlebars` and `app.pug`, allowing you to use methods like `app.handlebars.registerHelper()` to create global helpers. Keep in mind that you're extending the global Handlebars and Pug objects, potentially affecting citizen's view rendering if you do anything wacky because citizen relies on these same objects.
+In `article.html`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
-In `article.pug`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
+    // article.html
 
-    // article.pug
-
-    doctype html
-    html
-      body
-        main
-          h1 #{title} - Page #{url.page}
-          p#summary #{summary}
-          #text #{text}
+    <!doctype html>
+    <html>
+      <body>
+        <main>
+          <h1>{{title}} — Page {{url.page}}</h1>
+          <p>{{summary}}</p>
+          <section>{{text}}</section>
+        </main>
+      </body>
+    </html>
 
 citizen sends HTML to the client by default, but you can also return JSON and JSONP with no extra work on your part.
 
@@ -1754,10 +1732,10 @@ To create custom error views for server errors, create a directory called `/app/
       patterns/
         views/
           error/
-            404.pug        // Handles 404 errors
-            500.pug        // Handles 500 errors
-            ENOENT.pug     // Handles bad file read operations
-            error.pug      // Handles any error without its own template
+            404.html        // Handles 404 errors
+            500.html        // Handles 500 errors
+            ENOENT.html     // Handles bad file read operations
+            error.html      // Handles any error without its own template
 
 
 These error views are only used when citizen is in `production` mode. In `development` and `debug` modes, citizen dumps the error directly.
@@ -1784,7 +1762,7 @@ By default, the server renders the view whose name matches that of the controlle
       emitter.emit('ready', {
         content: article,
 
-        // This tells the server to render app/patterns/views/article/edit.pug
+        // This tells the server to render app/patterns/views/article/edit.html
         view: 'edit'
       });
     }
@@ -1989,7 +1967,7 @@ citizen lets you use complete MVC patterns as includes. These includes are more 
     }
 
 
-Let's say our article pattern's Pug template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
+Let's say our article pattern's template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
 
     doctype html
     html
@@ -2023,19 +2001,19 @@ It probably makes sense to use includes for the head section and header because 
       patterns/
         controllers/
           _head.js
-          _header.js   // Doesn't pull data, so it doesn't need a model
+          _header.js  // Doesn't pull data, so it doesn't need a model
           article.js
         models/
           _head.js
           article.js
         views/
           _head/
-            _head.pug
+            _head.html
           _header/
-            _header.pug
-            _header-authenticated.pug // A different header for logged in users
+            _header.html
+            _header-authenticated.html  // A different header for logged in users
           article/
-            article.pug
+            article.html
 
 When the article controller is fired, it has to tell citizen which includes it needs. We do that with the `include` directive, which we pass via the context in the emitter:
 
@@ -2053,7 +2031,7 @@ When the article controller is fired, it has to tell citizen which includes it n
         include: {
           head: {
             // If only the controller is specified, the default action handler() is
-            // called and the default view is rendered (_head.pug in this case).
+            // called and the default view is rendered (_head.html in this case).
             controller: '_head'
           },
           header: {
@@ -2097,7 +2075,7 @@ Here's what our header controller looks like:
 
 And the header views:
 
-    // _header view (/patterns/views/_header/_header.pug)
+    // _header view (/patterns/views/_header/_header.html)
 
     header
       a#logo Home page
@@ -2110,7 +2088,7 @@ And the header views:
 
 
 
-    // _header-authenticated view  (/patterns/views/_header/_header-authenticated.pug)
+    // _header-authenticated view  (/patterns/views/_header/_header-authenticated.html)
 
     header
       a#logo Home page
@@ -2125,7 +2103,7 @@ And the header views:
             a(href="/admin") Site Administration
 
 
-The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`!=` in Pug, `{{{...}}}` in Handlebars):
+The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`{{{...}}}` in Handlebars):
 
     doctype html
     html
@@ -2168,13 +2146,13 @@ Of course, if you don't write the controller in a manner to accept direct reques
           article.js   // Accessible via www.cleverna.me/article
 
 
-#### Should I use a citizen include or a Pug include/Handlebars partial?
+#### Should I use a citizen include or a Handlebars partial?
 
 citizen includes provide rich functionality, but they do have limitations and can be overkill in certain situations.
 
-* **Do you only need to share a chunk of markup across different views?** Use a standard Handlebars partial, Pug template, or HTML document. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
-* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with Handlebars partials or Pug includes.
-* **Do you need the ability to render different includes based on logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using Handlebars partials or Pug includes would require registering multiple partials and putting the logic in the view template.
+* **Do you only need to share a chunk of markup across different views?** Use a standard Handlebars partial. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
+* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with Handlebars partials.
+* **Do you need the ability to render different includes based on logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using Handlebars partials would require registering multiple partials and putting the logic in the view template.
 * **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
 
 
@@ -2218,9 +2196,9 @@ A common use case for `handoff` would be to create a layout controller that serv
     }
 
 
-The view of the originally requested controller (article.pug in this case) is rendered and stored in the `route.chain` object:
+The view of the originally requested controller (article.html in this case) is rendered and stored in the `route.chain` object:
 
-    // article.pug, which is stored in the route.chain scope
+    // article.html, which is stored in the route.chain scope
 
     h1 #{title}
     p#summary #{summary}
@@ -2290,7 +2268,7 @@ You can use `handoff` to chain requests across as many controllers as you want, 
 
 You can loop over this object to render all the chained views:
 
-    // +_layout.pug
+    // +_layout.html
 
     doctype html
     html
@@ -3479,9 +3457,6 @@ By default, the pattern's complete output is dumped. You can specify the exact o
     // Dumps the user's session scope to the view
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params.session/ctzn_dump/view
 
-    // Dumps the CTZN global object
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/CTZN
-
 
 The debug output traverses objects 2 levels deep by default. To display deeper output, use the `debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
 
@@ -3531,12 +3506,12 @@ Resulting file structure:
           index.js
         views/
           error/
-            404.pug
-            500.pug
-            ENOENT.pug
-            error.pug
+            404.html
+            500.html
+            ENOENT.html
+            error.html
           index/
-            index.pug
+            index.html
       start.js
     web/
 
@@ -3549,7 +3524,7 @@ Creates a complete citizen MVC pattern. The pattern command takes a pattern name
 
     $ node node_modules/citizen/util/scaffold pattern [options] [pattern]
 
-For example, `node scaffold pattern -f hbs article` will create the following pattern with a view file in Handlebars format:
+For example, `node scaffold pattern article` will create the following pattern:
 
     app/
       patterns/
@@ -3559,7 +3534,7 @@ For example, `node scaffold pattern -f hbs article` will create the following pa
           article.js
         views/
           article/
-            article.hbs
+            article.html
 
 Use `node node_modules/citizen/util/scaffold pattern -h` to see all available options for customizing your patterns.
 
@@ -3568,7 +3543,7 @@ Use `node node_modules/citizen/util/scaffold pattern -h` to see all available op
 
 (The MIT License)
 
-Copyright (c) 2014 [Jason Sylvester](http://jaysylvester.com)
+Copyright (c) 2014-2018 [Jay Sylvester](http://jaysylvester.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
