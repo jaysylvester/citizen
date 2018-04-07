@@ -1,6 +1,6 @@
 # citizen
 
-citizen is an event-driven MVC and caching framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or building a Jenga tower made out of 20 different packages (of course, citizen's few dependencies install a myriad of packages themselves, but let's sidestep that).
+citizen is an event-driven MVC and caching framework for Node.js web applications. It's for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
 
 Use citizen as a foundation for a traditional server-side web application, a modular single-page app, or a RESTful API to be consumed by your front end framework.
 
