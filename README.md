@@ -23,6 +23,10 @@ __citizen's API is stabilizing, but it's still subject to change.__ Always consu
 
 Have questions, suggestions, or need help? [Send me an e-mail](http://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
 
+## Want to see citizen in action?
+
+I use it on [originaltrilogy.com](http://originaltrilogy.com). We get a moderate amount of traffic (500k to 750k page views per month) and the site runs for months on end without restarting the app. It's very stable.
+
 
 ## Quick Start (Recommended)
 
