@@ -1,12 +1,13 @@
 [0.8.0]
   * BREAKING CHANGES (see readme for details):
     * Updated dependencies to latest versions
-    * The built-in Jade and Handlebars template engines have been replaced with consolidate.js (https://github.com/tj/consolidate.js). Simply install your preferred engine, add it to your dependencies, and set the "templateEngine" config setting
+    * The built-in Jade and Handlebars template engines have been replaced with consolidate.js (https://github.com/tj/consolidate.js). Simply install your preferred engine, add it to your dependencies, and set the "templateEngine" config setting. Handlebars is included by default.
     * Config change: the server "hostname" setting has been changed to "host" so as to avoid confusion with the HTTP/HTTPS server hostname settings
     * The copy() and extend() helpers have been updated for improved accuracy within the framework, which means some bad behavior that was tolerated previously will no longer work. Please test any code that relies on these methods to ensure it still behaves as expected.
     * CORS support has been enhanced to provide unique attributes to each controller action, so the notation in the controller has changed
+    * Cache-Control settings for cached routes should now be handled using the new HTTP Header directive rather than route.cache.control
   * Deprecations
-    * All helpers except for cache() and log() have been deprecated and will be removed from the public app scope in 0.9.x. Any of the deprecated helpers can be replaced by native functionality (Promises in place of listen() for example) or a third-party library. cache() and log() are still pretty nice though (imho), so I'm keeping them public.
+    * All helpers except for cache() and log() have been deprecated and will be removed from the public app scope in 0.9.0. Any of the deprecated helpers can be replaced by native functionality (Promises in place of listen() for example) or a third-party library. cache() and log() are still pretty nice though (imho), so I'm keeping them public.
 
 [0.7.19]
   * Deprecations (these items will no longer be supported by citizen as of v0.8.0):

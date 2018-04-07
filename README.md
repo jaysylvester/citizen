@@ -30,7 +30,7 @@ I use it on [originaltrilogy.com](http://originaltrilogy.com). We get a moderate
 
 ## Quick Start (Recommended)
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding CLI to create the app's skeleton, and start citizen with the web server listening on port 8080 (citizen defaults to port 80, but it's often in use already):
+These commands will create a new directory for your web app, install citizen, use its scaffolding utility to create the app's skeleton, and start citizen with the web server listening on port 8080 (citizen defaults to port 80, but it's often in use already):
 
     $ mkdir mywebapp
     $ cd mywebapp
@@ -40,7 +40,7 @@ These commands will create a new directory for your web app, install citizen, us
 
 If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
 
-citizen installs Handlebars as its default template engine, but you can install any template engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and modify the default view templates accordingly. The extension for views is always `.html` regardless of the template engine used.
+citizen installs Handlebars as its default template engine, but you can install any template engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and modify the default view templates accordingly.
 
 For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
 
@@ -50,6 +50,9 @@ For configuration options, see [Configuration](#configuration). For more utiliti
     app/
       config/
         citizen.json        // Default config (optional)
+        local.json          // Optional environment configs
+        qa.json
+        prod.json
       logs/                 // Log files created by citizen and your app
         app.txt
         citizen.txt
@@ -65,9 +68,9 @@ For configuration options, see [Configuration](#configuration). For more utiliti
           index.js          // Models (optional)
         views/
           error/
-            error.html      // Default error template
+            error.hbs      // Default error template
           index/
-            index.html      // Default index view
+            index.hbs      // Default index view
       start.js
     web/                    // public static assets
 
@@ -318,6 +321,128 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
+    <td colspan="3">
+      citizen.http
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      This setting controls the HTTP server, which is enabled by default.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>127.0.0.1</code>
+      </p>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTP. The default is localhost, but you can specify an empty string to accept requests at any hostname.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>port</code>
+    </td>
+    <td>
+      <p>
+        Number
+      </p>
+      <p>
+        Default: <code>80</code>
+      </p>
+    </td>
+    <td>
+      The port number on which citizen's HTTP server should listen for requests.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      citizen.https
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enable</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      This setting controls the HTTPS server, which is disabled by default.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+      <p>
+        Default: <code>127.0.0.1</code>
+      </p>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTPS. The default is localhost, but you can specify an empty string to accept requests at any hostname.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>port</code>
+    </td>
+    <td>
+      <p>
+        Number
+      </p>
+      <p>
+        Default: <code>443</code>
+      </p>
+    </td>
+    <td>
+      The port number on which citizen's HTTPS server should listen for requests.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>secureCookies</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      By default, all cookies set during an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
+    </td>
+  </tr>
+  <tr>
     <td>
       <code>mode</code>
     </td>
@@ -386,7 +511,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      If sessions are enabled, this number represents the length of a user's session in minutes. Sessions automatically expire once this time limit is reached.
+      If sessions are enabled, this number represents the length of a user's session in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
     </td>
   </tr>
   <tr>
@@ -502,7 +627,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers. To enable JSON at the controller action level, see the <a href="#json-and-jsonp">formats directive</a>.
+      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers. To enable JSON at the controller action level, see the <a href="#formats">formats directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
     </td>
   </tr>
   <tr>
@@ -539,7 +664,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers. To enable JSONP at the controller action level, see the <a href="#json-and-jsonp">formats directive</a>.
+      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers. To enable JSONP at the controller action level, see the <a href="#formats">formats directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
     </td>
   </tr>
   <tr>
@@ -577,7 +702,7 @@ Here's a complete rundown of citizen's settings and what they mean:
         Object
       </p>
       <p>
-        Default: Same as formidable
+        Default: Same as <a href="https://www.npmjs.com/package/formidable">formidable</a>
       </p>
     </td>
     <td>
@@ -623,7 +748,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      Enables gzip and deflate compression for rendered views and static assets. Compression occurs on the fly, but compressed routes can be cached with the cache directive, and static assets can be cached using the cache setting below.
+      Enables gzip and deflate compression for rendered views and static assets. Compression occurs on the fly, but if you enable caching, both the original and compressed version cached, so compression is only performed once.
     </td>
   </tr>
   <tr>
@@ -632,7 +757,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
     <td>
       <p>
-        String
+        Boolean or String
       </p>
       <p>
         Default: <code>false</code>
@@ -864,7 +989,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      citizen only writes to the console when in debug mode. To override this behavior, set this to <code>true</code>.
+      citizen only writes to the console when in debug mode. To override this behavior in other modes, set this to <code>true</code>.
     </td>
   </tr>
   <tr>
@@ -880,7 +1005,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      citizen only writes to a log file when in debug mode. To override this behavior, set this to <code>true</code>.
+      citizen only writes to a log file when in debug mode. To override this behavior in other modes, set this to <code>true</code>.
     </td>
   </tr>
   <tr>
@@ -896,7 +1021,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      citizen writes log files to the <code>logs</code> directory in your app folder by default. Enter a different absolute path in this setting to change the location.
+      citizen writes log files to <code>/app/logs</code> directory in your app folder by default. Enter a different absolute path in this setting to change the location.
     </td>
   </tr>
   <tr>
@@ -1018,7 +1143,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      When citizen dumps an object in the debug content, it inspects it using Node's util.inspect. This setting determines the depth of the inspection, meaning the number of nodes that will be inspected and displayed.
+      When citizen dumps an object in the debug content, it inspects it using Node's util.inspect. This setting determines the depth of the inspection, meaning the number of nodes that will be inspected and displayed. Deeper nodes mean slower performance.
     </td>
   </tr>
   <tr>
@@ -1055,129 +1180,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      Denotes the URL path leading to your app. If you want your app to be located at http://yoursite.com/my/app, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="3">
-      citizen.http
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enable</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>true</code>
-      </p>
-    </td>
-    <td>
-      This setting controls the HTTP server, which is enabled by default.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>hostname</code>
-    </td>
-    <td>
-      <p>
-        A valid hostname
-      </p>
-      <p>
-        Default: <code>127.0.0.1</code>
-      </p>
-    </td>
-    <td>
-      The hostname at which your app can be accessed via HTTP. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>port</code>
-    </td>
-    <td>
-      <p>
-        A valid port number
-      </p>
-      <p>
-        Default: <code>80</code>
-      </p>
-    </td>
-    <td>
-      The port number on which citizen's HTTP server should listen for requests.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="3">
-      citizen.https
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enable</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>false</code>
-      </p>
-    </td>
-    <td>
-      This setting controls the HTTPS server, which is disabled by default.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>hostname</code>
-    </td>
-    <td>
-      <p>
-        A valid hostname
-      </p>
-      <p>
-        Default: <code>127.0.0.1</code>
-      </p>
-    </td>
-    <td>
-      The hostname at which your app can be accessed via HTTPS. You need to configure your server's DNS settings to support this setting. The default is localhost, but you can specify an empty string to accept requests at any hostname.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>port</code>
-    </td>
-    <td>
-      <p>
-        A valid port number
-      </p>
-      <p>
-        Default: <code>443</code>
-      </p>
-    </td>
-    <td>
-      The port number on which citizen's HTTPS server should listen for requests.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>secureCookies</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>true</code>
-      </p>
-    </td>
-    <td>
-      By default, all cookies set during an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
+      Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
     </td>
   </tr>
 </table>
@@ -1213,7 +1216,7 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
       <code>app.log()</code>
     </td>
     <td>
-      <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful. Methods marked as deperecated will be removed in version 0.9.0.
+      <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful. Methods marked as deprecated will be removed in version 0.9.0.
     </td>
   </tr>
   <tr>
@@ -1285,9 +1288,9 @@ citizen relies on a simple model-view-controller convention. The article pattern
         models/
           article.js
         views/
-          article/        // Matches the controller name
-            article.html  // Matches the controller name, making it the default view
-            edit.html     // Secondary view for editing an article
+          article/        // Directory name matches the controller name
+            article.hbs  // Default view name matches the controller name
+            edit.hbs     // Secondary view, which must be called explicitly
 
 At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory. More on views in the [Views section](#views).
 
@@ -1424,7 +1427,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
       // Get the article content
       var article = app.models.article.getArticle(params.url.article, params.url.page);
 
-      // Use the /patterns/views/article/edit.html view for this action (more on
+      // Use the /patterns/views/article/edit.hbs view for this action (more on
       // alternate views in later sections).
       emitter.emit('ready', {
         content: article,
@@ -1564,11 +1567,11 @@ Here's a simple static model for the article pattern (just an example, because s
 
 ### Views
 
-citizen installs [Handlebars](https://npmjs.org/package/handlebars) by default, but you can install any engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and set the `templateEngine` config setting accordingly. Regardless of the template engine you use, all views should have a `.html` extension.
+citizen installs [Handlebars](https://npmjs.org/package/handlebars) by default, but you can install any engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and set the `templateEngine` config setting accordingly. Make sure you use the correct file extension with your views so citizen knows how to parse them. citizen only supports one template engine at a time; you can't mix and match templates.
 
-In `article.html`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
+In `article.hbs`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
-    {{! article.html }}
+    {{! article.hbs }}
 
     <!doctype html>
     <html>
@@ -1603,7 +1606,7 @@ Returns...
       "last modified": "2015 Mar 03"
     }
 
-Whatever you've added to the controller's emitter `content` object will be returned.
+Whatever you've added to the controller's emitter `content` object will be returned. Objects within `params` are not returned within JSON requests because they could include sensitive information like session contents.
 
 To enable JSON output at the controller level:
 
@@ -1718,7 +1721,7 @@ For this to work without manually enabling JSON or JSONP in every controller act
 
 ##### JSON security risks
 
-The JSON output from any controller action is driven by the emitter's content object. Anything you place in the content object will be present in the JSON output -- whether it's present in the HTML view or not.
+The JSON output from any controller action is driven by the emitter's content object. Anything you place in the content object will be present in the JSON output — whether it's present in the HTML view or not.
 
 **Take care not to place sensitive data in the content object thinking it will never be exposed because you don't reference it in your view template, because it WILL show up in your JSON.**
 
@@ -1736,10 +1739,10 @@ To create custom error views for server errors, create a directory called `/app/
       patterns/
         views/
           error/
-            404.html        // Handles 404 errors
-            500.html        // Handles 500 errors
-            ENOENT.html     // Handles bad file read operations
-            error.html      // Handles any error without its own template
+            404.hbs        // Handles 404 errors
+            500.hbs        // Handles 500 errors
+            ENOENT.hbs     // Handles bad file read operations
+            error.hbs      // Handles any error without its own template
 
 
 These error views are only used when citizen is in `production` mode. In `development` and `debug` modes, citizen dumps the error directly.
@@ -1766,10 +1769,29 @@ By default, the server renders the view whose name matches that of the controlle
       emitter.emit('ready', {
         content: article,
 
-        // This tells the server to render app/patterns/views/article/edit.html
+        // This tells the server to render app/patterns/views/article/edit.hbs
         view: 'edit'
       });
     }
+
+
+### Formats
+
+citizen returns HTML by default, and you can enable JSON or JSONP in the global config. However, if you want to enable a custom format at the controller action level, use the `format` directive.
+
+  emitter.emit('ready', {
+    formats: {
+      html: {
+        enable: false
+      },
+      json: {
+        enable: true
+      },
+      jsonp: {
+        enable: true
+      }
+    }
+  });
 
 
 ### Cookies
@@ -2035,12 +2057,12 @@ It probably makes sense to use includes for the head section and header because 
           article.js
         views/
           _head/
-            _head.html
+            _head.hbs
           _header/
-            _header.html
-            _header-authenticated.html  // A different header for logged in users
+            _header.hbs
+            _header-authenticated.hbs  // A different header for logged in users
           article/
-            article.html
+            article.hbs
 
 When the article controller is fired, it has to tell citizen which includes it needs. We do that with the `include` directive, which we pass via the context in the emitter:
 
@@ -2058,7 +2080,7 @@ When the article controller is fired, it has to tell citizen which includes it n
         include: {
           head: {
             // If only the controller is specified, the default action handler() is
-            // called and the default view is rendered (_head.html in this case).
+            // called and the default view is rendered (_head.hbs in this case).
             controller: '_head'
           },
           header: {
@@ -2097,9 +2119,9 @@ Here's what our head section controller might look like:
 And the head section view:
 
     <head>
-      <title>{{metaData.title}}</title>
-      <meta name="description" content="{{metaData.description}}">
-      <meta name="keywords" content="{{metaData.keywords}}">
+      <title>{{title}}</title>
+      <meta name="description" content="{{description}}">
+      <meta name="keywords" content="{{keywords}}">
       <link rel="stylesheet" type="text/css" href="app.css">
     </head>
 
@@ -2127,14 +2149,14 @@ Here's what our header controller might look like:
 
 And the header views:
 
-    {{! _header view (/patterns/views/_header/_header.html) }}
+    {{! _header view (/patterns/views/_header/_header.hbs) }}
 
     <header>
       <p>Welcome!</p>
     </header>
 
 
-    {{! _header-authenticated view  (/patterns/views/_header/_header-authenticated.html) }}
+    {{! _header-authenticated view  (/patterns/views/_header/_header-authenticated.hbs) }}
 
     <header>
       <p>Welcome, {{cookie.username}}</p>
@@ -2143,7 +2165,7 @@ And the header views:
 
 The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`{{{...}}}` in Handlebars) within the article view:
 
-    {{! article.html }}
+    {{! article.hbs }}
 
     <!doctype html>
     <html>
@@ -2179,7 +2201,7 @@ Perhaps you'd have it return meta data as JSON for the article pattern:
 
 Of course, if you don't write the controller in a manner to accept direct requests and return content, it'll return nothing (or throw an error). When accessed via HTTP, the controller has access to all emitter directives.
 
-**Reminder:** To make a controller private—inaccessible via HTTP, but accessible within your app—add a plus sign (`+`) to the beginning of the file name:
+**Reminder:** To make a controller private — inaccessible via HTTP, but accessible within your app — add a plus sign (`+`) to the beginning of the file name:
 
     app/
       patterns/
@@ -2239,9 +2261,9 @@ A common use case for `handoff` would be to create a layout controller that serv
     }
 
 
-The view of the originally requested controller (article.html in this case) is rendered and stored in the `route.chain` object:
+The view of the originally requested controller (article.hbs in this case) is rendered and stored in the `route.chain` object:
 
-    {{! article.html, which is stored in the route.chain scope }}
+    {{! article.hbs, which is stored in the route.chain scope }}
 
     <h1>{{title}}</h1>
     <p>{{summary}}</p>
@@ -2311,7 +2333,7 @@ You can use `handoff` to chain requests across as many controllers as you want, 
 
 You can loop over this object to render all the chained views:
 
-    {{! +_layout.html }}
+    {{! +_layout.hbs }}
 
     <!doctype html>
     <html>
@@ -2398,7 +2420,9 @@ Let's say you chain the article controller with the layout controller like we di
 Each of the following routes would generate its own cache item:
 
 http://cleverna.me/article
+
 http://cleverna.me/article/My-Article
+
 http://cleverna.me/article/My-Article/page/2
 
 Note that if you put the `cache.route` directive *anywhere* in your controller chain, the route will be cached.
@@ -2447,7 +2471,6 @@ If a given route chain will vary across requests, you can still cache individual
     emitter.emit('ready', {
       cache: {
         controller: {
-
           // Optional. If caching the controller, 'global' (default) will cache one
           // instance of the controller and use it globally, while 'route' will cache
           // a unique instance of the controller for every route that calls it.
@@ -2502,12 +2525,15 @@ The `urlParams` property helps protect against invalid cache items (or worse: an
 If we used the example above in our article controller, the following URLs would be cached because the "article" and "page" URL parameters are permitted:
 
 http://cleverna.me/article
+
 http://cleverna.me/article/My-Article-Title
+
 http://cleverna.me/article/My-Article-Title/page/2
 
 The following URLs wouldn't be cached, which is a good thing because it wouldn't take long for an attacker's script to loop over a URL and flood the cache:
 
 http://cleverna.me/article/My-Article-Title/dosattack/1
+
 http://cleverna.me/article/My-Article-Title/dosattack/2
 
 "page" is valid, but "dosattack" isn't, so this URL wouldn't be cached either:
@@ -2565,7 +2591,6 @@ This setting determines how long the route or controller should remain in the ca
     emitter.emit('ready', {
       cache: {
         route: {
-
           // This route cache will expire in 10 minutes
           lifespan: 10
         }
@@ -2579,7 +2604,6 @@ Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the ro
     emitter.emit('ready', {
       cache: {
         route: {
-
           // This route cache will expire in 10 minutes, but if a request accesses it
           // before then, the cache timer will be reset to 10 minutes from now
           lifespan: 10,
@@ -2594,7 +2618,7 @@ As mentioned previously, if you use the handoff directive to call a series of co
 
 When caching an include controller, the view directive doesn't work. Set the view within the include directive of the calling controller.
 
-citizen's cache is a RAM cache stored in the heap, so be careful with your caching strategy. Use the lifespan option so URLs that aren't receiving regular traffic naturally fall out of the cache and free up resources for frequently accessed pages.
+citizen's cache is a RAM cache stored in the heap, so be careful with your caching strategy. Use the `lifespan` and `resetOnAccess` options so URLs that receive a lot of traffic stay in the cache, while less popular URLs naturally fall out of the cache over time.
 
 
 ### Caching Static Assets
@@ -2746,7 +2770,7 @@ Unlike formidable, the `maxFieldsSize` option includes images in a multipart for
 citizen makes it easy to build progressively enhanced HTML forms that work both server-side and client-side. Here's a login form that will submit to the login controller and fire the `form()` action:
 
     <section class="login-form">
-      <p>
+      <p id="message">
         {{#if message}}
           {{message}}
         {{else}}
@@ -2809,7 +2833,7 @@ To take advantage of these events, include a directory called "on" in your app w
 
     app/
       on/
-        application.js // exports start(), end(), and error()
+        application.js // exports start() and error()
         request.js     // exports start() and end()
         response.js    // exports start() and end()
         session.js     // exports start() and end()
@@ -2817,8 +2841,6 @@ To take advantage of these events, include a directory called "on" in your app w
 `request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what they output—content, citizen directives, custom directives—is up to you.
 
 All files and exports are optional. citizen only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
-
-_Note: As of this version, session end() and application end() aren't functional. They'll be in a future version._
 
 Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to the login page if it doesn't exist. We also avoid a redirect loop by making sure the requested controller isn't the login controller:
 
@@ -2837,6 +2859,16 @@ Here's an example of a request module that checks for a username cookie at the b
         redirect: redirect
       });
     };
+
+`session.end` is slightly different in terms of the arguments in receives, which consist of a copy of the expired session (no longer active) and any context passed from citizen (empty as of 0.8.0):
+
+    // app/on/session.js
+
+    exports.end = end;
+
+    function end(expiredSession, context) {
+      // do something
+    }
 
 
 
@@ -3103,9 +3135,9 @@ Clear a cache object using a key or a scope.
     app.cache.clear({ scope: 'app' });
 
 
-### listen() **DEPRECATED**
+### listen()
 
-**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
+**This method has been deprecated. It will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 The article example we've been using has only simple methods that return static content immediately, but things are rarely that simple. The `listen()` function takes advantage of the asynchronous, event-driven nature of Node.js, letting you wrap a single function or multiple asynchronous functions within it and firing a callback when they're done. You can also chain and nest multiple `listen()` functions for very powerful asynchronous function calls.
 
@@ -3377,27 +3409,27 @@ Use `error` to throw an error and fire the callback, which is responsible for ha
     });
 
 
-### copy(object) **DEPRECATED**
+### copy(object)
 
-**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
+**This method has been deprecated. It will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Creates a deep copy of an object.
 
     var objectCopy = app.copy(object);
 
 
-### extend(object, extension) **DEPRECATED**
+### extend(object, extension)
 
-**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
+**This method has been deprecated. It will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Extends an object with another object, effectively merging the two objects. extend() creates a copy of the original before extending it, creating a new object. Nested objects are also merged, but properties in the original object containing arrays are overwritten by the extension (arrays aren't merged).
 
     var mergedObject = app.extend(originalObject, extensionObject);
 
 
-### isNumeric(object) **DEPRECATED**
+### isNumeric(object)
 
-**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
+**This method has been deprecated. It will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Returns `true` if the object is a number, `false` if not.
 
@@ -3408,9 +3440,9 @@ Returns `true` if the object is a number, `false` if not.
     }
 
 
-### size(object) **DEPRECATED**
+### size(object)
 
-**This method will remain available in 0.8.x, but will be removed from 0.9.x.**
+**This method has been deprecated. It will remain available in 0.8.x, but will be removed from 0.9.x.**
 
 Returns the number of properties contained within an object. Uses `hasOwnProperty()` to return a valid count. If the provided object isn't an object literal, size() throws an error.
 
@@ -3570,7 +3602,7 @@ For example, `node scaffold pattern article` will create the following pattern:
           article.js
         views/
           article/
-            article.html
+            article.hbs
 
 Use `node node_modules/citizen/util/scaffold pattern -h` to see all available options for customizing your patterns.
 
