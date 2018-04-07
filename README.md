@@ -1564,7 +1564,7 @@ citizen installs [Handlebars](https://npmjs.org/package/handlebars) by default, 
 
 In `article.html`, you can reference objects you placed within the `content` object passed by the emitter. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
-    // article.html
+    {{! article.html }}
 
     <!doctype html>
     <html>
@@ -1775,7 +1775,8 @@ You set cookies by appending a `cookie` object to the emitter context.
 Here's an example of a complete cookie object's default values:
 
     cookie.foo = {
-      value: '',
+      value: 'myValue',
+
       // Valid expiration options are:
       // 'now' - deletes an existing cookie
       // 'never' - current time plus 30 years, so effectively never
@@ -1836,7 +1837,7 @@ The following sample login controller tells the server to set `username` and `pa
       });
     };
 
-Alternatively, you can pass the cookie directive strings, which will create cookies using the default attributes. The following code sets the same cookies, but they expire at the end of the browser session:
+Alternatively, you can pass strings into the cookie directive, which will create cookies using the default attributes. The following code sets the same cookies, but they expire at the end of the browser session:
 
     emitter.emit('ready', {
       cookie: {
@@ -1847,14 +1848,18 @@ Alternatively, you can pass the cookie directive strings, which will create cook
 
 Cookies sent by the client are available in `params.cookie` within the controller and simply `cookie` within the view context:
 
-    doctype html
-    html
-      body
-        #welcome
-          if cookie.username
-            | Welcome, #{cookie.username}.
-          else
-            a(href="/login") Login
+    <!doctype html>
+    <html>
+      <body>
+        <section>
+          {{#if cookie.username}}
+            Welcome, {{cookie.username}}.
+          {{else}}
+            <a href="/login">Login</a>
+          {{/if}}
+        </section>
+      </body>
+    </html>
 
 Cookie variables you set within your controller aren't immediately available within the `params.cookie` scope. citizen's server has to receive the emitter's ready event from the controller before it can send the cookie to the client, so use a local instance of the variable if you need to access it during the same request.
 
@@ -1920,6 +1925,19 @@ If you haven't enabled sessions, citizen falls back to creating a cookie named `
 
 
 
+### HTTP Headers
+
+You can set HTTP headers using the `headers` directive:
+
+    emitter.emit('ready', {
+      headers: {
+        'Cache-Control': 'max-age=86400',
+        'Date': new Date().toISOString()
+      }
+    });
+
+
+
 ### Including Controllers
 
 citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse because each has its own controller, model, and view(s). Here's the syntax:
@@ -1967,33 +1985,38 @@ citizen lets you use complete MVC patterns as includes. These includes are more 
     }
 
 
-Let's say our article pattern's template has the following contents. The head section contains dynamic meta data, and the header nav's content changes depending on whether the user is logged in or not:
+Let's say our article pattern's template has the following contents. The head section contains dynamic meta data, and the header's content changes depending on whether the user is logged in or not:
 
-    doctype html
-    html
-      head
-        title #{metaData.title}
-        meta(name="description" content="#{metaData.description}")
-        meta(name="keywords" content="#{metaData.keywords}")
-        link(rel="stylesheet" type="text/css" href="app.css")
-      body
-        header
-          a#logo Home page
-          if cookie.username
-            p Welcome, #{cookie.username}
-          nav
-            ul
-              li
-                a(href="/") Home
-              li
-                a(href="/articles") Articles
-              if cookie.username
-                li
-                  a(href="/admin") Site Administration
-        main
-          h1 #{title} - Page #{url.page}
-          p#summary #{summary}
-          #text #{text}
+    <!doctype html>
+    <html>
+      <head>
+        <title>{{metaData.title}}</title>
+        <meta name="description" content="{{metaData.description}}">
+        <meta name="keywords" content="{{metaData.keywords}}">
+        <link rel="stylesheet" type="text/css" href="app.css">
+      </head>
+      <body>
+        <header>
+          {{#if cookie.username}}
+            <p>Welcome, {{cookie.username}}</p>
+          {{else}}
+            <p>Welcome!</p>
+          {{/if}}
+        </header>
+        <main>
+          <h1>{{title}} — Page {{url.page}}</h1>
+          <p>{{summary}}</p>
+          <section>{{text}}</section>
+        </main>
+        <section>
+          {{#if cookie.username}}
+            Welcome, {{cookie.username}}.
+          {{else}}
+            <a href="/login">Login</a>
+          {{/if}}
+        </section>
+      </body>
+    </html>
 
 It probably makes sense to use includes for the head section and header because you'll use that code everywhere, but rather than simple partials, you can create citizen includes. The head section can use its own model for populating the meta data, and since the header is different for authenticated users, let's pull that logic out of the template and put it in the header's controller. I like to follow the convention of starting partials with an underscore, but that's up to you:
 
@@ -2051,7 +2074,32 @@ When the article controller is fired, it has to tell citizen which includes it n
 
 citizen include patterns have the same requirements as regular patterns, including a controller with a `handler()` function. The `include` directive above tells citizen to call the _head and _header controllers, pass them the same arguments that were passed to the article controller (params, context, and emitter), render their respective views, and add the resulting views to the view context.
 
-Here's what our header controller looks like:
+Here's what our head section controller might look like:
+
+    // _head controller
+
+    module.exports = {
+      handler: handler
+    };
+
+    function handler(params, context, emitter) {
+      var metaData = app.models._head({ article: 2 });
+
+      emitter.emit('ready', {
+        content: metaData
+      });
+    }
+
+And the head section view:
+
+    <head>
+      <title>{{metaData.title}}</title>
+      <meta name="description" content="{{metaData.description}}">
+      <meta name="keywords" content="{{metaData.keywords}}">
+      <link rel="stylesheet" type="text/css" href="app.css">
+    </head>
+
+Here's what our header controller might look like:
 
     // _header controller
 
@@ -2075,47 +2123,38 @@ Here's what our header controller looks like:
 
 And the header views:
 
-    // _header view (/patterns/views/_header/_header.html)
+    {{! _header view (/patterns/views/_header/_header.html) }}
 
-    header
-      a#logo Home page
-      nav
-        ul
-          li
-            a(href="/") Home
-          li
-            a(href="/articles") Articles
+    <header>
+      <p>Welcome!</p>
+    </header>
 
 
+    {{! _header-authenticated view  (/patterns/views/_header/_header-authenticated.html) }}
 
-    // _header-authenticated view  (/patterns/views/_header/_header-authenticated.html)
-
-    header
-      a#logo Home page
-      p Welcome, #{cookie.username}
-      nav
-        ul
-          li
-            a(href="/") Home
-          li
-            a(href="/articles") Articles
-          li
-            a(href="/admin") Site Administration
+    <header>
+      <p>Welcome, {{cookie.username}}</p>
+    </header>
 
 
-The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`{{{...}}}` in Handlebars):
+The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`{{{...}}}` in Handlebars) within the article view:
 
-    doctype html
-    html
-      != include.head
-      body
-        != include.header
-        main
-          h1 #{title} - Page #{url.page}
-          p#summary #{summary}
-          #text #{text}
+    {{! article.html }}
 
-citizen includes are self-contained and sandboxed. Content you generate in the calling controller isn't passed to its include controllers, and content generated inside an include isn't passed back to the parent. citizen includes also can't make use of cookie, session, redirect, or handoff directives. They only use the content directive (to populate their own views), the view directive for setting the view used by the include, and the cache directive for controller caching.
+    <!doctype html>
+    <html>
+      {{{include.head}}}
+      <body>
+        {{{include.header}}}
+        <main>
+          <h1>{{title}} — Page {{url.page}}</h1>
+          <p>{{summary}}</p>
+          <section>{{text}}</section>
+        </main>
+      </body>
+    </html>
+
+citizen includes are self-contained and sandboxed. While they receive the same request context (URL parameters, form inputs, etc.) as the calling controller, content generated by the calling controller isn't passed to its includes, and content generated inside an include isn't passed back to the caller. citizen includes also can't make use of cookie, session, redirect, or handoff directives. They only use the content directive (to populate their own views), the view directive for setting the view used by the include, and the cache directive for controller caching.
 
 **A pattern meant to be used as an include can be accessed via HTTP just like any other controller.** You could request the `_head` controller like so:
 
@@ -2198,11 +2237,11 @@ A common use case for `handoff` would be to create a layout controller that serv
 
 The view of the originally requested controller (article.html in this case) is rendered and stored in the `route.chain` object:
 
-    // article.html, which is stored in the route.chain scope
+    {{! article.html, which is stored in the route.chain scope }}
 
-    h1 #{title}
-    p#summary #{summary}
-    #text #{text}
+    <h1>{{title}}</h1>
+    <p>{{summary}}</p>
+    <section>{{text}}</section>
 
 
 The layout controller handles the includes, follows your custom directive, and renders its own view:
@@ -2258,7 +2297,7 @@ You can use `handoff` to chain requests across as many controllers as you want, 
       { controller: 'article',
         action: 'handler',
         view: 'article',
-        viewContent: '<h1>My Article Title</h1><p id="summary">The article summary.</p><div id="text">The article text.</div>'
+        viewContent: '<h1>My Article Title</h1><p>The article summary.</p><section>The article text.</section>'
       },
       { controller: '+_layout',
         action: 'handler',
@@ -2268,17 +2307,22 @@ You can use `handoff` to chain requests across as many controllers as you want, 
 
 You can loop over this object to render all the chained views:
 
-    // +_layout.html
+    {{! +_layout.html }}
 
-    doctype html
-    html
-      != include.head
-      body
-        != include.header
-        main
-          // Loop over each controller in the chain and incorporate its rendered view
-          each controller in route.chain
-            != controller.viewContent
+    <!doctype html>
+    <html>
+      {{{include.head}}}
+      <body>
+        {{{include.header}}}
+        <main>
+          {{! Loop over each controller in the chain and incorporate its rendered view }}
+          {{#each route.chain}}
+            {{viewContent}}
+          {{/each}}
+        </main>
+      </body>
+    </html>
+
 
 
 It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
@@ -2361,10 +2405,6 @@ The example above is shorthand for default cache settings. The `cache.route` dir
     emitter.emit('ready', {
       cache: {
         route: {
-          // Optional. Set the HTTP Cache-Control header for this route, caching it
-          // on the client for the specified time in seconds.
-          control: 'max-age=86400',
-
           // Optional. This setting lets the server respond with a 304 Not Modified
           // status if the cache content hasn't been updated since the client last
           // accessed the route. Defaults to the current time if not specified.
@@ -2422,21 +2462,6 @@ If a given route chain will vary across requests, you can still cache individual
 
 #### cache.route and cache.controller options
 
-##### `control` (route cache only)
-
-Use this option to set the Cache-Control header for the requested route:
-
-    emitter.emit('ready', {
-      cache: {
-        route: {
-          // Set the HTTP Cache-Control header for this route, caching it on the
-          // client for 1 day (86400 seconds)
-          control: 86400
-        }
-    });
-
-The client will pull this route from its local cache until the cache expires.
-
 
 ##### `lastModified` (route cache only)
 
@@ -2448,7 +2473,6 @@ This setting lets the server respond with a faster `304 Not Modified` response i
       },
       cache: {
         route: {
-
           // Use toISOString() to format your date appropriately
           lastModified: myDate.toISOString()       // 2015-03-05T08:59:51.491Z
         }
@@ -2592,7 +2616,7 @@ To clear a file from the cache in a running app:
 
 citizen automatically sets ETag headers for cached routes and static assets. You don't need to do anything to make them work. The Cache-Control header is entirely manual, however.
 
-We already looked at setting Cache-Control for routes above. To do it for static assets, use the "control" setting in your config:
+To set the Cache-Control header for static assets, use the "control" setting in your config:
 
     {
       "citizen": {
@@ -2717,25 +2741,32 @@ Unlike formidable, the `maxFieldsSize` option includes images in a multipart for
 
 citizen makes it easy to build progressively enhanced HTML forms that work both server-side and client-side. Here's a login form that will submit to the login controller and fire the `form()` action:
 
-    section.login-form
-      p#message
-        if message
-          = message
-        else
-          | Please log in below.
-      form#login-form(action="/login/action/form" method="post" novalidate)
-        .data
-          ul
-            li.username
-              label(for="username") Username
-              input(id="username" name="username" type="text" value="#{form.username}" required autofocus)
-            li.password
-              label(for="password") Password
-              input(id="password" name="password" type="password" value="#{form.password}" required)
-        .actions
-          ul
-            li.primary
-              input(name="formAction" type="submit" value="Sign in")
+    <section class="login-form">
+      <p>
+        {{#if message}}
+          {{message}}
+        {{else}}
+          Please log in below.
+        {{/if}}
+      </p>
+      <form id="login-form" action="/login/action/form" method="post" novalidate>
+        <section class="data">
+          <ul>
+            <li>
+              <label for="username">Username</label>
+              <input id="username" name="username" value="{{form.username}}" required autofocus>
+            </li>
+            <li>
+              <label for="password">Password</label>
+              <input id="password" name="password" value="{{form.password}}" required>
+            </li>
+          </ul>
+        </section>
+        <section class="actions">
+          <input name="submit" type="submit" value="Sign in">
+        </section>
+      </form>
+    </section>
 
 
 This will perform a traditional POST to the server and reload the login page to display any messages. You can easily enhance this with a little JavaScript on the client to submit via AJAX and return a JSON response:
@@ -2751,7 +2782,7 @@ This will perform a traditional POST to the server and reload the login page to 
 
       // Appending /format/json to the form action tells the server to
       // respond with JSON instead of a rendered HTML view
-      request.open('POST', loginForm.action + '/format/json', true);
+      request.open(loginForm.method, loginForm.action + '/format/json', true);
 
       request.send(formData);
 
@@ -2805,28 +2836,29 @@ Here's an example of a request module that checks for a username cookie at the b
 
 
 
-## Cross-Origin Resource Sharing (CORS) _[deprecated]_
+## Cross-Origin Resource Sharing (CORS)
 
-_Note: this method for enabling CORS has been deprecated and will be removed from v0.8.0. It will be replaced with a similar method of setting headers that can be specified within each controller action for more granular control._
+By default, all controllers respond to requests from the host only. citizen supports cross-domain HTTP requests via access control headers.
 
-citizen supports cross-domain HTTP requests via access control headers. By default, all controllers respond to requests from the host only. This includes POST requests, which makes any controller that accepts form input safe from cross-site form submissions.
-
-To enable cross-domain access, add an `access` object with the necessary headers to your controller's exports:
+To enable cross-domain access for individual controller actions, add a `cors` object with the necessary headers to your controller's exports:
 
     module.exports = {
       handler: handler,
-      access: {
-        // citizen expects header names in lowercase (per the spec, HTTP headers
-        // are case-insensitive)
-        'access-control-allow-origin': 'http://www.foreignhost.com',
-        'access-control-expose-headers': 'X-My-Custom-Header, X-Another-Custom-Header',
-        'access-control-max-age': 1728000,
-        'access-control-allow-credentials': 'true',
-        'access-control-allow-methods': 'OPTIONS, PUT',
-        'access-control-allow-headers': 'Content-Type',
-        'vary': 'Origin'
+      cors: {
+        // Each controller action has its own CORS headers
+        handler: {
+          'Access-Control-Allow-Origin': 'http://www.foreignhost.com',
+          'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
+          'Access-Control-Max-Age': 600,
+          'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Allow-Methods': 'OPTIONS, PUT',
+          'Access-Control-Allow-Headers': 'Content-Type',
+          'Vary': 'Origin'
+        }
       }
     };
+
+Why not just use the [HTTP Headers](#http-headers) directive? Using the export technique above allows for easy preflight responses without having to fire the controller itself or write your own logic for the response. When citizen receives a request from an origin other than the host, it checks for the `cors` export in your controller to provide a preflight response.
 
 For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) and [the Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
 
@@ -3506,12 +3538,12 @@ Resulting file structure:
           index.js
         views/
           error/
-            404.html
-            500.html
-            ENOENT.html
-            error.html
+            404.hbs
+            500.hbs
+            ENOENT.hbs
+            error.hbs
           index/
-            index.html
+            index.hbs
       start.js
     web/
 
