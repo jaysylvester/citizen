@@ -1,3 +1,7 @@
+[0.8.1]
+  * Further fixes to copy() and extend(). Circular references are no longer supported, however.
+  * Removed a lot of unnecessary and complex copy() and extend() calls for a noticeable performance boost. There's less protection now against bad behavior (modifying param.session directly within controllers, for example), so if you access the params argument directly...test thoroughly :)
+
 [0.8.0]
   * BREAKING CHANGES (see readme for details):
     * Updated dependencies to latest versions
