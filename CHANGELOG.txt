@@ -1,3 +1,6 @@
+[0.8.3]
+  * Removed unnecessary copy() on file cache retrieval, which was causing static file serving to bomb out
+
 [0.8.2]
   * Preserve dates when copying objects
 

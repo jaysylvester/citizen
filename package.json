@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "0.8.2",
+  "version": "0.8.3",
   "description": "A server-side MVC framework for Node.js web applications. Includes serving, caching, and other helpful methods.",
   "keywords": [
     "citizen",
