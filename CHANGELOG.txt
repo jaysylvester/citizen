@@ -1,3 +1,6 @@
+[0.8.4]
+  * Fixed a bug in static file serving that caused initial requests for compressed static files to fail
+
 [0.8.3]
   * Removed unnecessary copy() on file cache retrieval, which was causing static file serving to bomb out
 
