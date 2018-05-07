@@ -1889,6 +1889,20 @@ Cookies sent by the client are available in `params.cookie` within the controlle
 
 Cookie variables you set within your controller aren't immediately available within the `params.cookie` scope. citizen's server has to receive the emitter's ready event from the controller before it can send the cookie to the client, so use a local instance of the variable if you need to access it during the same request.
 
+#### Proxy Header
+
+If you use citizen behind another web server, such as NGINX or Apache, you'll need to add a custom header called `x-citizen-uri` for secure cookies to work correctly. This is because citizen only has access to the URI it receives in the proxy request, not the actual URI requested by the browser, which in the case of HTTPS requests will have a different protocol.
+
+Here's an example of how you might set this up in NGINX:
+
+    location / {
+      proxy_set_header X-Real-IP       $remote_addr;
+      proxy_set_header Host            $host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header x-citizen-uri   https://website.com$request_uri;
+      proxy_pass                       http://127.0.0.1:8080;
+    }
+
 
 
 ### Session Variables
@@ -1948,6 +1962,20 @@ Unlike the Location header, if you use the `refresh` option, citizen will send a
 Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctzn_referer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctzn_referer` so you can send them there instead of the page containing the link to the secure page.
 
 If you haven't enabled sessions, citizen falls back to creating a cookie named `ctzn_referer` instead.
+
+#### Proxy Header
+
+If you use citizen behind another web server, such as NGINX or Apache, you'll need to add a custom header called `x-citizen-uri` for `citizen_referer` to work correctly. This is because citizen only has access to the URI it receives in the proxy request, not the actual URI requested by the browser. For example, using NGINX as an HTTPS front end means you'll have a different protocol in the requested URI than you'll have in the proxy URI. The `x-citizen-uri` header ensures citizen receives the original requested URL intact.
+
+Here's an example of how you might set this up in NGINX:
+
+    location / {
+      proxy_set_header X-Real-IP       $remote_addr;
+      proxy_set_header Host            $host;
+      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header x-citizen-uri   https://website.com$request_uri;
+      proxy_pass                       http://127.0.0.1:8080;
+    }
 
 
 
