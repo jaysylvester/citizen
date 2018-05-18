@@ -1,6 +1,7 @@
 [0.8.6]
   * Added request context to console output in the event of an error to assist with debugging
   * Relaxed requirements on the route descriptor to allow dot (.) and tilde (~) characters
+  * Added event handler for connections closed by the client
 
 [0.8.5]
   * Added custom header check (x-citizen-uri) to provide the original requested URL to citizen when behind a proxy (nginx, apache, etc.), which fixes issues with ctzn_referer and secure cookies
