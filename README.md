@@ -1275,6 +1275,8 @@ citizen also lets you optionally insert relevant content into your URLs, like so
 
 This SEO content must always follow the pattern name and precede any name/value pairs. You can access it generically via `route.descriptor` or specifically via the  `url` scope (`url.article` in this case), which means you can use it as a unique identifier (more on URL parameters in the [Controllers section](#controllers)).
 
+The SEO content can consist of letters, numbers, dots (.), and the tilde (~) character.
+
 
 
 ## MVC Patterns
