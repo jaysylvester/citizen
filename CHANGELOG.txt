@@ -1,3 +1,10 @@
+[0.8.8]
+  * Fixed another bug in route cache retrieval
+
+[0.8.7]
+  * Fixed a bug in route cache retrieval
+  * Tweaked readme
+
 [0.8.6]
   * Added request context to console output in the event of an error to assist with debugging
   * Relaxed requirements on the route descriptor to allow dot (.) and tilde (~) characters
