@@ -3,16 +3,13 @@
 [useStrict]
 module.exports = {
   handler: handler
-};
-
+}
 
 // default action
-function handler(params, context, emitter) {
+async function handler(params, context) {
+  let content = await [appName].models.[pattern].content()
 
-  var content = [appName].models.[pattern].content();
-
-  emitter.emit('ready', {
+  return {
     content: content
-  });
-
+  }
 }

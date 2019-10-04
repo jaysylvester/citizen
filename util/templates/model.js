@@ -3,11 +3,9 @@
 [useStrict]
 module.exports = {
   content: content
-};
-
+}
 
 function content() {
-
   return {
     metaData: {
       title: '[pattern] pattern template',
@@ -18,6 +16,5 @@ function content() {
       header: '[header]',
       text: '[text]'
     }
-  };
-
+  }
 }

@@ -1,42 +1,46 @@
 {
-  "name": "citizen",
-  "version": "0.8.8",
-  "description": "A server-side MVC framework for Node.js web applications. Includes serving, caching, and other helpful methods.",
-  "keywords": [
-    "citizen",
-    "mvc",
-    "server side",
-    "server-side",
-    "cache",
-    "caching",
-    "router",
-    "routing",
-    "view rendering",
-    "framework",
-    "web server",
-    "gzip"
-  ],
+  "name":           "citizen",
+  "version":        "0.9.0",
+  "description":    "An MVC-based web application framework. Includes routing, serving, caching, and other helpful tools.",
+  "keywords":       [
+                      "api server",
+                      "application server",
+                      "cache",
+                      "caching",
+                      "citizen",
+                      "framework",
+                      "mvc",
+                      "server side",
+                      "router",
+                      "routing",
+                      "view rendering",
+                      "web application server",
+                      "web server"
+                    ],
   "author": {
-    "name": "Jay Sylvester",
-    "email": "jay@jaysylvester.com",
-    "url": "http://jaysylvester.com"
+    "name":         "Jay Sylvester",
+    "email":        "jay@jaysylvester.com",
+    "url":          "http://jaysylvester.com"
   },
   "repository": {
-    "type": "git",
-    "url": "https://github.com/jaysylvester/citizen"
+    "type":         "git",
+    "url":          "https://github.com/jaysylvester/citizen"
   },
   "bugs": {
-    "url": "https://github.com/jaysylvester/citizen/issues"
+    "url":          "https://github.com/jaysylvester/citizen/issues"
   },
-  "main": "./lib/citizen.js",
+  "main":           "./lib/citizen.js",
   "dependencies": {
-    "commander": "2.15.x",
-    "consolidate": "0.15.x",
-    "formidable": "1.2.x",
-    "handlebars": "4.0.x"
+    "chokidar":     "^3.0.x",
+    "consolidate":  "^0.15.x",
+    "formidable":   "^1.2.x",
+    "handlebars":   "^4.2.x"
+  },
+  "devDependencies": {
+    "commander":    "^2.19.x"
   },
   "engines": {
-    "node": ">=8.x"
+    "node":         ">=8.x"
   },
-  "license": "MIT"
+  "license":        "MIT"
 }

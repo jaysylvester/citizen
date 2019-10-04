@@ -1,3 +1,22 @@
+[0.9.0]
+  New features:
+  * async-await support in controller actions
+  * Hot module reloading for controllers and models in development mode
+
+  BREAKING CHANGES (see readme for details)
+  * Controller actions are now called as async functions, so you should use async-await syntax
+  * Thanks to the above, the manual passing of event emitters to return results and errors is no longer supported and has been removed (simple return and throw statements do the job now). This is a major breaking change that will require you to rewrite all your controllers and any function calls to which you pass the emitter. While this could be a massive headache depending on the size of your app, it's unquestionably an improvement, with simpler syntax and no clunky emitter handling.
+  * All helpers deprecated in 0.8.0 have been removed
+  * The syntax for the formats directive has been simplified and it has been renamed to "legalFormat" to distinguish it from the format url parameter
+  * The urlDelimiter option has been removed from JSON output (the delimiter is now a comma, because if you use a comma in a JSON key, you're insane)
+  * The headers directive has been renamed to "header", keeping the grammar consistent with other directives (cookie, session, etc.)
+  * Form configuration now has both a global config (set within your config file) and controller-action config (a new `config` object set within the controller module exports); syntax has changed from the previous global setting and maxFieldSize is now specified in kilobytes rather than megabytes
+  * CORS controller settings are under the new `config` module export
+  * Functionality previously under the debug mode has been moved to development mode and debug has been removed
+  * Log configuration has been streamlined and consolidated, with some log settings previously under the debug settings now moved to logs
+  * Invalid URL parameters in controller and route caches now always throw an error, but don't prevent rendering
+  * The directory for app event handlers has been renamed from "/on" to "/hooks".
+
 [0.8.8]
   * Fixed another bug in route cache retrieval
 

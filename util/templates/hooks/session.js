@@ -10,14 +10,12 @@
 module.exports = {
   start: start,
   end: end
-};
-
-
-function start(params, context, emitter) {
-  emitter.emit('ready');
 }
 
+async function start(params, context) {
+  return
+}
 
-function end(params, context, emitter) {
-  emitter.emit('ready');
+async function end(params, context) {
+  return
 }
