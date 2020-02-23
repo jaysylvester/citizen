@@ -1,6 +1,6 @@
 {
   "name":           "citizen",
-  "version":        "0.9.0",
+  "version":        "0.9.1",
   "description":    "An MVC-based web application framework. Includes routing, serving, caching, and other helpful tools.",
   "keywords":       [
                       "api server",
