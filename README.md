@@ -216,7 +216,7 @@ The following represents citizen's default configuration, which is extended by y
           controller        : "",
           view              : ""
         },
-        legalFormats: {
+        legalFormat: {
           html              : true,
           json              : false,
           jsonp             : false
@@ -583,7 +583,7 @@ Here's a complete rundown of citizen's settings and what they mean:
   </tr>
   <tr>
     <td colspan="3">
-      legalFormats
+      legalFormat
     </td>
   </tr>
   <tr>
@@ -615,7 +615,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers. To enable JSON at the controller action level, see the <a href="#formats">legalFormats directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
+      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers. To enable JSON at the controller action level, see the <a href="#formats">legalFormat directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
     </td>
   </tr>
   <tr>
@@ -631,7 +631,7 @@ Here's a complete rundown of citizen's settings and what they mean:
       </p>
     </td>
     <td>
-      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers. To enable JSONP at the controller action level, see the <a href="#formats">legalFormats directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
+      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers. To enable JSONP at the controller action level, see the <a href="#formats">legalFormat directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
     </td>
   </tr>
   <tr>
@@ -1518,7 +1518,7 @@ To enable JSON output at the controller level:
         article: article,
         author: author
       },
-      legalFormats: {
+      legalFormat: {
         json: true
       }
     }
@@ -1565,7 +1565,7 @@ Returns:
 To enable JSONP output at the controller level:
 
     return {
-      legalFormats: {
+      legalFormat: {
         jsonp: true
       }
     }
@@ -1591,7 +1591,7 @@ Do you always want a particular controller action to return JSON without the URL
           article: article,
           author: author
         },
-        legalFormats: {
+        legalFormat: {
           json: true
         }
       }
@@ -1611,7 +1611,7 @@ Are you building a RESTful API and want every request across all controllers to 
 
       return {
         // Set JSON as a legal output format
-        legalFormats: {
+        legalFormat: {
           json: true
         }
       }
