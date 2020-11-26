@@ -31,13 +31,13 @@
   },
   "main":           "./lib/citizen.js",
   "dependencies": {
-    "chokidar":     "^3.0.x",
-    "consolidate":  "^0.15.x",
+    "chokidar":     "^3.4.x",
+    "consolidate":  "^0.16.x",
     "formidable":   "^1.2.x",
-    "handlebars":   "^4.2.x"
+    "handlebars":   "^4.7.x"
   },
   "devDependencies": {
-    "commander":    "^2.19.x"
+    "commander":    "^6.2.x"
   },
   "engines": {
     "node":         ">=12.9.x"
