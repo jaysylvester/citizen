@@ -40,7 +40,7 @@
     "commander":    "^2.19.x"
   },
   "engines": {
-    "node":         ">=8.x"
+    "node":         ">=12.9.x"
   },
   "license":        "MIT"
 }
