@@ -3152,10 +3152,7 @@ If you set `"mode": "development"` in your config file, citizen dumps the curren
     }
 
 
-By default, the pattern's complete output is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter. You can access globals, `pattern` (which is the current controller chain), and request `params`:
-
-    // Dumps pattern.content
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/pattern.content
+By default, the pattern's complete context is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter:
 
     // Dumps the server params object
     http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params

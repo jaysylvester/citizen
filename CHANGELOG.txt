@@ -1,4 +1,6 @@
 [0.9.1]
+  * Added SameSite cookie attribute to the cookie directive (defaults to "Lax" as recommended by the spec)
+  * Fixed broken debug output
   * Removed public helper methods that were deprecated in 0.8.0 and supposed to have been removed in 0.9.0
   * Fixed typos in README
 
