@@ -1,6 +1,9 @@
-# citizen 0.9.x
+STUFF TO ADD
+- Use 'Accept': 'application/json' header to receive JSON responses (alternative to /format/json)
 
-citizen is an MVC-based web application framework designed for people who are more interested in quickly building fast, scalable apps than digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
+# citizen
+
+citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable apps rather than digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
 
 Use citizen as a foundation for a traditional server-side web application, a modular single-page app, or a REST API.
 
@@ -9,24 +12,17 @@ Use citizen as a foundation for a traditional server-side web application, a mod
 
 - High performance and stability
 - Zero-configuration server-side routing with SEO-friendly URLs
-- Built-in session management
-- Built-in caching of routes, individual controllers, objects, and static files
-- Directives that make it easy to manage cookies, sessions, redirects, caches, and more
-- Controller-based includes and chaining for powerful code reuse options
+- Server-side session management
+- Caching for routes, individual controllers, objects, and static files
+- Simple directives for managing cookies, sessions, redirects, caches, and more
+- Powerful code reuse options via controller-based includes and chaining
 - HTML, JSON, and JSONP served from the same pattern
-- Support for many template engines
+- `async await` support
+- Hot module reloading in development mode
+- Support for many template engines with [consolidate](https://github.com/tj/consolidate.js)
 - Few direct dependencies
 
-
-## New for 0.9.x
-
-- `async await` and vanilla `return` statements replace event emitter controller actions
-- Hot module reloading in development mode—no more restarting the app while coding
-
-
-__citizen's API is stabilizing, but it's still subject to change.__ Always consult [the change log](https://github.com/jaysylvester/citizen/blob/master/CHANGELOG.txt) before upgrading. Version 0.9.x has significant breaking changes compared to 0.8.x.
-
-Have questions, suggestions, or need help? [Send me an e-mail](http://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
+Have questions, suggestions, or need help? [Send me an e-mail](https://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
 
 
 ## Want to see citizen in action?
@@ -38,8 +34,7 @@ I use it on [originaltrilogy.com](https://originaltrilogy.com). We get a moderat
 
 These commands will create a new directory for your web app, install citizen, use its scaffolding utility to create the app's skeleton, and start citizen with the web server listening on port 8080 (citizen defaults to port 80, but it's often in use already, so change it to whatever you want):
 
-    $ mkdir mywebapp
-    $ cd mywebapp
+    $ mkdir myapp && cd myapp
     $ npm install citizen
     $ node node_modules/citizen/util/scaffold skeleton -n 8080
     $ node app/start.js
@@ -48,11 +43,11 @@ If everything went well, you'll see confirmation in the console that citizen is 
 
 citizen installs [Handlebars](http://handlebarsjs.com) as its default template engine, but you can install any template engine supported by [consolidate.js](https://github.com/tj/consolidate.js), update the [config template settings](#config-settings), and modify the default view templates accordingly.
 
-<!-- ### Demo App
-
-Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basic responsive web site built with citizen that demonstrates some of the framework's functionality. -->
-
 For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
+
+### Demo App
+
+Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basic responsive web site built with citizen that demonstrates some of the framework's functionality.
 
 
 ### App Directory Structure
