@@ -30,8 +30,9 @@
     "url": "https://github.com/jaysylvester/citizen/issues"
   },
   "main": "./lib/citizen.js",
+  "type": "module",
   "dependencies": {
-    "chokidar": "^3.4.x",
+    "chokidar": "^3.5.x",
     "commander": "^7.2.x",
     "consolidate": "^0.16.x",
     "formidable": "^1.2.x",

@@ -1,4 +1,5 @@
 [1.0.0]
+  * ES module support with configurable options
   * Using the 'Accept': 'application/json' header can be used in place of the /format/json URL parameter for JSON responses
   * App checks on startup for the logs directory and attempts to create it if it doesn't exist
 
