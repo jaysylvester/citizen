@@ -1,5 +1,9 @@
 STUFF TO ADD
 - Use 'Accept': 'application/json' header to receive JSON responses (alternative to /format/json)
+- Reformat all examples using ES module syntax
+- Explain ESM vs CJS and file extensions (.js vs .cjs)
+- replace app.start() with app.server.start()
+- Update the scaffold util and docs
 
 # citizen
 
@@ -18,11 +22,12 @@ Use citizen as a foundation for a traditional server-side web application, a mod
 - Powerful code reuse options via controller-based includes and chaining
 - HTML, JSON, and JSONP served from the same pattern
 - `async await` support
+- ES module and Node (CommonJS) module support
 - Hot module reloading in development mode
 - Support for many template engines with [consolidate](https://github.com/tj/consolidate.js)
 - Few direct dependencies
 
-Have questions, suggestions, or need help? [Send me an e-mail](https://jaysylvester.com/contact). Want to contribute? Pull requests are welcome.
+Have questions, suggestions, or need help? Want to contribute? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
 
 
 ## Want to see citizen in action?
@@ -87,6 +92,8 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
 The start.js file in your app directory can be as simple as this:
 
     // start.js
+
+    import 
 
     global.app = require('citizen')
 

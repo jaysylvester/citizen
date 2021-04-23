@@ -1,7 +1,14 @@
 [1.0.0]
-  * ES module support with configurable options
+  New features:
+  * ES module support
+
+  Fixes/improvements:
   * Using the 'Accept': 'application/json' header can be used in place of the /format/json URL parameter for JSON responses
-  * App checks on startup for the logs directory and attempts to create it if it doesn't exist
+  * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
+
+  BREAKING CHANGES
+  * Your app can use both ES and CommonJS modules, but citizen now defaults to ES module parsing for all .js files. All CommonJS modules should use the .cjs extension.
+  * app.start() is now app.server.start()
 
 [0.9.2]
   * Moved commander to dependencies
