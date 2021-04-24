@@ -29,7 +29,7 @@
   "bugs": {
     "url": "https://github.com/jaysylvester/citizen/issues"
   },
-  "main": "./lib/citizen.js",
+  "main": "./index.js",
   "type": "module",
   "dependencies": {
     "chokidar": "^3.5.x",

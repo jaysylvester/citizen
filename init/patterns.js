@@ -5,7 +5,7 @@ import fs from 'fs'
 import path from 'path'
 
 export const getPatterns = async (config) => {
-  var patterns = {
+  let patterns = {
         controllers : {},
         models      : {},
         views       : {}
@@ -47,7 +47,7 @@ export const getPatterns = async (config) => {
   console.log('\n\nValidating views:\n')
 
   views.forEach( function (directory) {
-    var viewFiles
+    let viewFiles
     if ( fs.statSync(path.join(config.citizen.directories.views, '/', directory)).isDirectory() ) {
       viewFiles = fs.readdirSync(path.join(config.citizen.directories.views, '/', directory))
       patterns.views[directory] = {}

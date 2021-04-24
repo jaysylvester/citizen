@@ -3,13 +3,14 @@
 // node
 import fs   from 'fs'
 import path from 'path'
-import * as application from '../hooks/application.js'
-import * as request     from '../hooks/request.js'
-import * as response    from '../hooks/response.js'
-import * as session     from '../hooks/session.js'
+// citizen
+import * as application from '../lib/hooks/application.js'
+import * as request     from '../lib/hooks/request.js'
+import * as response    from '../lib/hooks/response.js'
+import * as session     from '../lib/hooks/session.js'
 
 export const getHooks = async (config) => {
-  var hooks    = {},
+  let hooks    = {},
       files    = [],
       jsRegex  = new RegExp(/.*\.(js)|(cjs)$/)
 

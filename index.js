@@ -67,10 +67,10 @@ CTZN.config.citizen.sessionTimeout         = CTZN.config.citizen.sessionTimeout 
 
 
 // Export citizen data and methods meant for public consumption
-import { clear, exists, get, set } from './cache.js'
-import { log } from './helpers.js'
-import { start } from './server.js'
-import { end } from './session.js'
+import { clear, exists, get, set } from './lib/cache.js'
+import { log } from './lib/helpers.js'
+import { start } from './lib/server.js'
+import { end } from './lib/session.js'
 
 const controllers = patterns.controllers
 const models = patterns.models

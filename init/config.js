@@ -4,15 +4,14 @@
 // extended by optional config files.
 
 // node
-import fs from 'fs'
-import os from 'os'
+import fs   from 'fs'
+import os   from 'os'
 import path from 'path'
-import url from 'url'
-
+import url  from 'url'
 // citizen
-import * as helpers from '../helpers.js'
+import * as helpers from '../lib/helpers.js'
 
-const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../../../../app'),
+const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../../../app'),
       defaultConfig = {
         host                  : '',
         citizen: {
@@ -119,14 +118,14 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
             views             : path.join(appPath, '/patterns/views'),
             web               : path.resolve(appPath, '../web')
           },
-          mimetypes           : JSON.parse(fs.readFileSync(path.resolve(url.fileURLToPath(import.meta.url), '../../../config/mimetypes.json')))
+          mimetypes           : JSON.parse(fs.readFileSync(path.resolve(url.fileURLToPath(import.meta.url), '../../config/mimetypes.json')))
         }
       },
       appConfig = getAppConfig()
 
 
 function getAppConfig() {
-  var configDirectory = path.join(appPath, '/config'),
+  let configDirectory = path.join(appPath, '/config'),
       files           = [],
       config          = {}
 
@@ -141,7 +140,7 @@ function getAppConfig() {
   }
 
   files.forEach( function (file) {
-    var parsedConfig,
+    let parsedConfig,
         configRegex = new RegExp(/^[A-Za-z0-9_-]*\.json$/)
 
     if ( configRegex.test(file) ) {
