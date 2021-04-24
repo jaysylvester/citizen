@@ -4,6 +4,9 @@ STUFF TO ADD
 - Explain ESM vs CJS and file extensions (.js vs .cjs)
 - replace app.start() with app.server.start()
 - Update the scaffold util and docs
+- Write remoteHost() function to handle this since it's done in several places now:
+let remoteHost = ( params ? params.request.headers['x-forwarded-for'] || params.request.connection.remoteAddress || params.request.socket.remoteAddress || ( params.request.connection.socket ? params.request.connection.socket.remoteAddress : 'undefined' ) : 'undefined' ).replace('::ffff:', '')
+
 
 # citizen
 
