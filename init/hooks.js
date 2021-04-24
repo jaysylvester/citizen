@@ -1,15 +1,15 @@
 // initialize event hooks
 
 // node
-import fs   from 'fs'
-import path from 'path'
+import fs          from 'fs'
+import path        from 'path'
 // citizen
-import * as application from '../lib/hooks/application.js'
-import * as request     from '../lib/hooks/request.js'
-import * as response    from '../lib/hooks/response.js'
-import * as session     from '../lib/hooks/session.js'
+import application from '../lib/hooks/application.js'
+import request     from '../lib/hooks/request.js'
+import response    from '../lib/hooks/response.js'
+import session     from '../lib/hooks/session.js'
 
-export const getHooks = async (config) => {
+const get = async (config) => {
   let hooks    = {},
       files    = [],
       jsRegex  = new RegExp(/.*\.(js)|(cjs)$/)
@@ -35,11 +35,14 @@ export const getHooks = async (config) => {
 
   return {
     citizen: {
-      application: application,
-      request: request,
-      response: response,
-      session: session
+      application : application,
+      request     : request,
+      response    : response,
+      session     : session
     },
     app: hooks
   }
 }
+
+
+export default { get }

@@ -1,10 +1,10 @@
 // initialize controllers and models
 
 // node
-import fs from 'fs'
+import fs   from 'fs'
 import path from 'path'
 
-export const getPatterns = async (config) => {
+const get = async (config) => {
   let patterns = {
         controllers : {},
         models      : {},
@@ -73,3 +73,6 @@ export const getPatterns = async (config) => {
 
   return patterns
 }
+
+
+export default { get }

@@ -4,12 +4,12 @@
 // extended by optional config files.
 
 // node
-import fs   from 'fs'
-import os   from 'os'
-import path from 'path'
-import url  from 'url'
+import fs      from 'fs'
+import os      from 'os'
+import path    from 'path'
+import url     from 'url'
 // citizen
-import * as helpers from '../lib/helpers.js'
+import helpers from '../lib/helpers.js'
 
 const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../../../app'),
       defaultConfig = {
@@ -121,13 +121,13 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
           mimetypes           : JSON.parse(fs.readFileSync(path.resolve(url.fileURLToPath(import.meta.url), '../../config/mimetypes.json')))
         }
       },
-      appConfig = getAppConfig()
+      config = getConfig()
 
 
-function getAppConfig() {
+function getConfig() {
   let configDirectory = path.join(appPath, '/config'),
       files           = [],
-      config          = {}
+      appConfig          = {}
 
   console.log('Loading configuration:\n')
   // If there isn't a config directory, return an empty config.
@@ -136,25 +136,25 @@ function getAppConfig() {
     files = fs.readdirSync(configDirectory)
   } catch ( err ) {
     console.log('  No valid configuration files found. Loading default config.\n')
-    return config
+    return defaultConfig
   }
 
-  files.forEach( function (file) {
+  for ( const file of files ) {
     let parsedConfig,
         configRegex = new RegExp(/^[A-Za-z0-9_-]*\.json$/)
 
     if ( configRegex.test(file) ) {
       parsedConfig = JSON.parse(fs.readFileSync(path.join(configDirectory, '/', file)))
       if ( parsedConfig.host === os.hostname() ) {
-        config = parsedConfig
+        appConfig = parsedConfig
         console.log('  [host: ' + parsedConfig.host + '] ' + configDirectory + '/' + file + '\n')
       }
     }
-  })
+  }
 
   if ( !config.host ) {
     try {
-      config = JSON.parse(fs.readFileSync(path.join(configDirectory, '/citizen.json')))
+      appConfig = JSON.parse(fs.readFileSync(path.join(configDirectory, '/citizen.json')))
       console.log('  ' + configDirectory + '/citizen.json\n')
     } catch ( err ) {
       console.log('  There was a problem parsing your config file.\n')
@@ -162,8 +162,7 @@ function getAppConfig() {
     }
   }
 
-  return config
+  return helpers.extend(defaultConfig, appConfig)
 }
 
-
-export const config = helpers.extend(defaultConfig, appConfig)
+export default config

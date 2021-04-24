@@ -2,18 +2,19 @@
 
 console.log('\nInitializing citizen...\n')
 
-import { config } from './init/config.js'
-import { getHooks } from './init/hooks.js'
-import { getPatterns } from './init/patterns.js'
+// citizen
+import config   from './init/config.js'
+import hooks    from './init/hooks.js'
+import patterns from './init/patterns.js'
 
-const hooks = await getHooks(config)
-const patterns = await getPatterns(config)
+const appHooks    = await hooks.get(config)
+const appPatterns = await patterns.get(config)
 
 global.CTZN = {
   cache     : {},
   config    : config,
-  hooks     : hooks,
-  patterns  : patterns,
+  hooks     : appHooks,
+  patterns  : appPatterns,
   sessions  : {},
   // citizen throws an error if apps use any of the following variable names
   // because they're reserved for the framework.
@@ -68,16 +69,16 @@ CTZN.config.citizen.sessionTimeout         = CTZN.config.citizen.sessionTimeout 
 
 // Export citizen data and methods meant for public consumption
 import { clear, exists, get, set } from './lib/cache.js'
-import { log } from './lib/helpers.js'
-import { start } from './lib/server.js'
-import { end } from './lib/session.js'
+import { log }                     from './lib/helpers.js'
+import { start }                   from './lib/server.js'
+import { end }                     from './lib/session.js'
 
-const controllers = patterns.controllers
-const models = patterns.models
-const views = patterns.views
-const cache = { clear, exists, get, set }
-const helpers = { log }
-const server = { start }
-const session = { end }
+const controllers = appPatterns.controllers
+const models      = appPatterns.models
+const views       = appPatterns.views
+const cache       = { clear, exists, get, set }
+const helpers     = { log }
+const server      = { start }
+const session     = { end }
 
 export default { config, controllers, models, views, cache, helpers, server, session }
