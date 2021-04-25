@@ -129,13 +129,13 @@ function getConfig() {
       files           = [],
       appConfig          = {}
 
-  console.log('Loading configuration:\n')
+  console.log('\n\nLoading configuration:\n')
   // If there isn't a config directory, return an empty config.
   // citizen will start under its default configuration.
   try {
     files = fs.readdirSync(configDirectory)
   } catch ( err ) {
-    console.log('  No valid configuration files found. Loading default config.\n')
+    console.log('  No configuration files found. Loading default config.\n')
     return defaultConfig
   }
 

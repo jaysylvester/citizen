@@ -9,40 +9,46 @@ import request     from '../lib/hooks/request.js'
 import response    from '../lib/hooks/response.js'
 import session     from '../lib/hooks/session.js'
 
-const get = async (config) => {
-  let hooks    = {},
-      files    = [],
-      jsRegex  = new RegExp(/.*\.(js)|(cjs)$/)
+const getHooks = async (hookPath) => {
+  let hooks    = {
+        citizen: {
+          application : application,
+          request     : request,
+          response    : response,
+          session     : session
+        },
+        app: {}
+      },
+      files   = [],
+      jsRegex = new RegExp(/.*\.(js)|(cjs)$/)
 
-  // If there isn't a hooks directory, return an empty object
+  console.log('\nImporting application event hooks:\n')
+
   try {
-    files = fs.readdirSync(config.citizen.directories.hooks)
+    files = fs.readdirSync(hookPath)
+    if ( files.length ) {
+      for ( const file of files ) {
+        if ( jsRegex.test(file) ) {
+          console.log('  ' + hookPath + '/' + file)
+          hooks.app[path.basename(file, path.extname(file))] = await import(path.join(hookPath, '/', file))
+        }
+      }
+    }
   } catch ( err ) {
-    console.log(err)
-    console.log('\nNo valid app event hooks found. Skipping...\n')
-  }
-
-  console.log('\nImporting event hooks:\n')
-
-  for ( const file of files ) {
-    if ( jsRegex.test(file) ) {
-      console.log('  ' + config.citizen.directories.hooks + '/' + file)
-      hooks[path.basename(file, path.extname(file))] = await import(path.join(config.citizen.directories.hooks, '/', file))
+    switch ( err.code ) {
+      case 'ENOENT':
+        console.log('   No event hooks found.')
+        break
+      default:
+        console.log('   There was an error while attempting to traverse the event hooks directory (' + hookPath + ').\n')
+        console.log(err)
     }
   }
-
+  
   console.log('\n')
 
-  return {
-    citizen: {
-      application : application,
-      request     : request,
-      response    : response,
-      session     : session
-    },
-    app: hooks
-  }
+  return hooks
 }
 
 
-export default { get }
+export default { getHooks }
