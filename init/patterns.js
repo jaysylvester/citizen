@@ -8,7 +8,7 @@ import path from 'path'
 const getControllers = async (controllerPath) => {
   let controllers = {},
       controllerFiles = [],
-      regex = new RegExp(/.*\.(js)|(cjs)$/)
+      regex = new RegExp(/.*\.(c|m)?(js)$/)
       
   console.log('Importing controllers:\n')
 
@@ -52,7 +52,7 @@ const getControllers = async (controllerPath) => {
 const getModels = async (modelPath) => {
   let models = {},
       modelFiles = [],
-      regex = new RegExp(/.*\.(js)|(cjs)$/)
+      regex = new RegExp(/.*\.(c|m)?(js)$/)
 
   console.log('\n\nImporting models:\n')
 

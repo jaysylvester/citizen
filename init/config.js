@@ -27,7 +27,6 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
             port              : 443,
             secureCookies     : true
           },
-          module              : 'esm',
           connectionQueue     : null,
           fallbackController  : '',
           templateEngine      : 'handlebars',

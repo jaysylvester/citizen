@@ -1,13 +1,12 @@
 [1.0.0]
   New features:
-  * ES module support has been added and is now the default module type. CommonJS modules must use the .cjs file extension.
+  * ES module support
 
   Fixes/improvements:
   * The 'Accept': 'application/json' header can be used in place of the /format/json URL parameter for JSON responses
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
 
   BREAKING CHANGES
-  * Your app can use both ES and CommonJS modules, but citizen now defaults to ES module parsing for all .js files. If you're migrating an existing citizen app and don't want to rewrite your CommonJS modules, just rename them with the .cjs extension.
   * app.start() is now app.server.start()
 
 [0.9.2]

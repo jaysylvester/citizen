@@ -20,7 +20,7 @@ const getHooks = async (hookPath) => {
         app: {}
       },
       files   = [],
-      jsRegex = new RegExp(/.*\.(js)|(cjs)$/)
+      jsRegex = new RegExp(/.*\.(c|m)?(js)$/)
 
   console.log('\nImporting application event hooks:\n')
 
@@ -42,6 +42,7 @@ const getHooks = async (hookPath) => {
       default:
         console.log('   There was an error while attempting to traverse the event hooks directory (' + hookPath + ').\n')
         console.log(err)
+        process.exit()
     }
   }
   
