@@ -42,7 +42,7 @@
     "eslint": "^7.24.0"
   },
   "engines": {
-    "node": ">=12.9.x"
+    "node": ">=14.0.0"
   },
   "license": "MIT"
 }
