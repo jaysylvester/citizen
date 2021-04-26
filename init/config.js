@@ -126,7 +126,7 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
 function getConfig() {
   let configDirectory = path.join(appPath, '/config'),
       files           = [],
-      appConfig          = {}
+      appConfig        = {}
 
   console.log('\n\nLoading configuration:\n')
   // If there isn't a config directory, return an empty config.
@@ -151,7 +151,7 @@ function getConfig() {
     }
   }
 
-  if ( !config.host ) {
+  if ( !appConfig.host ) {
     try {
       appConfig = JSON.parse(fs.readFileSync(path.join(configDirectory, '/citizen.json')))
       console.log('  ' + configDirectory + '/citizen.json\n')
