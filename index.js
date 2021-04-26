@@ -82,4 +82,8 @@ const helpers = { log }
 const server  = { start }
 const session = { end }
 
+// Allow either:
+// import citizen from 'citizen'
+// import { server } from 'citizen'
 export default { config, controllers, models, views, cache, helpers, server, session }
+export { config, controllers, models, views, cache, helpers, server, session }
