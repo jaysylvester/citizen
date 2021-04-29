@@ -1,6 +1,7 @@
 [1.0.0]
   New features:
   * ES module support
+  * Hot module reloading now works with caching enabled, so caching is now enabled by default in development mode to better match production
 
   Fixes/improvements:
   * The 'Accept': 'application/json' header can be used in place of the /format/json URL parameter for JSON responses
@@ -9,6 +10,7 @@
   BREAKING CHANGES
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
+  * The file watcher used in development mode, which relies upon chokidar, now accepts all the settings available in chokidar via a new options object. Please reference the chokidar documentation for these options if you environment requires them (networked file systems, for example).
 
 [0.9.2]
   * Moved commander to dependencies

@@ -98,17 +98,19 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
               showHidden      : false,
               view            : false
             },
-            enableCache       : false,
+            enableCache       : true,
             watcher: {
               custom          : [],
-              interval        : 500,
-              killSession     : false
+              killSession     : false,
+              options: {
+                ignored       : /(^|[/\\])\../ // Ignore dotfiles
+              }
             }
           },
-          urlPaths:  {
+          urlPaths: {
             app               : '/'
           },
-          directories:  {
+          directories: {
             app               : appPath,
             hooks             : path.join(appPath, '/hooks'),
             logs              : path.join(appPath, '/logs'),
