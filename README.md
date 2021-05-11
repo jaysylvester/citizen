@@ -3,6 +3,7 @@ STUFF TO ADD
 - Reformat all examples using ES module syntax
 - Explain ESM vs CJS and file extensions (.js vs .cjs)
 - replace app.start() with app.server.start()
+- replace app.log() with app.helpers.log()
 - Update the scaffold util and docs
 - chokidar options
 - Write remoteHost() function to handle this since it's done in several places now:
@@ -11,9 +12,9 @@ let remoteHost = ( params ? params.request.headers['x-forwarded-for'] || params.
 
 # citizen
 
-citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable apps rather than digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
+citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable web sites instead of digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
 
-Use citizen as a foundation for a traditional server-side web application, a modular single-page app, or a REST API.
+Use citizen as the foundation for a traditional server-side web application, a modular single-page application (SPA), or a REST API.
 
 
 ## Benefits
@@ -1830,16 +1831,15 @@ Cookie variables you set within your controller aren't immediately available wit
 
 #### Proxy Header
 
-If you use citizen behind another web server, such as NGINX or Apache, you'll need to add a custom header called `x-citizen-uri` for secure cookies to work correctly. This is because citizen only has access to the URI it receives in the proxy request, not the actual URI requested by the browser, which in the case of HTTPS requests will have a different protocol.
+If you use citizen behind a proxy, such as NGINX or Apache, make sure you have `X-Forwarded-Host` and `X-Forwarded-Proto` headers in your server configuration so citizen's handling of secure cookies works correctly.
 
 Here's an example of how you might set this up in NGINX:
 
     location / {
-      proxy_set_header X-Real-IP       $remote_addr
-      proxy_set_header Host            $host
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for
-      proxy_set_header x-citizen-uri   https://website.com$request_uri
-      proxy_pass                       http://127.0.0.1:8080
+      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Host   $host;
+      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_pass                          http://127.0.0.1:8080;
     }
 
 
@@ -1901,16 +1901,15 @@ If you haven't enabled sessions, citizen falls back to creating a cookie named `
 
 #### Proxy Header
 
-If you use citizen behind another web server, such as NGINX or Apache, you'll need to add a custom header called `x-citizen-uri` for `citizen_referer` to work correctly. This is because citizen only has access to the URI it receives in the proxy request, not the actual URI requested by the browser. For example, using NGINX as an HTTPS front end means you'll have a different protocol in the requested URI than you'll have in the proxy URI. The `x-citizen-uri` header ensures citizen receives the original requested URL intact.
+If you use citizen behind a proxy, such as NGINX or Apache, make sure you have `X-Forwarded-Host` and `X-Forwarded-Proto` headers in your server configuration so `ctzn_referer` works correctly.
 
 Here's an example of how you might set this up in NGINX:
 
     location / {
-      proxy_set_header X-Real-IP       $remote_addr
-      proxy_set_header Host            $host
-      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for
-      proxy_set_header x-citizen-uri   https://website.com$request_uri
-      proxy_pass                       http://127.0.0.1:8080
+      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Host   $host;
+      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_pass                          http://127.0.0.1:8080;
     }
 
 
@@ -2863,9 +2862,24 @@ To enable cross-domain access for individual controller actions, add a `cors` ob
       }
     }
 
-Why not just use the [HTTP Headers](#http-headers) directive within the controller action itself? When citizen receives a request from an origin other than the host, it checks for the `cors` export in your controller to provide a preflight response, skipping controller processing entirely for improved performance and no logic required on your part.
+Why not just use the [HTTP Headers](#http-headers) directive within the controller action itself? When citizen receives a request from an origin other than the host, it checks for the `cors` export in your controller to provide a preflight response without you having to write your own logic within the controller action.
 
 For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) and [the Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
+
+
+
+### Proxy Header
+
+If you use citizen behind a proxy, such as NGINX or Apache, make sure you have `X-Forwarded-Host` and `X-Forwarded-Proto` headers in your server configuration so citizen handles CORS requests correctly. Different protocols (HTTPS on your load balancer and HTTP in your citizen app) will cause CORS requests to fail without these headers.
+
+Here's an example of how you might set this up in NGINX:
+
+    location / {
+      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
+      proxy_set_header X-Forwarded-Host   $host;
+      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_pass                          http://127.0.0.1:8080;
+    }
 
 
 ## Helpers

@@ -6,11 +6,12 @@
   Fixes/improvements:
   * The 'Accept': 'application/json' header can be used in place of the /format/json URL parameter for JSON responses
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
+  * The previously required x-citizen-uri header for proxy servers is no longer required. Use standard X-Forwarded-Host and X-Forwarded-Scheme headers instead.
 
   BREAKING CHANGES
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
-  * The file watcher used in development mode, which relies upon chokidar, now accepts all the settings available in chokidar via a new options object. Please reference the chokidar documentation for these options if you environment requires them (networked file systems, for example).
+  * The file watcher used in development mode, which relies upon chokidar, now accepts all the settings available in chokidar via a new options object. Please reference the chokidar documentation for these options if you environment requires customizations (networked file systems, for example).
 
 [0.9.2]
   * Moved commander to dependencies
