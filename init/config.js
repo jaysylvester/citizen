@@ -98,7 +98,6 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
               showHidden      : false,
               view            : false
             },
-            enableCache       : true,
             watcher: {
               custom          : [],
               killSession     : false,
