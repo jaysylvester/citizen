@@ -11,11 +11,7 @@ const models      = await patterns.getModels(config.citizen.directories.models)
 const views       = await patterns.getViews(config.citizen.directories.views)
 
 global.CTZN = {
-  cache     : {
-    controllers: {},
-    files: {},
-    routes: {}
-  },
+  cache     : {},
   config    : config,
   hooks     : appHooks,
   patterns  : {
