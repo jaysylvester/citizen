@@ -127,7 +127,7 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
 function getConfig() {
   let configDirectory = path.join(appPath, '/config'),
       files           = [],
-      appConfig        = {}
+      appConfig       = {}
 
   console.log('\n\nLoading configuration:\n')
   // If there isn't a config directory, return an empty config.
