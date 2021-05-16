@@ -2,6 +2,7 @@
   New features:
   * ES module support
   * Hot module reloading now works with caching enabled, so caching is now enabled by default in development mode to better match production
+  * TODO: Controller config
 
   Fixes/improvements:
   * The 'Accept': 'application/json' header can be used in place of the /format/json URL parameter for JSON responses
@@ -11,7 +12,12 @@
   BREAKING CHANGES
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
-  * The file watcher used in development mode, which relies upon chokidar, now accepts all the settings available in chokidar via a new options object. Please reference the chokidar documentation for these options if you environment requires customizations (networked file systems, for example).
+  * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments.
+  * The properties of the params object passed to controllers can no longer be manipulated (e.g., params.url.fizz = "buzz"), which often had negative and unintended downstream effects that were difficult to debug.
+  * Controller action CORS configuration has been incorporated into the new controller config mentioned above. Please consult the readme for details.
+  * The /type/direct URL flag used to bypass controller handoff has been replaced with /direct/true
+  * Undocumented and unused (within citizen) URL flags have been removed (ajax, show, and task)
+  * The file watcher used in development mode, which relies upon chokidar, now accepts all the settings available in chokidar via a new options object. Please reference the chokidar documentation for these options if your environment requires customizations (usePolling for networked file systems, for example).
 
 [0.9.2]
   * Moved commander to dependencies

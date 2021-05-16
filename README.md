@@ -4,8 +4,13 @@ STUFF TO ADD
 - Explain ESM vs CJS and file extensions (.js vs .cjs)
 - replace app.start() with app.server.start()
 - replace app.log() with app.helpers.log()
+- new controller config for CORS, forms, etc.
+- options to specify keepAliveTimeout, maxHeadersCount, requestTimeout, timeout in both http and https
+- replace /type/direct with /direct/true
 - Update the scaffold util and docs
 - chokidar options
+  - Add note to use polling (options: { usePolling: true }) for remote files so hot module reloading works correctly
+- Application cache enabled by default, static is not
 - Write remoteHost() function to handle this since it's done in several places now:
 let remoteHost = ( params ? params.request.headers['x-forwarded-for'] || params.request.connection.remoteAddress || params.request.socket.remoteAddress || ( params.request.connection.socket ? params.request.connection.socket.remoteAddress : 'undefined' ) : 'undefined' ).replace('::ffff:', '')
 
