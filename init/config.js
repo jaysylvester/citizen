@@ -51,7 +51,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             controller        : '',
             view              : ''
           },
-          legalFormat: {
+          legalFormats: {
             html              : true,
             json              : false,
             jsonp             : false
