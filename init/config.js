@@ -33,7 +33,18 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
           compression: {
             enable            : false,
             force             : false,
-            mimeTypes         : 'text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml'
+            mimeTypes         : [
+                                'application/javascript',
+                                'application/x-javascript',
+                                'application/xml',
+                                'application/xml+rss',
+                                'image/svg+xml',
+                                'text/css',
+                                'text/html',
+                                'text/javascript',
+                                'text/plain',
+                                'text/xml'
+                                ]
           },
           sessions            : false,
           sessionTimeout      : 20, // 20 minutes
@@ -88,8 +99,6 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
                 cookie        : true,
                 form          : true,
                 payload       : true,
-                request       : false,
-                response      : false,
                 route         : true,
                 session       : true,
                 url           : true,
@@ -117,8 +126,7 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
             models            : path.join(appPath, '/patterns/models'),
             views             : path.join(appPath, '/patterns/views'),
             web               : path.resolve(appPath, '../web')
-          },
-          mimetypes           : JSON.parse(fs.readFileSync(path.resolve(url.fileURLToPath(import.meta.url), '../../config/mimetypes.json')))
+          }
         }
       },
       config = getConfig()

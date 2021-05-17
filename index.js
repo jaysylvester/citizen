@@ -65,7 +65,6 @@ global.CTZN = {
   }
 }
 
-CTZN.config.citizen.compression.mimeTypes  = CTZN.config.citizen.compression.mimeTypes.split(' ')
 CTZN.config.citizen.sessionTimeout         = CTZN.config.citizen.sessionTimeout * 60000
 
 
