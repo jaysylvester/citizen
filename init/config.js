@@ -4,14 +4,13 @@
 // extended by optional config files.
 
 // node
-import fs      from 'fs'
-import os      from 'os'
-import path    from 'path'
-import url     from 'url'
+import fs from 'fs'
+import os from 'os'
 // citizen
 import helpers from '../lib/helpers.js'
 
-const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../../../app'),
+
+const appPath       = new URL('../../../app', import.meta.url).pathname,
       defaultConfig = {
         host                  : '',
         citizen: {
@@ -120,12 +119,12 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
           },
           directories: {
             app               : appPath,
-            hooks             : path.join(appPath, '/hooks'),
-            logs              : path.join(appPath, '/logs'),
-            controllers       : path.join(appPath, '/patterns/controllers'),
-            models            : path.join(appPath, '/patterns/models'),
-            views             : path.join(appPath, '/patterns/views'),
-            web               : path.resolve(appPath, '../web')
+            hooks             : appPath + '/hooks',
+            logs              : appPath + '/logs',
+            controllers       : appPath + '/patterns/controllers',
+            models            : appPath + '/patterns/models',
+            views             : appPath + '/patterns/views',
+            web               : new URL('../../../web', import.meta.url).pathname
           }
         }
       },
@@ -133,7 +132,7 @@ const appPath       = path.resolve(url.fileURLToPath(import.meta.url), '../../..
 
 
 function getConfig() {
-  let configDirectory = path.join(appPath, '/config'),
+  let configDirectory = appPath + '/config',
       files           = [],
       appConfig       = {}
 
@@ -152,7 +151,7 @@ function getConfig() {
         configRegex = new RegExp(/^[A-Za-z0-9_-]*\.json$/)
 
     if ( configRegex.test(file) ) {
-      parsedConfig = JSON.parse(fs.readFileSync(path.join(configDirectory, '/', file)))
+      parsedConfig = JSON.parse(fs.readFileSync(configDirectory + '/' + file))
       if ( parsedConfig.host === os.hostname() ) {
         appConfig = parsedConfig
         console.log('  [host: ' + parsedConfig.host + '] ' + configDirectory + '/' + file + '\n')
@@ -162,7 +161,7 @@ function getConfig() {
 
   if ( !appConfig.host ) {
     try {
-      appConfig = JSON.parse(fs.readFileSync(path.join(configDirectory, '/citizen.json')))
+      appConfig = JSON.parse(fs.readFileSync(configDirectory + '/citizen.json'))
       console.log('  ' + configDirectory + '/citizen.json\n')
     } catch ( err ) {
       console.log('  There was a problem parsing your config file.\n')
