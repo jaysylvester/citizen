@@ -40,9 +40,9 @@ Use citizen as the foundation for a traditional server-side web application, a m
 Have questions, suggestions, or need help? Want to contribute? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
 
 
-## Want to see citizen in action?
+## Is it production-ready?
 
-I use it on [originaltrilogy.com](https://originaltrilogy.com). We get a moderate amount of traffic (averaging ~400k page views per month and peaking at 750k) and the site runs for months on end without the app/process crashing. It's very stable.
+I use citizen on [my personal site](https://jaysylvester.com) and [originaltrilogy.com](https://originaltrilogy.com). OT.com gets a moderate amount of traffic (between 300K and 400K page views per month) and runs for months on end on a $20 cloud hosting plan without the app/process crashing. It's very stable.
 
 
 ## Quick Start
@@ -54,7 +54,7 @@ These commands will create a new directory for your web app, install citizen, us
     $ node node_modules/citizen/util/scaffold skeleton -n 8080
     $ node app/start.js
 
-If everything went well, you'll see confirmation in the console that citizen is listening on the specified port. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
+If everything went well, you'll see confirmation in the console that the web server is running. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
 
 citizen installs [Handlebars](http://handlebarsjs.com) as its default template engine, but you can install any template engine supported by [consolidate.js](https://github.com/tj/consolidate.js), update the [config template settings](#config-settings), and modify the default view templates accordingly.
 
@@ -103,11 +103,11 @@ The start.js file in your app directory can be as simple as this:
 
     // start.js
 
-    import 
+    import citizen from 'citizen'
 
-    global.app = require('citizen')
+    global.app = citizen
 
-    app.start()
+    app.server.start()
 
 
 Run start.js from the command line:

@@ -12,8 +12,9 @@
   BREAKING CHANGES
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
+  * The legalFormat config option is now legalFormats
+  * The legalFormat directive has been removed and replaced with a legalFormats config option that can be set using the new controller config.
   * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments.
-  * The properties of the params object passed to controllers can no longer be manipulated (e.g., params.url.fizz = "buzz"), which often had negative and unintended downstream effects that were difficult to debug.
   * Controller action CORS configuration has been incorporated into the new controller config mentioned above. Please consult the readme for details.
   * The /type/direct URL flag used to bypass controller handoff has been replaced with /direct/true
   * Undocumented and unused (within citizen) URL flags have been removed (ajax, show, and task)
