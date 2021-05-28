@@ -102,7 +102,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                 session       : true,
                 url           : true,
               },
-              depth           : 3,
+              depth           : 4,
               showHidden      : false,
               view            : false
             },
