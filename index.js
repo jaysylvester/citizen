@@ -53,9 +53,9 @@ global.CTZN = {
     url: [
       'action',
       'callback',
+      'direct',
       'format',
       'output',
-      'direct',
       'ctzn_debug',
       'ctzn_debugColors',
       'ctzn_debugDepth',
@@ -65,7 +65,7 @@ global.CTZN = {
   }
 }
 
-CTZN.config.citizen.sessionTimeout         = CTZN.config.citizen.sessionTimeout * 60000
+CTZN.config.citizen.sessionTimeout = CTZN.config.citizen.sessionTimeout * 60000
 
 
 // Export citizen data and methods meant for public consumption
