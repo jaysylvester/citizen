@@ -54,7 +54,6 @@ global.CTZN = {
       'action',
       'callback',
       'direct',
-      'format',
       'output',
       'ctzn_debug',
       'ctzn_debugColors',
