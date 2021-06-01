@@ -51,12 +51,12 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             controller        : '',
             view              : ''
           },
-          legalFormats: {
-            html              : true,
-            json              : false,
-            jsonp             : false
-          },
-          form: {},
+          contentTypes        : [
+                                'text/html',
+                                'application/json',
+                                'application/javascript'
+                                ],
+          form                : {},
           cache: {
             application: {
               enable          : true,
