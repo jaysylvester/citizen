@@ -62,7 +62,6 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
               enable          : true,
               lifespan        : 15,
               resetOnAccess   : true,
-              overwrite       : false,
               encoding        : 'utf-8',
               synchronous     : false
             },

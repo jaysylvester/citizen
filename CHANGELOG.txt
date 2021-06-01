@@ -24,6 +24,8 @@
   * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments
   * Controller action CORS configuration has been incorporated into the new controller config mentioned above
   * The /type/direct URL flag used to bypass controller handoff has been replaced with /direct/true
+  * The cache overwrite error/warning has been removed
+    * cache.set() now overwrites existing cache items rather than throwing an error
   * Undocumented and unused (within citizen) URL flags have been removed (ajax, show, and task)
   * The file watcher, which relies upon chokidar, now accepts all the settings available in chokidar via a new options configuration
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
