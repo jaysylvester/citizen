@@ -1,8 +1,8 @@
 [1.0.0]
   New features:
   * ES module support
-  * Hot module reloading now works with caching enabled, so caching is now enabled by default in development mode to better match production
-  * TODO: Controller config
+  * Hot module reloading now works with caching enabled, so caching is now enabled by default to maintain consistency between development and production environments
+  * TODO: Controller/action config
 
   Fixes/improvements:
   * Application mode defaults to NODE_ENV
@@ -11,23 +11,26 @@
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
   * The previously required x-citizen-uri header for proxy servers is no longer required
     * Use standard X-Forwarded-Host and X-Forwarded-Scheme headers instead (required for the router to work correctly)
+  * Previously reserved URL parameters (type, ajax, show, and task) have been released for dev use
 
   BREAKING CHANGES
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
-  * The legalFormat config option is now contentTypes
-    * contentTypes is an array that lists available output MIME types (text/html, application/json, application/javascript)
-  * The legalFormat directive has been removed
+  * The "content" directive, which contains all data meant for public views, has been renamed to "public"
+    * This makes it more explicit that data within this directive is intended to be public, and also removes confusion between "content" and "context"
+  * The "legalFormat" config option is now "contentTypes"
+    * "contentTypes" is an array that lists available output MIME types ("text/html", "application/json", "application/javascript")
+  * The "legalFormat" directive has been removed
     * The new controller config mentioned above accepts the "legalFormats" option for setting available formats within a controller/action
-  * The format URL parameter has been removed
-    * To request different output formats, the client must set the Accept request header to the desired content type (text/html, application/json, application/javascript)
+  * The "format" URL parameter (/format/json, etc.) has been removed
+    * To request different output formats, the client must set the Accept request header to the desired content type (currently supported: "text/html", "application/json", "application/javascript")
   * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments
   * Controller action CORS configuration has been incorporated into the new controller config mentioned above
   * The /type/direct URL flag used to bypass controller handoff has been replaced with /direct/true
+    * "direct" is now reserved for the framework and can't be used by apps
   * The cache overwrite error/warning has been removed
     * cache.set() now overwrites existing cache items rather than throwing an error
-  * Undocumented and unused (within citizen) URL flags have been removed (ajax, show, and task)
-  * The file watcher, which relies upon chokidar, now accepts all the settings available in chokidar via a new options configuration
+  * The file watcher, which relies upon chokidar, now accepts all settings available in chokidar via a new options configuration
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
 
 [0.9.2]

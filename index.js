@@ -23,7 +23,7 @@ global.CTZN = {
   // citizen throws an error if apps use any of the following variable names
   // because they're reserved for the framework.
   reserved: {
-    content: [
+    public: [
       'config',
       'cookie',
       'form',
