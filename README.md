@@ -15,6 +15,7 @@ STUFF TO ADD
 - legalFormats changed to contentTypes, all enabled by default
 - url.format deprecated
 - cache overwrite removed, default behavior is to overwrite
+- better explanation of how logging works
 - Write remoteHost() function to handle this since it's done in several places now:
 let remoteHost = ( params ? params.request.headers['x-forwarded-for'] || params.request.connection.remoteAddress || params.request.socket.remoteAddress || ( params.request.connection.socket ? params.request.connection.socket.remoteAddress : 'undefined' ) : 'undefined' ).replace('::ffff:', '')
 
