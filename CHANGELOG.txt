@@ -12,7 +12,7 @@
     * "text/html", "application/json", and "application/javascript" (JSON-P) are supported
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
   * The previously required x-citizen-uri header for routing behind proxy servers is deprecated in favor of industry standard headers
-    * Use X-Forwarded-Host and X-Forwarded-Scheme headers in your proxy configuration instead
+    * Use X-Forwarded-Host and X-Forwarded-Proto headers in your proxy configuration instead
   * Previously reserved URL parameters (type, ajax, show, and task) have been released for dev use
   * JSON requests now provide the public context of include controllers in the response
   * cache.set() now automatically expires/clears the specified cache key if it exists and creates a new cache item rather than throwing an error
@@ -32,8 +32,8 @@
     * To request different output formats, the client must set the HTTP "Accept" request header to the desired content type (currently supported: "text/html", "application/json", "application/javascript")
   * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments
   * Controller action CORS configuration has been incorporated into the new controller/action configuration feature
-  * The delimiter for the JSON "output" URL parameter value used to return specific nodes is now a dot (".")
-    * To output a specific node in a JSON request, use dot notation (/output/drill.down.to.node)
+  * The delimiter for the JSON "output" URL parameter value used to return specific nodes is now a tilde ("~")
+    * To output a specific node in a JSON request, separate nodes with a tilde (/output/drill~down~to~node)
   * The /type/direct URL flag used to bypass controller handoff has been replaced with /direct/true
     * "direct" is now reserved for the framework and can't be used by apps
   * The cache.set() overwrite option has been removed, as has the error/warning that occurred when attempting to overwrite existing cache items
