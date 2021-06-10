@@ -31,6 +31,8 @@
   * The "format" URL parameter (/format/json, etc.) has been removed
     * To request different output formats, the client must set the HTTP "Accept" request header to the desired content type (currently supported: "text/html", "application/json", "application/javascript")
   * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments
+  * params.route no longer contains the view, but it was wrong half the time anyway
+    * You can reference params.route.chain for all controllers in the chain, including their actions, views, and context
   * Controller action CORS configuration has been incorporated into the new controller/action configuration feature
   * The delimiter for the JSON "output" URL parameter value used to return specific nodes is now a tilde ("~")
     * To output a specific node in a JSON request, separate nodes with a tilde (/output/drill~down~to~node)
