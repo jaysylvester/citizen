@@ -47,6 +47,8 @@
     * "direct" is now reserved for the framework and can't be used by apps
   * The cache.set() overwrite option has been removed, as has the error/warning that occurred when attempting to overwrite existing cache items
   * The file watcher options have changed to match chokidar's options, so adjust accordingly
+  * The ctzn_debug URL parameter is now a boolean that enables debug output in the view
+    * Use the ctzn_inspect URL parameter to specify the variable you want to dump to the view
 
 [0.9.2]
   * Moved commander to dependencies
