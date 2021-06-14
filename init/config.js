@@ -14,7 +14,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
       defaultConfig = {
         host                  : '',
         citizen: {
-          mode                : process.env.NODE_ENV || 'production',
+          mode                : process.env.NODE_ENV || 'development',
           http: {
             enable            : true,
             hostname          : '127.0.0.1',
@@ -74,17 +74,12 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             control           : {}
           },
           log: {
-            console: {
-              error           : false,
-              request         : false,
-              status          : false
-            },
-            file: {
-              error           : false,
-              request         : false,
-              status          : false,
-              maxFileSize     : 10000,
-              watcher: {
+            access            : true,
+            error             : true,
+            debug             : false,
+            maxFileSize       : 10000,
+            watcher: {
+              options: {
                 interval      : 60000
               }
             }
