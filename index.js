@@ -59,7 +59,7 @@ global.CTZN = {
       'ctzn_debugColors',
       'ctzn_debugDepth',
       'ctzn_debugShowHidden',
-      'ctzn_dump'
+      'ctzn_inspect'
     ]
   }
 }
