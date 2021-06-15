@@ -9,13 +9,14 @@ STUFF TO ADD
 - replace /type/direct with /direct/true
 - Update the scaffold util and docs
 - chokidar options
-  - Add note to use polling (options: { usePolling: true }) for remote files so hot module reloading works correctly
+  - Add note to use polling (options: { usePolling: true }) if necessary for hot module reloading to work correctly
 - Application cache enabled by default, static is not
 - Make a note in the route cache section that HTTP headers are preserved in the cache
 - legalFormats changed to contentTypes, all enabled by default
 - url.format deprecated
 - cache overwrite removed, default behavior is to overwrite
-- better explanation of how logging works
+- new logging options
+- ctzn_debug and ctzn_inspect (get rid of ctzn_dump)
 - Write remoteHost() function to handle this since it's done in several places now:
 let remoteHost = ( params ? params.request.headers['x-forwarded-for'] || params.request.connection.remoteAddress || params.request.socket.remoteAddress || ( params.request.connection.socket ? params.request.connection.socket.remoteAddress : 'undefined' ) : 'undefined' ).replace('::ffff:', '')
 

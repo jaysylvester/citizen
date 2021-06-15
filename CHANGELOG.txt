@@ -6,8 +6,11 @@
   * TODO: Controller/action config
 
   Fixes/improvements:
-  * Application mode defaults to NODE_ENV
-    * If NODE_ENV is undefined, citizen defaults to production mode, which can still be overridden by the "mode" configuration option
+  * citien checks for NODE_ENV and sets its mode based on that
+    * If NODE_ENV is undefined, citizen defaults to development mode, which can still be overridden by the "mode" configuration option
+    * If you specify a mode in your citizen configuration, it takes precedence over NODE_ENV
+  * Log files are split into access.log, error.log, and debug.log and can be enabled independently
+    * Debug logs are extremely verbose—helpful in emergencies, but not something you want to enable all the time
   * citizen now uses the HTTP "Accept" header to determine the response format
     * "text/html", "application/json", and "application/javascript" (JSON-P) are supported
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
@@ -20,8 +23,12 @@
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
 
   BREAKING CHANGES
+  * citizen now starts in development mode by default if NODE_ENV doesn't exist
+    * Be sure to set NODE_ENV to "production" or manually set citizen's mode configuration to "production" in your production environment
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
+  * The "log" configuration setting now only applies to file logging, which can be enabled in development or production mode
+    * Console debug logging is automatically enabled in development mode
   * The "content" directive, which contains all data meant for public views, has been renamed to "public"
     * This makes it more explicit that data within this directive is intended to be public, and also removes confusion between "content" and "context"
   * The "legalFormat" config option is now "contentTypes"
@@ -40,6 +47,8 @@
     * "direct" is now reserved for the framework and can't be used by apps
   * The cache.set() overwrite option has been removed, as has the error/warning that occurred when attempting to overwrite existing cache items
   * The file watcher options have changed to match chokidar's options, so adjust accordingly
+  * The ctzn_debug URL parameter is now a boolean that enables debug output in the view
+    * Use the ctzn_inspect URL parameter to specify the variable you want to dump to the view
 
 [0.9.2]
   * Moved commander to dependencies
