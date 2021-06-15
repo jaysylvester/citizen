@@ -32,11 +32,11 @@
   * The "content" directive, which contains all data meant for public views, has been renamed to "public"
     * This makes it more explicit that data within this directive is intended to be public, and also removes confusion between "content" and "context"
   * The "legalFormat" config option is now "contentTypes"
-    * "contentTypes" is an array that lists available output MIME types ("text/html", "application/json", "application/javascript")
+    * "contentTypes" is an array that lists available output MIME types ("text/html", "text/plain", "application/json", "application/javascript")
   * The "legalFormat" directive has been removed
     * The new controller config mentioned above accepts the "legalFormats" option for setting available formats within a controller/action
   * The "format" URL parameter (/format/json, etc.) has been removed
-    * To request different output formats, the client must set the HTTP "Accept" request header to the desired content type (currently supported: "text/html", "application/json", "application/javascript")
+    * To request different output formats, the client must set the HTTP "Accept" request header to the desired content type (currently supported: "text/html", "text/plain", "application/json", "application/javascript")
   * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments
   * params.route no longer contains the view, but it was wrong half the time anyway
     * You can reference params.route.chain for all controllers in the chain, including their actions, views, and context

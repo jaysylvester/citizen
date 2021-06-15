@@ -53,6 +53,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
           },
           contentTypes        : [
                                 'text/html',
+                                'text/plain',
                                 'application/json',
                                 'application/javascript'
                                 ],
