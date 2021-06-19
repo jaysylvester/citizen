@@ -64,8 +64,6 @@ global.CTZN = {
   }
 }
 
-CTZN.config.citizen.sessionTimeout = CTZN.config.citizen.sessionTimeout * 60000
-
 
 // Export citizen data and methods meant for public consumption
 import { clear, exists, get, set } from './lib/cache.js'

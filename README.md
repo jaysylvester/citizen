@@ -17,6 +17,7 @@ STUFF TO ADD
 - cache overwrite removed, default behavior is to overwrite
 - new logging options
 - ctzn_debug and ctzn_inspect (get rid of ctzn_dump)
+- server options (same as Node http options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
 
 
 # citizen
@@ -3144,11 +3145,11 @@ When citizen is in production mode, log() does nothing by default. In developmen
       // number, log() will run util.inspect on it and dump the contents.
       contents: someObject,
 
-      // Optional. By default, log() uses the config.citizen.log.console setting
+      // Optional. By default, log() uses the config.citizen.logs.console setting
       // to determine whether to log to the console, but this option overrides it.
       console: false,
 
-      // Optional. By default, log() uses the config.citizen.log.file setting
+      // Optional. By default, log() uses the config.citizen.logs.file setting
       // to determine whether to log to a file, but this option overrides it.
       file: false,
 

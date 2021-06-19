@@ -16,21 +16,21 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
         citizen: {
           mode                : process.env.NODE_ENV || 'development',
           http: {
-            enable            : true,
+            enabled           : true,
             hostname          : '127.0.0.1',
             port              : 80
           },
           https: {
-            enable            : false,
+            enabled           : false,
             hostname          : '127.0.0.1',
             port              : 443,
             secureCookies     : true
           },
           connectionQueue     : null,
-          fallbackController  : '',
+          fallbackController  : false,
           templateEngine      : 'handlebars',
           compression: {
-            enable            : false,
+            enabled           : false,
             force             : false,
             mimeTypes         : [
                                 'application/javascript',
@@ -45,8 +45,10 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 'text/xml'
                                 ]
           },
-          sessions            : false,
-          sessionTimeout      : 20, // 20 minutes
+          sessions: {
+            enabled           : false,
+            lifespan          : 20 // minutes
+          },
           layout: {
             controller        : '',
             view              : ''
@@ -57,24 +59,24 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 'application/json',
                                 'application/javascript'
                                 ],
-          form                : {},
+          forms               : {},
           cache: {
             application: {
-              enable          : true,
-              lifespan        : 15,
+              enabled         : true,
+              lifespan        : 15, // minutes
               resetOnAccess   : true,
               encoding        : 'utf-8',
               synchronous     : false
             },
             static: {
-              enable          : false,
-              lifespan        : 15,
+              enabled         : false,
+              lifespan        : 15, // minutes
               resetOnAccess   : true
             },
             invalidUrlParams  : 'warn',
             control           : {}
           },
-          log: {
+          logs: {
             access            : true,
             error             : true,
             debug             : false,
