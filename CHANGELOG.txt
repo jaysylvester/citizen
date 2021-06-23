@@ -35,6 +35,7 @@
   * The "log" configuration setting has been renamed to "logs"
     * It now only applies to file logging, which can be enabled in development or production mode
     * Console debug logging is automatically enabled in development mode
+  * The "urlPaths" configuration option is now just "urlPath", which accepts a string representing the URL path to your app (defaults to "/")
   * The "content" directive, which contains all data meant for public views, has been renamed to "public"
     * This makes it more explicit that data within this directive is intended to be public, and also removes confusion between "content" and "context"
   * The "legalFormat" config option is now "contentTypes"

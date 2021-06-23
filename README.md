@@ -1760,8 +1760,8 @@ Here's an example of a complete cookie object's default settings:
       // [time in minutes] - expires this many minutes from now
       expires: 'session',
 
-      // By default, a cookie's path is the same as the app path in your config
-      path: app.config.citizen.urlPaths.app,
+      // By default, a cookie's path equals the URL path in your config
+      path: app.config.citizen.urlPath,
 
       // citizen's cookies are accessible via HTTP only by default. To access a
       // cookie via JavaScript, set this to false.

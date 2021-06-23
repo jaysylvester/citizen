@@ -111,9 +111,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
               }
             }
           },
-          urlPaths: {
-            app               : '/'
-          },
+          urlPath             : '/',
           directories: {
             app               : appPath,
             hooks             : appPath + '/hooks',
