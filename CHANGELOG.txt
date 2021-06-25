@@ -32,6 +32,7 @@
     * "enabled" (boolean)
     * "lifespan" (integer) - Reflects session timeout in minutes and replaces the old "sessionTimeout" property, which has been removed
   * The "form" configuration setting has been renamed to "forms"
+    * "forms" options are identical to formidable, the dependency used for form parsing
   * The "log" configuration setting has been renamed to "logs"
     * It now only applies to file logging, which can be enabled in development or production mode
     * Console debug logging is automatically enabled in development mode
