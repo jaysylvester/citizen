@@ -8,6 +8,8 @@ STUFF TO ADD
 - options to specify keepAliveTimeout, maxHeadersCount, requestTimeout, timeout in both http and https
 - replace /type/direct with /direct/true
 - Update the scaffold util and docs
+- Remove formidable
+  - Uploaded files are stored in binary format in the form parameter, to decode/write: Buffer.from(data, 'binary')
 - chokidar options
   - Add note to use polling (options: { usePolling: true }) if necessary for hot module reloading to work correctly
 - Application cache enabled by default, static is not
