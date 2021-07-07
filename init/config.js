@@ -59,7 +59,10 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 'application/json',
                                 'application/javascript'
                                 ],
-          forms               : {},
+          forms: {
+            enabled           : true,
+            maxPayloadSize    : 524288 // 0.5MB
+          },
           cache: {
             application: {
               enabled         : true,
