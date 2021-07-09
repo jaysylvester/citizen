@@ -79,6 +79,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             invalidUrlParams  : 'warn',
             control           : {}
           },
+          errors              : 'capture',
           logs: {
             access            : true,
             error             : true,

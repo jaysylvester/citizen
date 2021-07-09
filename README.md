@@ -21,6 +21,7 @@ STUFF TO ADD
 - ctzn_debug and ctzn_inspect (get rid of ctzn_dump)
 - server options (same as Node http options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
 - cookie and header directives are now cookies and headers
+- error handling options (capture, exit)
 
 
 # citizen
