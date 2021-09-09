@@ -1,11 +1,6 @@
 // [pattern] model
 
-[useStrict]
-module.exports = {
-  content: content
-}
-
-function content() {
+export const content = () => {
   return {
     metaData: {
       title: '[pattern] pattern template',
