@@ -1,13 +1,89 @@
 // Generates files and directories needed for citizen apps
 
-'use strict'
+import program from 'commander'
+import fs      from 'fs'
+import path    from 'path'
 
-const
-  program      = require('commander'),
-  fs           = require('fs'),
-  path         = require('path'),
-  scaffoldPath = path.dirname(module.filename),
-  appPath      = path.resolve(scaffoldPath, '../../../app')
+const scaffoldPath = new URL('../util/', import.meta.url).pathname,
+      appPath      = path.resolve(scaffoldPath, '../../../app')
+
+      
+const buildController = (options) => {
+  var template  = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
+      pattern   = options.pattern,
+      appName   = options.appName,
+      isPrivate = options.private || false,
+      name      = pattern + '.js'
+
+  if ( isPrivate ) {
+    name = '+' + name
+  }
+
+  template = template.toString()
+  template = template.replace(/\[pattern\]/g, pattern)
+  template = template.replace(/\[appName\]/g, appName)
+
+  return {
+    name     : name,
+    contents : template
+  }
+}
+
+
+const buildModel = (options) => {
+  var template  = fs.readFileSync(scaffoldPath + '/templates/model.js'),
+      pattern   = options.pattern,
+      header    = options.main && options.main.header ? options.main.header : pattern + ' pattern template',
+      text      = options.main && options.main.text ? options.main.text : 'This is a template for the ' + pattern + ' pattern.'
+
+  template = template.toString()
+  template = template.replace(/\[pattern\]/g, pattern)
+  template = template.replace(/\[header\]/g, header)
+  template = template.replace(/\[text\]/g, text)
+
+  return {
+    name     : pattern + '.js',
+    contents : template
+  }
+}
+
+
+const buildView = (options) => {
+  var pattern   = options.pattern,
+      isPrivate = options.private || false,
+      template  = fs.readFileSync(scaffoldPath + '/templates/view.hbs'),
+      directory = pattern,
+      name      = pattern + '.hbs'
+
+  if ( isPrivate ) {
+    directory = '+' + directory
+    name      = '+' + name
+  }
+
+  return {
+    directory : directory,
+    name      : name,
+    contents  : template.toString()
+  }
+}
+
+
+const buildConfig = (options) => {
+  var template = fs.readFileSync(scaffoldPath + '/templates/config.json'),
+      mode     = options.mode || 'development',
+      port     = options.port || 80,
+      name     = options.name || 'citizen'
+
+  template = template.toString()
+  template = template.replace(/\[mode\]/g, mode)
+  template = template.replace(/\[port\]/g, port)
+
+  return {
+    name     : name + '.json',
+    contents : template
+  }
+}
+
 
 program
   .version('0.0.3')
@@ -23,28 +99,25 @@ program
 program
   .command('skeleton')
   .option('-n, --network-port [port number]', 'Default HTTP port is 80, but if that\'s taken, use this option to set your config')
-  .option('-m, --mode [mode]', 'Set the config mode to production (default) or development')
-  .option('-U, --no-use-strict', 'Don\'t include the \'use strict\' statement in any of the modules')
+  .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
         templates = {
-          application: fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
-          request:     fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
-          response:    fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
-          session:     fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
-          start:       fs.readFileSync(scaffoldPath + '/templates/start.js'),
-          error:       fs.readdirSync(scaffoldPath + '/templates/error')
+          application : fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
+          package     : fs.readFileSync(scaffoldPath + '/templates/package.json'),
+          request     : fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
+          response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
+          session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
+          start       : fs.readFileSync(scaffoldPath + '/templates/start.js'),
+          error       : fs.readdirSync(scaffoldPath + '/templates/error')
         },
-        useStrict = options.useStrict ? '\'use strict\'\n' : '',
         controller = buildController({
-          pattern:   'index',
-          appName:   'app',
-          useStrict: useStrict
+          pattern: 'index',
+          appName: 'app'
         }),
         model = buildModel({
-          pattern:   'index',
-          appName:   'app',
-          useStrict: useStrict,
+          pattern: 'index',
+          appName: 'app',
           main: {
             header: 'Hello, world!',
             text:   'How easy was that?'
@@ -58,18 +131,14 @@ program
           port: options.networkPort
         }),
         application = templates.application.toString(),
+        packageJSON = templates.package.toString(),
         request     = templates.request.toString(),
         response    = templates.response.toString(),
         session     = templates.session.toString(),
         start       = templates.start.toString()
 
-    application = application.replace(/\[useStrict\]/g, useStrict)
-    request     = request.replace(/\[useStrict\]/g, useStrict)
-    response    = response.replace(/\[useStrict\]/g, useStrict)
-    session     = session.replace(/\[useStrict\]/g, useStrict)
-    start       = start.replace(/\[useStrict\]/g, useStrict)
-
     fs.mkdirSync(appPath)
+    fs.writeFileSync(appPath + '/package.json', packageJSON)
     fs.writeFileSync(appPath + '/start.js', start)
     fs.mkdirSync(appPath + '/config')
     fs.writeFileSync(appPath + '/config/' + config.name, config.contents)
@@ -154,22 +223,18 @@ program
   .command('pattern [pattern]')
   .option('-a, --app-name [name]', 'Specify a custom global app variable name (default is "app")')
   .option('-p, --private', 'Make the controller private (inaccessible via HTTP)')
-  .option('-U, --no-use-strict', 'Don\'t include the \'use strict\' statement in the controller and model')
   .option('-M, --no-model', 'Skip creation of the model')
   .option('-T, --no-view-template', 'Skip creation of the view')
   .action( function (pattern, options) {
     var appName = options.appName || 'app',
-        useStrict = options.useStrict ? '\'use strict\'\n' : '',
         controller = buildController({
           pattern: pattern,
           appName: appName,
-          useStrict: useStrict,
           private: options.private
         }),
         model = buildModel({
           pattern: pattern,
           appName: appName,
-          useStrict: useStrict,
           private: options.private
         }),
         view = buildView({
@@ -211,84 +276,3 @@ program
     })
 
 program.parse(process.argv)
-
-
-function buildController(options) {
-  var template  = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
-      pattern   = options.pattern,
-      appName   = options.appName,
-      isPrivate = options.private || false,
-      useStrict = options.useStrict,
-      name      = pattern + '.js'
-
-  if ( isPrivate ) {
-    name = '+' + name
-  }
-
-  template = template.toString()
-  template = template.replace(/\[pattern\]/g, pattern)
-  template = template.replace(/\[useStrict\]/g, useStrict)
-  template = template.replace(/\[appName\]/g, appName)
-
-  return {
-    name     : name,
-    contents : template
-  }
-}
-
-
-function buildModel(options) {
-  var template  = fs.readFileSync(scaffoldPath + '/templates/model.js'),
-      pattern   = options.pattern,
-      useStrict = options.useStrict,
-      header    = options.main && options.main.header ? options.main.header : pattern + ' pattern template',
-      text      = options.main && options.main.text ? options.main.text : 'This is a template for the ' + pattern + ' pattern.'
-
-  template = template.toString()
-  template = template.replace(/\[pattern\]/g, pattern)
-  template = template.replace(/\[useStrict\]/g, useStrict)
-  template = template.replace(/\[header\]/g, header)
-  template = template.replace(/\[text\]/g, text)
-
-  return {
-    name     : pattern + '.js',
-    contents : template
-  }
-}
-
-
-function buildView(options) {
-  var pattern   = options.pattern,
-      isPrivate = options.private || false,
-      template  = fs.readFileSync(scaffoldPath + '/templates/view.hbs'),
-      directory = pattern,
-      name      = pattern + '.hbs'
-
-  if ( isPrivate ) {
-    directory = '+' + directory
-    name      = '+' + name
-  }
-
-  return {
-    directory : directory,
-    name      : name,
-    contents  : template.toString()
-  }
-}
-
-
-function buildConfig(options) {
-  var template = fs.readFileSync(scaffoldPath + '/templates/config.json'),
-      mode     = options.mode || 'production',
-      port     = options.port || 80,
-      name     = options.name || 'citizen'
-
-  template = template.toString()
-  template = template.replace(/\[mode\]/g, mode)
-  template = template.replace(/\[port\]/g, port)
-
-  return {
-    name     : name + '.json',
-    contents : template
-  }
-}

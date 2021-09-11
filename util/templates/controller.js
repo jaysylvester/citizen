@@ -1,15 +1,10 @@
 // [pattern] controller
 
-[useStrict]
-module.exports = {
-  handler: handler
-}
-
 // default action
-async function handler(params, context) {
+export const handler = async (params, context) => {
   let content = await [appName].models.[pattern].content()
 
   return {
-    content: content
+    public: content
   }
 }

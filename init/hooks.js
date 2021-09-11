@@ -9,6 +9,7 @@ import request     from '../lib/hooks/request.js'
 import response    from '../lib/hooks/response.js'
 import session     from '../lib/hooks/session.js'
 
+
 const getHooks = async (hookPath) => {
   let hooks    = {
         citizen: {
