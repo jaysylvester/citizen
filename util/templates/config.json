@@ -1,8 +1,8 @@
 {
   "citizen": {
-    "mode":             "[mode]",
+    "mode":     "[mode]",
     "http": {
-      "port":           [port]
+      "port":   [port]
     }
   }
 }
