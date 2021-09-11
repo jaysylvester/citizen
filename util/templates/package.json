@@ -1,0 +1,9 @@
+{
+  "name": "citizen-skeleton",
+  "version": "1.0.0",
+  "description": "Skeleton of a citizen app",
+  "type": "module",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

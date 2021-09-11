@@ -103,20 +103,21 @@ program
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
         templates = {
-          application: fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
-          request:     fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
-          response:    fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
-          session:     fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
-          start:       fs.readFileSync(scaffoldPath + '/templates/start.js'),
-          error:       fs.readdirSync(scaffoldPath + '/templates/error')
+          application : fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
+          package     : fs.readFileSync(scaffoldPath + '/templates/package.json'),
+          request     : fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
+          response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
+          session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
+          start       : fs.readFileSync(scaffoldPath + '/templates/start.js'),
+          error       : fs.readdirSync(scaffoldPath + '/templates/error')
         },
         controller = buildController({
-          pattern:   'index',
-          appName:   'app'
+          pattern: 'index',
+          appName: 'app'
         }),
         model = buildModel({
-          pattern:   'index',
-          appName:   'app',
+          pattern: 'index',
+          appName: 'app',
           main: {
             header: 'Hello, world!',
             text:   'How easy was that?'
@@ -130,12 +131,14 @@ program
           port: options.networkPort
         }),
         application = templates.application.toString(),
+        packageJSON = templates.package.toString(),
         request     = templates.request.toString(),
         response    = templates.response.toString(),
         session     = templates.session.toString(),
         start       = templates.start.toString()
 
     fs.mkdirSync(appPath)
+    fs.writeFileSync(appPath + '/package.json', packageJSON)
     fs.writeFileSync(appPath + '/start.js', start)
     fs.mkdirSync(appPath + '/config')
     fs.writeFileSync(appPath + '/config/' + config.name, config.contents)
