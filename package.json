@@ -33,16 +33,15 @@
   "type": "module",
   "dependencies": {
     "chokidar": "^3.5.x",
-    "commander": "^7.2.x",
+    "commander": "^9.4.x",
     "consolidate": "^0.16.x",
-    "formidable": "^1.2.x",
     "handlebars": "^4.7.x"
   },
   "devDependencies": {
-    "eslint": "^7.32.0"
+    "eslint": "^8.0.0"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=16.0.0"
   },
   "license": "MIT"
 }
