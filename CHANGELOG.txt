@@ -30,6 +30,10 @@
     * Be sure to set NODE_ENV to "production" or manually set citizen's mode configuration to "production" in your production environment
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
+  * The server requestStart event now fires before checking if the controller exists
+    * This is logically consistent with the intention behind requestStart (i.e., it fires at the start of the request)
+    * This allows you to incorporate logic into requestStart even if the requested controller doesn't exist (custom 404 handling, for example)
+    * This is considered a breaking change because the requestStart context won't inherit the controller config, so if you depend on anything in your controller config within the requestStart event, that functionality should be moved to the controller action itself, which fires after requestStart
   * All instances of the "enable" property in the config have been renamed to "enabled"
   * The "sessions" configuration setting is now an object that takes two arguments:
     * "enabled" (boolean)
