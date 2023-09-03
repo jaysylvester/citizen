@@ -1,25 +1,18 @@
-# Editor files #
-################
+# Editor files
 *~
 *.swp
 *.swo
 
-
-# OS Generated Files #
-######################
+# OS Generated Files
 .Ds_Store*
 ehtumbs.db
 Icon?
 Thumbs.db
 
-
-
-# Node Files #
-##############
+# Node Files
 node_modules/
 npm-debug.log
+package-lock.json
 
-
-# Dev #
-#######
+# Dev
 coverage/
