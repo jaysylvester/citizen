@@ -2,17 +2,17 @@
   New features:
   * ES module support
   * Hot module reloading works with the app cache enabled
-    * Caching is now enabled by default to maintain consistency between development and production environments, but can still be disabled manually via the config
+    * Caching is now enabled by default to maintain consistency between development and production environments, but can still be disabled manually via the config for debugging purposes
   * TODO: Controller/action config
 
   Fixes/improvements:
-  * citien checks for NODE_ENV and sets its mode based on that
-    * If NODE_ENV is undefined, citizen defaults to development mode, which can still be overridden by the "mode" configuration option
-    * If you specify a mode in your citizen configuration, it takes precedence over NODE_ENV
+  * citizen checks for the NODE_ENV environment variable and sets its mode accordingly
+    * If NODE_ENV is undefined, citizen defaults to production mode, which can still be overridden by the "mode" configuration option
+    * Setting the mode in your citizen configuration takes precedence over NODE_ENV
   * Log files are split into access.log, error.log, and debug.log and can be enabled independently
     * Debug logs are extremely verbose—helpful in emergencies, but not something you want to enable all the time
   * citizen now uses the HTTP "Accept" header to determine the response format
-    * "text/html", "text/plain", "application/json", and "application/javascript" (JSON-P) are supported
+    * Supported response types are "text/html", "text/plain", "application/json", and "application/javascript" (JSON-P)
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
   * Handling of 500 errors can be configured
     * "capture" (default) will write the error to the log, render an error view to the client, and keep the process/server running
@@ -21,25 +21,24 @@
     * Use X-Forwarded-Host and X-Forwarded-Proto headers in your proxy configuration instead
   * Previously reserved URL parameters (type, ajax, show, and task) have been released for dev use
   * JSON requests now provide the public context of include controllers in the response
-  * cache.set() now automatically expires/clears the specified cache key if it exists and creates a new cache item rather than throwing an error
+  * cache.set() now automatically expires/clears the specified cache key if it already exists and creates a new cache item rather than throwing an error
   * The file watcher, which relies upon chokidar, now accepts all settings available in chokidar via a new options configuration
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
 
   BREAKING CHANGES
-  * citizen now starts in development mode by default if NODE_ENV doesn't exist
-    * Be sure to set NODE_ENV to "production" or manually set citizen's mode configuration to "production" in your production environment
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
   * The server requestStart event now fires before checking if the controller exists
     * This is logically consistent with the intention behind requestStart (i.e., it fires at the start of the request)
     * This allows you to incorporate logic into requestStart even if the requested controller doesn't exist (custom 404 handling, for example)
-    * This is considered a breaking change because the requestStart context won't inherit the controller config, so if you depend on anything in your controller config within the requestStart event, that functionality should be moved to the controller action itself, which fires after requestStart
+    * This is considered a breaking change because the requestStart context won't inherit the controller config like it did previous, so if you depend on anything in your controller config within the requestStart event, that functionality should be moved to the controller action itself, which fires after requestStart
   * All instances of the "enable" property in the config have been renamed to "enabled"
   * The "sessions" configuration setting is now an object that takes two arguments:
     * "enabled" (boolean)
     * "lifespan" (integer) - Reflects session timeout in minutes and replaces the old "sessionTimeout" property, which has been removed
   * The "form" configuration setting has been renamed to "forms"
-    * "forms" options are identical to formidable, the dependency used for form parsing
+    * The dependency on formidable has been removed and replaced with basic native form parsing, see the docs for settings/options
+    * Third-party form processors can still be used within hooks and controllers by accessing Node's native request object, which is passed to each hook and controller as an argument
   * The "log" configuration setting has been renamed to "logs"
     * It now only applies to file logging, which can be enabled in development or production mode
     * Console debug logging is automatically enabled in development mode
