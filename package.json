@@ -32,13 +32,13 @@
   "main": "./index.js",
   "type": "module",
   "dependencies": {
-    "chokidar": "^3.5.x",
-    "commander": "^9.4.x",
-    "consolidate": "^0.16.x",
-    "handlebars": "^4.7.x"
+    "chokidar"    : "^3.6.x",
+    "commander"   : "^12.0.x",
+    "consolidate" : "^1.0.x",
+    "handlebars"  : "^4.7.x"
   },
   "devDependencies": {
-    "eslint": "^8.0.0"
+    "eslint"      : "*"
   },
   "engines": {
     "node": ">=16.0.0"
