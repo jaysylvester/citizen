@@ -22,6 +22,7 @@ STUFF TO ADD
 - server options (same as Node http options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
 - cookie and header directives are now cookies and headers
 - error handling options (capture, exit)
+- HTTP Forwarded header now supported, X-Forwarded-For/Host/Proto deprecated and will be removed from future versions
 
 
 # citizen
