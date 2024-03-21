@@ -135,6 +135,7 @@ function getConfig() {
       files           = [],
       appConfig       = {}
 
+  console.log('\n\n\x1b[1m[' + new Date().toISOString() + ']\x1b[0m' + ' Starting citizen...')
   console.log('\n\nLoading configuration:\n')
   // If there isn't a config directory, return an empty config.
   // citizen will start under its default configuration.
