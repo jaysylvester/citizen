@@ -24,6 +24,7 @@
   * cache.set() now automatically expires/clears the specified cache key if it already exists and creates a new cache item rather than throwing an error
   * The file watcher, which relies upon chokidar, now accepts all settings available in chokidar via a new options configuration
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
+  * The handoff directive now accepts a route property similar to the include route property, which allows simulating a different route when handing off to the next controller in the chain
 
   BREAKING CHANGES
   * app.start() is now app.server.start()
