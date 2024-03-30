@@ -7,9 +7,10 @@
 
   Fixes/improvements:
   * citizen checks for the NODE_ENV environment variable and sets its mode accordingly
-    * If NODE_ENV is undefined, citizen defaults to production mode, which can still be overridden by the "mode" configuration option
+    * If NODE_ENV is undefined, citizen defaults to production mode
     * Setting the mode in your citizen configuration takes precedence over NODE_ENV
   * Log files are split into access.log, error.log, and debug.log and can be enabled independently
+    * If running only a single citizen app server instance, access logs will likely affect performance
     * Debug logs are extremely verbose—helpful in emergencies, but not something you want to enable all the time
   * citizen now uses the HTTP "Accept" header to determine the response format
     * Supported response types are "text/html", "text/plain", "application/json", and "application/javascript" (JSON-P)
@@ -17,8 +18,8 @@
   * Handling of 500 errors can be configured
     * "capture" (default) will write the error to the log, render an error view to the client, and keep the process/server running
     * "exit" will send a 500 to the client without rendering a view, write the error to the log, and then throw the error, exiting the process
-  * The previously required x-citizen-uri header for routing behind proxy servers is deprecated in favor of industry standard headers
-    * Use X-Forwarded-Host and X-Forwarded-Proto headers in your proxy configuration instead
+  * The previously required x-citizen-uri header for routing behind proxy servers is deprecated in favor of industry standard Forwarded headers
+    * X-Forwarded header support has been deprecated and will be removed from a future version
   * Previously reserved URL parameters (type, ajax, show, and task) have been released for dev use
   * JSON requests now provide the public context of include controllers in the response
   * cache.set() now automatically expires/clears the specified cache key if it already exists and creates a new cache item rather than throwing an error
@@ -27,6 +28,8 @@
   * The handoff directive now accepts a route property similar to the include route property, which allows simulating a different route when handing off to the next controller in the chain
 
   BREAKING CHANGES
+  * The default rendering engine is now based on template literals, and consolidate is no longer included as a dependency
+    * To use another template engine, install consolidate and your preferred library (handlebars, pug, etc.) and update config.citizen.templateEngine
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
   * The server requestStart event now fires before checking if the controller exists
@@ -45,8 +48,8 @@
     * Console debug logging is automatically enabled in development mode
   * The "urlPaths" configuration option has been removed
     * It never worked reliably, and this sort of thing should really be handled by a proxy anyway
-  * The "content" directive, which contains all data meant for public views, has been renamed to "public"
-    * This makes it more explicit that data within this directive is intended to be public, and also removes confusion between "content" and "context"
+  * The "content" directive, which contains all data local to the controller/view, has been renamed to "local"
+    * Local variable references within views should contain the local namespace (local.myVar)
   * The "cookie" and "header" directives have been renamed to "cookies" and "headers" to better reflect that multiple cookies and headers can be created
   * The "legalFormat" config option is now "contentTypes"
     * "contentTypes" is an array that lists available output MIME types ("text/html", "text/plain", "application/json", "application/javascript")

@@ -23,21 +23,6 @@ global.CTZN = {
   // citizen throws an error if apps use any of the following variable names
   // because they're reserved for the framework.
   reserved: {
-    public: [
-      'config',
-      'cookie',
-      'form',
-      'payload',
-      'request',
-      'response',
-      'route',
-      'session',
-      'url'
-      // The include scope isn't susceptible to content overwrites, so leave it off
-      // the list for now. Includes break if this is enabled, so that will have to be
-      // fixed if this changes.
-      // 'include'
-    ],
     cookie: [
       'ctzn_referer',
       'ctzn_sessionID'

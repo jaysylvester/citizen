@@ -23,6 +23,7 @@ STUFF TO ADD
 - cookie and header directives are now cookies and headers
 - error handling options (capture, exit)
 - HTTP Forwarded header now supported, X-Forwarded-For/Host/Proto deprecated and will be removed from future versions
+- New local directive for variables local to the controller/view
 
 
 # citizen

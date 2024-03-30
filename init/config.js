@@ -28,7 +28,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
           },
           connectionQueue     : null,
           fallbackController  : false,
-          templateEngine      : 'handlebars',
+          templateEngine      : 'templateLiterals',
           compression: {
             enabled           : false,
             force             : false,
