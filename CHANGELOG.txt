@@ -19,17 +19,21 @@
     * "capture" (default) will write the error to the log, render an error view to the client, and keep the process/server running
     * "exit" will send a 500 to the client without rendering a view, write the error to the log, and then throw the error, exiting the process
   * The previously required x-citizen-uri header for routing behind proxy servers is deprecated in favor of industry standard Forwarded headers
-    * X-Forwarded header support has been deprecated and will be removed from a future version
+    * X-Forwarded header support has been deprecated and will be removed from future versions
   * Previously reserved URL parameters (type, ajax, show, and task) have been released for dev use
-  * JSON requests now provide the public context of include controllers in the response
+  * JSON requests now provide the local context of include controllers in the response
   * cache.set() now automatically expires/clears the specified cache key if it already exists and creates a new cache item rather than throwing an error
   * The file watcher, which relies upon chokidar, now accepts all settings available in chokidar via a new options configuration
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
   * The handoff directive now accepts a route property similar to the include route property, which allows simulating a different route when handing off to the next controller in the chain
+  * Views no longer require subfolders
+    * Old pattern (still supported): views for a given controller go within a folder matching that controller name, with the default view also matching the controller name, helpful for organizing multiple views related to a single controller
+    * New pattern: views can reside within the /app/patterns/views folder directly, with the default view for a controller matching the controller name, so controllers with a single view no longer require a subfolder
 
   BREAKING CHANGES
   * The default rendering engine is now based on template literals, and consolidate is no longer included as a dependency
     * To use another template engine, install consolidate and your preferred library (handlebars, pug, etc.) and update config.citizen.templateEngine
+  * Properties returned by controllers for use within views (public variables) must now be placed within a property called "local"
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
   * The server requestStart event now fires before checking if the controller exists
@@ -69,6 +73,7 @@
   * The file watcher options have changed to match chokidar's options, so adjust accordingly
   * The ctzn_debug URL parameter is now a boolean that enables debug output in the view
     * Use the ctzn_inspect URL parameter to specify the variable you want to dump to the view
+  * The undocumented fallbackController option has been removed because there are better ways to handle a nonexistent controller in the app itself
 
 [0.9.2]
   * Moved commander to dependencies

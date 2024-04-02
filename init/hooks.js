@@ -1,8 +1,8 @@
 // initialize event hooks
 
 // node
-import fs          from 'fs'
-import path        from 'path'
+import fs          from 'node:fs'
+import path        from 'node:path'
 // citizen
 import application from '../lib/hooks/application.js'
 import request     from '../lib/hooks/request.js'

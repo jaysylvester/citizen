@@ -1,8 +1,8 @@
 // initialize controllers and models
 
 // node
-import fs   from 'fs'
-import path from 'path'
+import fs   from 'node:fs'
+import path from 'node:path'
 
 
 const getControllers = async (controllerPath) => {
@@ -99,25 +99,33 @@ const getViews = async (viewPath) => {
   try {
     viewFiles = fs.readdirSync(viewPath)
     if ( viewFiles.length ) {
-      for ( const directory of viewFiles ) {
-        let viewFiles
-        if ( fs.statSync(path.join(viewPath, '/', directory)).isDirectory() ) {
-          viewFiles = fs.readdirSync(path.join(viewPath, '/', directory))
-          views[directory] = {}
+      for ( const itemPath of viewFiles ) {
+        let viewFiles, filePath, fileExtension, viewName
+        if ( fs.statSync(path.join(viewPath, '/', itemPath)).isDirectory() ) {
+          viewFiles = fs.readdirSync(path.join(viewPath, '/', itemPath))
+          views[itemPath] = {}
           for ( const file of viewFiles ) {
             let filePath,
                 fileExtension,
                 viewName
             
             if ( regex.test(file) ) {
-              console.log('  ' + viewPath + '/' + directory + '/' + file)
-              filePath = path.join(viewPath, '/', directory, '/', file)
+              console.log('  ' + viewPath + '/' + itemPath + '/' + file)
+              filePath = path.join(viewPath, '/', itemPath, '/', file)
               fileExtension = path.extname(file)
               viewName = path.basename(file, fileExtension)
-              views[directory][viewName] = {
+              views[itemPath][viewName] = {
                 path: filePath
               }
             }
+          }
+        } else if ( regex.test(itemPath) ) {
+          console.log('  ' + viewPath + '/' + itemPath)
+          filePath = path.join(viewPath, '/', itemPath)
+          fileExtension = path.extname(itemPath)
+          viewName = path.basename(itemPath, fileExtension)
+          views[viewName] = {
+            path: filePath
           }
         }
       }
@@ -137,7 +145,7 @@ const getViews = async (viewPath) => {
   }
 
   console.log('')
-
+console.log(views)
   return views
 }
 

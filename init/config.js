@@ -4,8 +4,8 @@
 // extended by optional config files.
 
 // node
-import fs from 'fs'
-import os from 'os'
+import fs from 'node:fs'
+import os from 'node:os'
 // citizen
 import helpers from '../lib/helpers.js'
 
@@ -27,7 +27,6 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             secureCookies     : true
           },
           connectionQueue     : null,
-          fallbackController  : false,
           templateEngine      : 'templateLiterals',
           compression: {
             enabled           : false,

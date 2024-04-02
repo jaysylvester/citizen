@@ -24,6 +24,7 @@ STUFF TO ADD
 - error handling options (capture, exit)
 - HTTP Forwarded header now supported, X-Forwarded-For/Host/Proto deprecated and will be removed from future versions
 - New local directive for variables local to the controller/view
+- New view file options (old pattern of dedicated folder or placing views directly within the app views folder)
 
 
 # citizen
@@ -226,7 +227,6 @@ The following represents citizen's default configuration, which is extended by y
           secureCookies     : true
         },
         connectionQueue     : null,
-        fallbackController  : "",
         templateEngine      : "handlebars",
         compression: {
           enable            : false,
