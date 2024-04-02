@@ -145,7 +145,7 @@ const getViews = async (viewPath) => {
   }
 
   console.log('')
-console.log(views)
+
   return views
 }
 
