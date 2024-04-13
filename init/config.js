@@ -119,9 +119,9 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             app               : appPath,
             hooks             : appPath + '/hooks',
             logs              : appPath + '/logs',
-            controllers       : appPath + '/patterns/controllers',
-            models            : appPath + '/patterns/models',
-            views             : appPath + '/patterns/views',
+            controllers       : appPath + '/routes',
+            models            : appPath + '/models',
+            views             : appPath + '/views',
             web               : new URL('../../../web', import.meta.url).pathname
           }
         }
