@@ -140,7 +140,7 @@ function getConfig() {
   // citizen will start under its default configuration.
   try {
     files = fs.readdirSync(configDirectory)
-  } catch ( err ) {
+  } catch {
     console.log('  No configuration files found. Loading default config.\n')
     return defaultConfig
   }
