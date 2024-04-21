@@ -1,51 +1,51 @@
-// initialize controllers and models
+// initialize routes and models
 
 // node
 import fs   from 'node:fs'
 import path from 'node:path'
 
 
-const getControllers = async (controllerPath) => {
-  let controllers = {},
-      controllerFiles = [],
+const getRoutes = async (routePath) => {
+  let routes = {},
+      routeFiles = [],
       regex = new RegExp(/.*\.(c|m)?(js)$/)
       
-  console.log('Importing controllers:\n')
+  console.log('Importing routes:\n')
 
   try {
-    controllerFiles = fs.readdirSync(controllerPath)
-    if ( controllerFiles.length ) {
+    routeFiles = fs.readdirSync(routePath)
+    if ( routeFiles.length ) {
       let count = 0
-      for ( const file of controllerFiles ) {
+      for ( const file of routeFiles ) {
         if ( regex.test(file) ) {
           count++
-          console.log('  ' + controllerPath + '/' + file)
-          controllers[path.basename(file, path.extname(file))] = await import(path.join(controllerPath, '/', file))
+          console.log('  ' + routePath + '/' + file)
+          routes[path.basename(file, path.extname(file))] = await import(path.join(routePath, '/', file))
         }
       }
       if ( !count ) {
-        console.log('   No controllers found. citizen requires at least one controller in the controller directory (' + controllerPath + ').\n')
+        console.log('   No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
         process.exit()
       }
     } else {
-      console.log('   No controllers found. citizen requires at least one controller in the controller directory (' + controllerPath + ').\n')
+      console.log('   No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
       process.exit()
     }
   } catch ( err ) {
     switch ( err.code ) {
       case 'ENOENT':
-        console.log('   No controllers found. citizen requires at least one controller in the controller directory (' + controllerPath + ').\n')
+        console.log('   No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
         process.exit()
         break
       default:
-        console.log('   There was an error while attempting to traverse the controller directory (' + controllerPath + ').\n')
+        console.log('   There was an error while attempting to traverse the route directory (' + routePath + ').\n')
         console.log(err)
         console.log('/n')
         process.exit()
     }
   }
 
-  return controllers
+  return routes
 }
 
 
@@ -150,4 +150,4 @@ const getViews = async (viewPath) => {
 }
 
 
-export default { getControllers, getModels, getViews }
+export default { getRoutes, getModels, getViews }

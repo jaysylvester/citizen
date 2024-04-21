@@ -5,21 +5,19 @@ import config   from './init/config.js'
 import hooks    from './init/hooks.js'
 import patterns from './init/patterns.js'
 
-const appHooks    = await hooks.getHooks(config.citizen.directories.hooks)
-const controllers = await patterns.getControllers(config.citizen.directories.controllers)
-const models      = await patterns.getModels(config.citizen.directories.models)
-const views       = await patterns.getViews(config.citizen.directories.views)
+const appHooks = await hooks.getHooks(config.citizen.directories.hooks)
+const routes   = await patterns.getRoutes(config.citizen.directories.routes)
+const models   = await patterns.getModels(config.citizen.directories.models)
+const views    = await patterns.getViews(config.citizen.directories.views)
 
 global.CTZN = {
-  cache     : {},
-  config    : config,
-  hooks     : appHooks,
-  patterns  : {
-    controllers: controllers,
-    models:      models,
-    views:       views
-  },
-  sessions  : {},
+  cache  : {},
+  config : config,
+  hooks  : appHooks,
+  routes : routes,
+  models : models,
+  views  : views,
+  sessions: {},
   // citizen throws an error if apps use any of the following variable names
   // because they're reserved for the framework.
   reserved: {
@@ -64,5 +62,5 @@ const session = { end }
 // Allow either:
 // import citizen from 'citizen'
 // import { server } from 'citizen'
-export default { config, controllers, models, views, cache, helpers, server, session }
-export { config, controllers, models, views, cache, helpers, server, session }
+export default { config, routes, models, views, cache, helpers, server, session }
+export { config, routes, models, views, cache, helpers, server, session }
