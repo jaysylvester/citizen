@@ -5,47 +5,43 @@ import fs   from 'node:fs'
 import path from 'node:path'
 
 
-const getRoutes = async (routePath) => {
-  let routes = {},
-      routeFiles = [],
+const getHooks = async (modelPath) => {
+  let models = {},
+      modelFiles = [],
       regex = new RegExp(/.*\.(c|m)?(js)$/)
-      
-  console.log('Importing routes:\n')
+
+  console.log('\n\nImporting event hooks:\n')
 
   try {
-    routeFiles = fs.readdirSync(routePath)
-    if ( routeFiles.length ) {
+    modelFiles = fs.readdirSync(modelPath)
+    if ( modelFiles.length ) {
       let count = 0
-      for ( const file of routeFiles ) {
+      for ( const file of modelFiles ) {
         if ( regex.test(file) ) {
           count++
-          console.log('  ' + routePath + '/' + file)
-          routes[path.basename(file, path.extname(file))] = await import(path.join(routePath, '/', file))
+          console.log('  ' + modelPath + '/' + file)
+          models[path.basename(file, path.extname(file))] = await import(path.join(modelPath, '/', file))
         }
       }
       if ( !count ) {
-        console.log('   No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
-        process.exit()
+        console.log('  No event hooks found.')
       }
     } else {
-      console.log('   No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
-      process.exit()
+      console.log('  No event hooks found.')
     }
   } catch ( err ) {
     switch ( err.code ) {
       case 'ENOENT':
-        console.log('   No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
-        process.exit()
+        console.log('  No event hooks found.')
         break
       default:
-        console.log('   There was an error while attempting to traverse the route directory (' + routePath + ').\n')
+        console.log('  There was an error while attempting to traverse the event hooks directory (' + modelPath + ').\n')
         console.log(err)
-        console.log('/n')
         process.exit()
     }
   }
 
-  return routes
+  return models
 }
 
 
@@ -68,24 +64,108 @@ const getModels = async (modelPath) => {
         }
       }
       if ( !count ) {
-        console.log('   No models found.')
+        console.log('  No models found.')
       }
     } else {
-      console.log('   No models found.')
+      console.log('  No models found.')
     }
   } catch ( err ) {
     switch ( err.code ) {
       case 'ENOENT':
-        console.log('   No models found.')
+        console.log('  No models found.')
         break
       default:
-        console.log('   There was an error while attempting to traverse the model directory (' + modelPath + ').\n')
+        console.log('  There was an error while attempting to traverse the model directory (' + modelPath + ').\n')
         console.log(err)
         process.exit()
     }
   }
 
   return models
+}
+
+
+const getPrivate = async (modelPath) => {
+  let models = {},
+      modelFiles = [],
+      regex = new RegExp(/.*\.(c|m)?(js)$/)
+
+  console.log('\n\nImporting private controllers:\n')
+
+  try {
+    modelFiles = fs.readdirSync(modelPath)
+    if ( modelFiles.length ) {
+      let count = 0
+      for ( const file of modelFiles ) {
+        if ( regex.test(file) ) {
+          count++
+          console.log('  ' + modelPath + '/' + file)
+          models[path.basename(file, path.extname(file))] = await import(path.join(modelPath, '/', file))
+        }
+      }
+      if ( !count ) {
+        console.log('  No private controllers found.')
+      }
+    } else {
+      console.log('  No private controllers found.')
+    }
+  } catch ( err ) {
+    switch ( err.code ) {
+      case 'ENOENT':
+        console.log('  No private controllers found.')
+        break
+      default:
+        console.log('  There was an error while attempting to traverse the private controllers directory (' + modelPath + ').\n')
+        console.log(err)
+        process.exit()
+    }
+  }
+
+  return models
+}
+
+
+const getRoutes = async (routePath) => {
+  let routes = {},
+      routeFiles = [],
+      regex = new RegExp(/.*\.(c|m)?(js)$/)
+      
+  console.log('Importing routes:\n')
+
+  try {
+    routeFiles = fs.readdirSync(routePath)
+    if ( routeFiles.length ) {
+      let count = 0
+      for ( const file of routeFiles ) {
+        if ( regex.test(file) ) {
+          count++
+          console.log('  ' + routePath + '/' + file)
+          routes[path.basename(file, path.extname(file))] = await import(path.join(routePath, '/', file))
+        }
+      }
+      if ( !count ) {
+        console.log('  No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
+        process.exit()
+      }
+    } else {
+      console.log('  No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
+      process.exit()
+    }
+  } catch ( err ) {
+    switch ( err.code ) {
+      case 'ENOENT':
+        console.log('  No routes found. citizen requires at least one route in the route directory (' + routePath + ').\n')
+        process.exit()
+        break
+      default:
+        console.log('  There was an error while attempting to traverse the route directory (' + routePath + ').\n')
+        console.log(err)
+        console.log('/n')
+        process.exit()
+    }
+  }
+
+  return routes
 }
 
 
@@ -130,15 +210,15 @@ const getViews = async (viewPath) => {
         }
       }
     } else {
-      console.log('   No views found.')
+      console.log('  No views found.')
     }
   } catch ( err ) {
     switch ( err.code ) {
       case 'ENOENT':
-        console.log('   No views found.')
+        console.log('  No views found.')
         break
       default:
-        console.log('   There was an error while attempting to traverse the view directory (' + viewPath + ').\n')
+        console.log('  There was an error while attempting to traverse the view directory (' + viewPath + ').\n')
         console.log(err)
         process.exit()
     }
@@ -150,4 +230,4 @@ const getViews = async (viewPath) => {
 }
 
 
-export default { getRoutes, getModels, getViews }
+export default { getHooks, getModels, getPrivate, getRoutes, getViews }
