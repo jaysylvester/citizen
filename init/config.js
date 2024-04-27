@@ -12,26 +12,26 @@ import helpers from '../lib/helpers.js'
 
 const appPath       = new URL('../../../app', import.meta.url).pathname,
       defaultConfig = {
-        host                  : '',
+        host                 : '',
         citizen: {
-          mode                : process.env.NODE_ENV || 'production',
+          mode               : process.env.NODE_ENV || 'production',
           http: {
-            enabled           : true,
-            hostname          : '127.0.0.1',
-            port              : 80
+            enabled          : true,
+            hostname         : '127.0.0.1',
+            port             : 80
           },
           https: {
-            enabled           : false,
-            hostname          : '127.0.0.1',
-            port              : 443,
-            secureCookies     : true
+            enabled          : false,
+            hostname         : '127.0.0.1',
+            port             : 443,
+            secureCookies    : true
           },
-          connectionQueue     : null,
-          templateEngine      : 'templateLiterals',
+          connectionQueue    : null,
+          templateEngine     : 'templateLiterals',
           compression: {
-            enabled           : false,
-            force             : false,
-            mimeTypes         : [
+            enabled          : false,
+            force            : false,
+            mimeTypes        : [
                                 'application/javascript',
                                 'application/x-javascript',
                                 'application/xml',
@@ -45,84 +45,83 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 ]
           },
           sessions: {
-            enabled           : false,
-            lifespan          : 20 // minutes
+            enabled          : false,
+            lifespan         : 20 // minutes
           },
           layout: {
-            controller        : '',
-            view              : ''
+            controller       : '',
+            view             : ''
           },
-          contentTypes        : [
+          contentTypes       : [
                                 'text/html',
                                 'text/plain',
                                 'application/json',
                                 'application/javascript'
                                 ],
           forms: {
-            enabled           : true,
-            maxPayloadSize    : 524288 // 0.5MB
+            enabled          : true,
+            maxPayloadSize   : 524288 // 0.5MB
           },
           cache: {
             application: {
-              enabled         : true,
-              lifespan        : 15, // minutes
-              resetOnAccess   : true,
-              encoding        : 'utf-8',
-              synchronous     : false
+              enabled        : true,
+              lifespan       : 15, // minutes
+              resetOnAccess  : true,
+              encoding       : 'utf-8',
+              synchronous    : false
             },
             static: {
-              enabled         : false,
-              lifespan        : 15, // minutes
-              resetOnAccess   : true
+              enabled        : false,
+              lifespan       : 15, // minutes
+              resetOnAccess  : true
             },
-            invalidUrlParams  : 'warn',
-            control           : {}
+            invalidUrlParams : 'warn',
+            control          : {}
           },
-          errors              : 'capture',
+          errors             : 'capture',
           logs: {
-            access            : false, // performance-intensive, opt-in only
-            error             : true,
-            debug             : false,
-            maxFileSize       : 10000,
+            access           : false, // performance-intensive, opt-in only
+            error            : true,
+            debug            : false,
+            maxFileSize      : 10000,
             watcher: {
               options: {
-                interval      : 60000
+                interval     : 60000
               }
             }
           },
           development: {
             debug: {
               scope: {
-                config        : true,
-                context       : true,
-                cookie        : true,
-                form          : true,
-                payload       : true,
-                route         : true,
-                session       : true,
-                url           : true,
+                config       : true,
+                context      : true,
+                cookie       : true,
+                form         : true,
+                payload      : true,
+                route        : true,
+                session      : true,
+                url          : true,
               },
-              depth           : 4,
-              showHidden      : false,
-              view            : false
+              depth          : 4,
+              showHidden     : false,
+              view           : false
             },
             watcher: {
-              custom          : [],
-              killSession     : false,
+              custom         : [],
+              killSession    : false,
               options: {
-                ignored       : /(^|[/\\])\../ // Ignore dotfiles
+                ignored      : /(^|[/\\])\../ // Ignore dotfiles
               }
             }
           },
-          urlPath             : '/',
+          urlPath            : '/',
           directories: {
-            app               : appPath,
-            hooks             : appPath + '/hooks',
-            logs              : appPath + '/logs',
-            models            : appPath + '/models',
-            routes            : appPath + '/routes',
-            views             : appPath + '/views',
-            web               : new URL('../../../web', import.meta.url).pathname
+            app              : appPath,
+            controllers      : appPath + '/controllers',
+            logs             : appPath + '/logs',
+            models           : appPath + '/models',
+            views            : appPath + '/views',
+            web              : new URL('../../../web', import.meta.url).pathname
           }
         }
       },
@@ -141,7 +140,7 @@ function getConfig() {
   try {
     files = fs.readdirSync(configDirectory)
   } catch {
-    console.log('  No configuration files found. Loading default config.\n')
+    console.log('  No configuration files found. Loading default config.\n\n')
     return defaultConfig
   }
 
