@@ -135,8 +135,7 @@ function getConfig() {
 
   console.log('\n\n\x1b[1m[' + new Date().toISOString() + ']\x1b[0m' + ' Starting citizen...')
   console.log('\n\nLoading configuration:\n')
-  // If there isn't a config directory, return an empty config.
-  // citizen will start under its default configuration.
+  // If there isn't a config directory, return an empty config. citizen will start under its default configuration.
   try {
     files = fs.readdirSync(configDirectory)
   } catch {
@@ -152,7 +151,7 @@ function getConfig() {
       parsedConfig = JSON.parse(fs.readFileSync(configDirectory + '/' + file))
       if ( parsedConfig.host === os.hostname() ) {
         appConfig = parsedConfig
-        console.log('  [host: ' + parsedConfig.host + '] ' + configDirectory + '/' + file + '\n')
+        console.log('  [host: ' + parsedConfig.host + '] ' + configDirectory + '/' + file + '\n\n')
       }
     }
   }
@@ -162,7 +161,7 @@ function getConfig() {
       appConfig = JSON.parse(fs.readFileSync(configDirectory + '/citizen.json'))
       console.log('  ' + configDirectory + '/citizen.json\n')
     } catch ( err ) {
-      console.log('  There was a problem parsing your config file.\n')
+      console.log('  There was a problem parsing your config file.\n\n')
       console.log(err)
     }
   }
