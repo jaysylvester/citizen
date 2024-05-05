@@ -81,7 +81,10 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
           errors             : 'capture',
           logs: {
             access           : false, // performance-intensive, opt-in only
-            error            : true,
+            error: {
+              client         : true, // 400 errors
+              server         : true // 500 errors
+            },
             debug            : false,
             maxFileSize      : 10000,
             watcher: {
