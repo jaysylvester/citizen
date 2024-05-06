@@ -86,7 +86,7 @@ const buildConfig = (options) => {
 
 
 program
-  .version('0.0.3')
+  .version('1.0.0')
   .on('--help', function () {
     console.log('')
     console.log('This utility creates templates for citizen apps and patterns.')
@@ -98,7 +98,7 @@ program
 // Create the skeleton of an app
 program
   .command('skeleton')
-  .option('-n, --network-port [port number]', 'Default HTTP port is 80, but if that\'s taken, use this option to set your config')
+  .option('-n, --network-port [port number]', 'Default HTTP port is 3000, but if that\'s taken, use this option to set your config')
   .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
