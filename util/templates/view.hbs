@@ -2,14 +2,14 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>{{metaData.title}}</title>
-    <meta name="description" content="{{metaData.description}}">
-    <meta name="keywords" content="{{metaData.keywords}}">
+    <title>${local.metaData.title}</title>
+    <meta name="description" content="${local.metaData.description}">
+    <meta name="keywords" content="${local.metaData.keywords}">
   </head>
-  <body data-controller="{{route.controller}}" data-action="{{route.action}}" data-view="{{route.view}}" data-renderer="{{route.renderer}}" data-rendered-view="{{route.renderedView}}" data-show="{{route.show}}" data-task="{{route.task}}" data-type="{{route.type}}" data-mode="{{config.citizen.mode}}">
+  <body data-controller="${route.controller}" data-action="${route.action}" data-view="${route.view}" data-mode="${config.citizen.mode}">
     <main>
-      <h1>{{main.header}}</h1>
-      <p>{{main.text}}</p>
+      <h1>${local.main.header}</h1>
+      <p>${local.main.text}</p>
     </main>
   </body>
 </html>

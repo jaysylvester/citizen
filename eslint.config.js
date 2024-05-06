@@ -9,7 +9,8 @@ export default [
         ...globals.node,
         CTZN: 'writeable'
       }
-    }
+    },
+    ignorePatterns: ['util/']
   },
   pluginJs.configs.recommended,
   {

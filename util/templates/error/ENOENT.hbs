@@ -10,21 +10,21 @@
       <p>Attempting to read or write the following file failed because the file (or possibly the directory) doesn't exist:</p>
       <pre>
         <code>
-          {{error.raw.path}}
+          ${local.error.raw.path}
         </code>
       </pre>
       <p>The complete error follows:</p>
       <pre>
         <code>
-          {{error.errorCode}}
+          ${local.error.errorCode}
 
-          {{error.statusCode}}
+          ${local.error.statusCode}
 
-          {{error.label}}
+          ${local.error.label}
 
-          {{error.message}}
+          ${local.error.message}
           
-          {{error.stack}}
+          ${local.error.stack}
         </code>
       </pre>
     </main>
