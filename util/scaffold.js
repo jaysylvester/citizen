@@ -51,9 +51,9 @@ const buildModel = (options) => {
 const buildView = (options) => {
   var pattern   = options.pattern,
       isPrivate = options.private || false,
-      template  = fs.readFileSync(scaffoldPath + '/templates/view.hbs'),
+      template  = fs.readFileSync(scaffoldPath + '/templates/view.html'),
       directory = pattern,
-      name      = pattern + '.hbs'
+      name      = pattern + '.html'
 
   if ( isPrivate ) {
     directory = '+' + directory
@@ -159,7 +159,7 @@ program
     fs.mkdirSync(appPath +     '/views/error')
     templates.error.forEach( function (file) {
       var template,
-          viewRegex = new RegExp(/.+\.hbs$/)
+          viewRegex = new RegExp(/.+\.html$/)
 
       if ( viewRegex.test(file) ) {
         template = fs.readFileSync(scaffoldPath + '/templates/error/' + file)
@@ -203,11 +203,11 @@ program
     console.log('        index.js')
     console.log('      views/')
     console.log('        error/')
-    console.log('          404.hbs')
-    console.log('          500.hbs')
-    console.log('          ENOENT.hbs')
-    console.log('          error.hbs')
-    console.log('        index.hbs')
+    console.log('          404.html')
+    console.log('          500.html')
+    console.log('          ENOENT.html')
+    console.log('          error.html')
+    console.log('        index.html')
     console.log('      start.js')
     console.log('    web/')
     console.log('')
@@ -269,7 +269,7 @@ program
       console.log('      models/')
       console.log('        foo.js')
       console.log('      views/')
-      console.log('        foo.hbs')
+      console.log('        foo.html')
       console.log('')
     })
 
