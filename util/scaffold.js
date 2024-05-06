@@ -109,7 +109,7 @@ program
           response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
           session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
           start       : fs.readFileSync(scaffoldPath + '/templates/start.js'),
-          error       : fs.readdirSync(scaffoldPath + '/templates/error')
+          error       : fs.readdirSync(scaffoldPath +  '/templates/error')
         },
         controller = buildController({
           pattern: 'index',
@@ -140,23 +140,23 @@ program
     fs.mkdirSync(appPath)
     fs.writeFileSync(appPath + '/package.json', packageJSON)
     fs.writeFileSync(appPath + '/start.js', start)
-    fs.mkdirSync(appPath + '/config')
+    fs.mkdirSync(appPath +     '/config')
     fs.writeFileSync(appPath + '/config/' + config.name, config.contents)
-    fs.mkdirSync(appPath + '/logs')
-    fs.mkdirSync(appPath + '/controllers')
-    fs.mkdirSync(appPath + '/controllers/hooks')
+    fs.mkdirSync(appPath +     '/logs')
+    fs.mkdirSync(appPath +     '/controllers')
+    fs.mkdirSync(appPath +     '/controllers/hooks')
     fs.writeFileSync(appPath + '/controllers/hooks/application.js', application)
     fs.writeFileSync(appPath + '/controllers/hooks/request.js', request)
     fs.writeFileSync(appPath + '/controllers/hooks/response.js', response)
     fs.writeFileSync(appPath + '/controllers/hooks/session.js', session)
-    fs.mkdirSync(appPath + '/controllers/routes')
+    fs.mkdirSync(appPath +     '/controllers/routes')
     fs.writeFileSync(appPath + '/controllers/routes/' + controller.name, controller.contents)
-    fs.mkdirSync(appPath + '/models')
+    fs.mkdirSync(appPath +     '/models')
     fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
-    fs.mkdirSync(appPath + '/views')
-    fs.mkdirSync(appPath + '/views/' + view.directory)
+    fs.mkdirSync(appPath +     '/views')
+    fs.mkdirSync(appPath +     '/views/' + view.directory)
     fs.writeFileSync(appPath + '/views/' + view.directory + '/' + view.name, view.contents)
-    fs.mkdirSync(appPath + '/views/error')
+    fs.mkdirSync(appPath +     '/views/error')
     templates.error.forEach( function (file) {
       var template,
           viewRegex = new RegExp(/.+\.hbs$/)
