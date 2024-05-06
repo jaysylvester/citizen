@@ -1,8 +1,8 @@
 // Generates files and directories needed for citizen apps
 
-import program from 'commander'
-import fs      from 'fs'
-import path    from 'path'
+import { program } from 'commander'
+import fs      from 'node:fs'
+import path    from 'node:path'
 
 const scaffoldPath = new URL('../util/', import.meta.url).pathname,
       appPath      = path.resolve(scaffoldPath, '../../../app')
@@ -51,9 +51,9 @@ const buildModel = (options) => {
 const buildView = (options) => {
   var pattern   = options.pattern,
       isPrivate = options.private || false,
-      template  = fs.readFileSync(scaffoldPath + '/templates/view.hbs'),
+      template  = fs.readFileSync(scaffoldPath + '/templates/view.html'),
       directory = pattern,
-      name      = pattern + '.hbs'
+      name      = pattern + '.html'
 
   if ( isPrivate ) {
     directory = '+' + directory
@@ -71,7 +71,7 @@ const buildView = (options) => {
 const buildConfig = (options) => {
   var template = fs.readFileSync(scaffoldPath + '/templates/config.json'),
       mode     = options.mode || 'development',
-      port     = options.port || 80,
+      port     = options.port || 3000,
       name     = options.name || 'citizen'
 
   template = template.toString()
@@ -86,7 +86,7 @@ const buildConfig = (options) => {
 
 
 program
-  .version('0.0.3')
+  .version('1.0.0')
   .on('--help', function () {
     console.log('')
     console.log('This utility creates templates for citizen apps and patterns.')
@@ -98,7 +98,7 @@ program
 // Create the skeleton of an app
 program
   .command('skeleton')
-  .option('-n, --network-port [port number]', 'Default HTTP port is 80, but if that\'s taken, use this option to set your config')
+  .option('-n, --network-port [port number]', 'Default HTTP port is 3000, but if that\'s taken, use this option to set your config')
   .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
     var webPath = path.resolve(appPath, '../web'),
@@ -109,7 +109,7 @@ program
           response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
           session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
           start       : fs.readFileSync(scaffoldPath + '/templates/start.js'),
-          error       : fs.readdirSync(scaffoldPath + '/templates/error')
+          error       : fs.readdirSync(scaffoldPath +  '/templates/error')
         },
         controller = buildController({
           pattern: 'index',
@@ -140,32 +140,32 @@ program
     fs.mkdirSync(appPath)
     fs.writeFileSync(appPath + '/package.json', packageJSON)
     fs.writeFileSync(appPath + '/start.js', start)
-    fs.mkdirSync(appPath + '/config')
+    fs.mkdirSync(appPath +     '/config')
     fs.writeFileSync(appPath + '/config/' + config.name, config.contents)
-    fs.mkdirSync(appPath + '/logs')
-    fs.mkdirSync(appPath + '/hooks')
-    fs.writeFileSync(appPath + '/hooks/application.js', application)
-    fs.writeFileSync(appPath + '/hooks/request.js', request)
-    fs.writeFileSync(appPath + '/hooks/response.js', response)
-    fs.writeFileSync(appPath + '/hooks/session.js', session)
-    fs.mkdirSync(appPath + '/patterns')
-    fs.mkdirSync(appPath + '/patterns/controllers')
-    fs.writeFileSync(appPath + '/patterns/controllers/' + controller.name, controller.contents)
-    fs.mkdirSync(appPath + '/patterns/models')
-    fs.writeFileSync(appPath + '/patterns/models/' + model.name, model.contents)
-    fs.mkdirSync(appPath + '/patterns/views')
-    fs.mkdirSync(appPath + '/patterns/views/' + view.directory)
-    fs.writeFileSync(appPath + '/patterns/views/' + view.directory + '/' + view.name, view.contents)
-    fs.mkdirSync(appPath + '/patterns/views/error')
+    fs.mkdirSync(appPath +     '/logs')
+    fs.mkdirSync(appPath +     '/controllers')
+    fs.mkdirSync(appPath +     '/controllers/hooks')
+    fs.writeFileSync(appPath + '/controllers/hooks/application.js', application)
+    fs.writeFileSync(appPath + '/controllers/hooks/request.js', request)
+    fs.writeFileSync(appPath + '/controllers/hooks/response.js', response)
+    fs.writeFileSync(appPath + '/controllers/hooks/session.js', session)
+    fs.mkdirSync(appPath +     '/controllers/routes')
+    fs.writeFileSync(appPath + '/controllers/routes/' + controller.name, controller.contents)
+    fs.mkdirSync(appPath +     '/models')
+    fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
+    fs.mkdirSync(appPath +     '/views')
+    fs.mkdirSync(appPath +     '/views/' + view.directory)
+    fs.writeFileSync(appPath + '/views/' + view.directory + '/' + view.name, view.contents)
+    fs.mkdirSync(appPath +     '/views/error')
     templates.error.forEach( function (file) {
       var template,
-          viewRegex = new RegExp(/.+\.hbs$/)
+          viewRegex = new RegExp(/.+\.html$/)
 
       if ( viewRegex.test(file) ) {
         template = fs.readFileSync(scaffoldPath + '/templates/error/' + file)
       }
 
-      fs.writeFileSync(appPath + '/patterns/views/error/' + file, template)
+      fs.writeFileSync(appPath + '/views/error/' + file, template)
     })
     fs.mkdirSync(webPath)
 
@@ -190,25 +190,24 @@ program
     console.log('    app/')
     console.log('      config/')
     console.log('        citizen.json')
+    console.log('      controllers/')
+    console.log('        hooks/')
+    console.log('          application.js')
+    console.log('          request.js')
+    console.log('          response.js')
+    console.log('          session.js')
+    console.log('        routes/')
+    console.log('          index.js')
     console.log('      logs/')
-    console.log('      hooks/')
-    console.log('        application.js')
-    console.log('        request.js')
-    console.log('        response.js')
-    console.log('        session.js')
-    console.log('      patterns/')
-    console.log('        controllers/')
-    console.log('          index.js')
-    console.log('        models/')
-    console.log('          index.js')
-    console.log('        views/')
-    console.log('          error/')
-    console.log('            404.hbs')
-    console.log('            500.hbs')
-    console.log('            ENOENT.hbs')
-    console.log('            error.hbs')
-    console.log('          index/')
-    console.log('            index.hbs')
+    console.log('      models/')
+    console.log('        index.js')
+    console.log('      views/')
+    console.log('        error/')
+    console.log('          404.html')
+    console.log('          500.html')
+    console.log('          ENOENT.html')
+    console.log('          error.html')
+    console.log('        index.html')
     console.log('      start.js')
     console.log('    web/')
     console.log('')
@@ -242,13 +241,12 @@ program
           private: options.private
         })
 
-    fs.writeFileSync(appPath + '/patterns/controllers/' + controller.name, controller.contents)
+    fs.writeFileSync(appPath + '/controllers/routes/' + controller.name, controller.contents)
     if ( options.model ) {
-      fs.writeFileSync(appPath + '/patterns/models/' + model.name, model.contents)
+      fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
     }
     if ( options.viewTemplate ) {
-      fs.mkdirSync(appPath + '/patterns/views/' + view.directory)
-      fs.writeFileSync(appPath + '/patterns/views/' + view.directory + '/' + view.name, view.contents)
+      fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
     }
 
     console.log(pattern + ' pattern created')
@@ -264,14 +262,13 @@ program
       console.log('    Creates the following pattern:')
       console.log('')
       console.log('    app/')
-      console.log('      patterns/')
-      console.log('        controllers/')
+      console.log('      controllers/')
+      console.log('        routes/')
       console.log('          foo.js')
-      console.log('        models/')
-      console.log('          foo.js')
-      console.log('        views/')
-      console.log('          foo/')
-      console.log('            foo.hbs')
+      console.log('      models/')
+      console.log('        foo.js')
+      console.log('      views/')
+      console.log('        foo.html')
       console.log('')
     })
 

@@ -2,7 +2,7 @@
 
 // This module optionally exports the following methods:
 // start(params, request, response, context) - Called when the application starts
-// error(params, request, response, context, err) - Called on every application error
+// error(params, request, response, context, err) - Called on every application error (500-level)
 
 // If you have no use for this file, you can delete it.
 
