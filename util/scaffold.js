@@ -246,8 +246,7 @@ program
       fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
     }
     if ( options.viewTemplate ) {
-      fs.mkdirSync(appPath + '/views/' + view.directory)
-      fs.writeFileSync(appPath + '/views/' + view.directory + '/' + view.name, view.contents)
+      fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
     }
 
     console.log(pattern + ' pattern created')
