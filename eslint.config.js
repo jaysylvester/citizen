@@ -9,10 +9,12 @@ export default [
         ...globals.node,
         CTZN: 'writeable'
       }
-    },
-    ignorePatterns: ['util/']
+    }
   },
   pluginJs.configs.recommended,
+  {
+    ignores: ['util/templates/']
+  },
   {
     rules: {
       'linebreak-style': [
