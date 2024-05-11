@@ -12,12 +12,7 @@ const buildController = (options) => {
   var template  = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
       pattern   = options.pattern,
       appName   = options.appName,
-      isPrivate = options.private || false,
       name      = pattern + '.js'
-
-  if ( isPrivate ) {
-    name = '+' + name
-  }
 
   template = template.toString()
   template = template.replace(/\[pattern\]/g, pattern)
@@ -50,15 +45,9 @@ const buildModel = (options) => {
 
 const buildView = (options) => {
   var pattern   = options.pattern,
-      isPrivate = options.private || false,
       template  = fs.readFileSync(scaffoldPath + '/templates/view.html'),
       directory = pattern,
       name      = pattern + '.html'
-
-  if ( isPrivate ) {
-    directory = '+' + directory
-    name      = '+' + name
-  }
 
   return {
     directory : directory,
@@ -221,31 +210,27 @@ program
 program
   .command('pattern [pattern]')
   .option('-a, --app-name [name]', 'Specify a custom global app variable name (default is "app")')
-  .option('-p, --private', 'Make the controller private (inaccessible via HTTP)')
   .option('-M, --no-model', 'Skip creation of the model')
-  .option('-T, --no-view-template', 'Skip creation of the view')
+  .option('-T, --no-view', 'Skip creation of the view')
   .action( function (pattern, options) {
     var appName = options.appName || 'app',
         controller = buildController({
           pattern: pattern,
-          appName: appName,
-          private: options.private
+          appName: appName
         }),
         model = buildModel({
           pattern: pattern,
-          appName: appName,
-          private: options.private
+          appName: appName
         }),
         view = buildView({
-          pattern: pattern,
-          private: options.private
+          pattern: pattern
         })
 
     fs.writeFileSync(appPath + '/controllers/routes/' + controller.name, controller.contents)
     if ( options.model ) {
       fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
     }
-    if ( options.viewTemplate ) {
+    if ( options.view ) {
       fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
     }
 
