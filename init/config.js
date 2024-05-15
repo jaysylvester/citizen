@@ -42,7 +42,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 'text/javascript',
                                 'text/plain',
                                 'text/xml'
-                                ]
+                               ]
           },
           sessions: {
             enabled          : false,
@@ -57,7 +57,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 'text/plain',
                                 'application/json',
                                 'application/javascript'
-                                ],
+                               ],
           forms: {
             enabled          : true,
             maxPayloadSize   : 524288 // 0.5MB
