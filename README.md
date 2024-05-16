@@ -37,40 +37,41 @@ Use citizen as the foundation for a traditional server-side web application, a m
 ## Benefits
 
 - High performance and stability
+- Convention over configuration, but still flexible
 - Zero-configuration server-side routing with SEO-friendly URLs
 - Server-side session management
-- Caching for routes, individual controllers, objects, and static files
+- Caching for requests, controller actions, objects, and static files
 - Simple directives for managing cookies, sessions, redirects, caches, and more
 - Powerful code reuse options via controller-based includes and chaining
-- HTML, JSON, and JSONP served from the same pattern
-- `async await` support
+- HTML, JSON, JSONP, and plain text served from the same pattern
 - ES module and Node (CommonJS) module support
 - Hot module reloading in development mode
-- Support for many template engines with [consolidate](https://github.com/tj/consolidate.js)
+- View rendering using template literals or any engine supported by [consolidate](https://github.com/tj/consolidate.js)
 - Few direct dependencies
 
 Have questions, suggestions, or need help? Want to contribute? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
 
 
-## Is it production-ready?
+## Is it production ready?
 
-I use citizen on [my personal site](https://jaysylvester.com) and [originaltrilogy.com](https://originaltrilogy.com). OT.com gets a moderate amount of traffic (between 300K and 400K page views per month) and runs for months on end on a $20 cloud hosting plan without the app/process crashing. It's very stable.
+I use citizen on [my personal site](https://jaysylvester.com) and [originaltrilogy.com](https://originaltrilogy.com). OT.com handles a moderate amount of traffic (at least a couple hundred thousand views each month) on a $30 cloud hosting plan running a single instance of citizen, where the app/process runs for months at a time without crashing. It's very stable.
 
 
 ## Quick Start
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding utility to create the app's skeleton, and start citizen with the web server listening on port 8080 (citizen defaults to port 80, but it's often in use already, so change it to whatever you want):
+These commands will create a new directory for your web app, install citizen, use its scaffolding utility to create the app's skeleton, and start citizen with the web server on port 3000:
 
     $ mkdir myapp && cd myapp
     $ npm install citizen
-    $ node node_modules/citizen/util/scaffold skeleton -n 8080
+    $ node node_modules/citizen/util/scaffold skeleton
     $ node app/start.js
 
-If everything went well, you'll see confirmation in the console that the web server is running. Go to http://127.0.0.1:8080 in your browser and you'll see a bare index template.
+If everything went well, you'll see confirmation in the console that the web server is running. Go to http://127.0.0.1:3000 in your browser and you'll see a bare index template.
 
-citizen installs [Handlebars](http://handlebarsjs.com) as its default template engine, but you can install any template engine supported by [consolidate.js](https://github.com/tj/consolidate.js), update the [config template settings](#config-settings), and modify the default view templates accordingly.
+citizen uses template literals as its default template engine, but you can install [consolidate.js](https://github.com/tj/consolidate.js), update the [template config](#config-settings), and modify the default view templates accordingly.
 
 For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
+
 
 ### Demo App
 
@@ -85,25 +86,26 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
         local.json        // Examples of environment configs
         qa.json
         prod.json
-      /hooks              // Application event hooks (optional)
-        application.js
-        request.js
-        response.js
-        session.js
-      /logs               // Log files created by citizen and your app
-        app.log
-        citizen.log
-      /patterns
-        /controllers      // Controllers
+      /controllers
+        /hooks            // Application event hooks (optional)
+          application.js
+          request.js
+          response.js
+          session.js
+        /routes           // Public route controllers
           index.js
-        /models           // Models (optional)
-          index.js
-        /views
-          /error
-            error.hbs     // Default error view
-          /index
-            index.hbs     // Default index view
-            other.hbs     // Alternate index view (optional)
+      /logs               // Log files
+        access.log
+        error.log
+      /models             // Models (optional)
+        index.js
+      /views
+        /error            // Default error views
+          404.html
+          500.html
+          ENOENT.html
+          error.html
+        index.html        // Default index view
       start.js
     /web                  // public static assets
 
@@ -130,11 +132,14 @@ Run start.js from the command line:
 
 ### Configuration
 
+There are two configuration options: inline and file-based.
+
 The config directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
 
-1. citizen parses each JSON file looking for a `host` key that matches the machine's hostname. If it finds one, it loads that configuration.
-2. If it can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
-3. If it can't find citizen.json or you don't have a config directory, it runs under its default configuration.
+1. citizen parses each JSON file looking for a `host` key that matches the machine's hostname, extending the default configuration with the file config.
+2. If citizen can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
+3. If citizen can't find citizen.json or you don't have a config directory, it runs under its default configuration.
+4. Finally, citizen extends the configuration with the inline config at app startup.
 
 Let's say you want to run citizen on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
 
@@ -147,48 +152,24 @@ Let's say you want to run citizen on port 8080 in your local dev environment and
         }
       },
       "db": {
-        "server":   "localhost",
-        "username": "dbuser",
-        "password": "dbpassword"
+        server:   "localhost",  // app.config.db.server
+        username: "dbuser",     // app.config.db.username
+        password: "dbpassword"  // app.config.db.password
       }
     }
 
-This config would extend the default configuration only when running on your local machine. If you were to push this to a production environment accidentally, it wouldn't do anything. Using this method, you can commit multiple config files from different environments to the same repository.
+This config would extend the default configuration only when running on your local machine. Using this method, you can commit multiple config files from different environments to the same repository.
 
 The database settings would be accessible within your app via `app.config.db`. The `citizen` and `host` nodes are reserved for the framework; create your own node(s) to store your custom settings.
 
 
 #### Inline config
 
-You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
-
-    // Start an HTTP server on port 8080 accepting requests at www.mysite.com
-    app.start({
-      citizen: {
-        http: {
-          hostname: 'www.mysite.com',
-          port:     8080
-        }
-      }
-    })
-
-    // Start an HTTPS server with key and cert PEM files
-    app.start({
-      citizen: {
-        http: {
-          enable: false
-        },
-        https: {
-          enable: true,
-          key:    '/absolute/path/to/key.pem',
-          cert:   '/absolute/path/to/cert.pem'
-        }
-      }
-    })
+You can also pass your app's configuration directly to citizen through `app.server.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
 
     // Start an HTTPS server with a PFX file running on port 3000,
     // and add a custom namespace for your app's database config
-    app.start({
+    app.server.start({
       citizen: {
         http: {
           enable: false
@@ -212,106 +193,119 @@ You can also pass your app's configuration directly to citizen through `app.star
 The following represents citizen's default configuration, which is extended by your configuration:
 
     {
-      host                  : "",
+      host                 : '',
       citizen: {
-        mode                : "production",
+        mode               : process.env.NODE_ENV || 'production',
         http: {
-          enable            : true,
-          hostname          : "127.0.0.1",
-          port              : 80
+          enabled          : true,
+          hostname         : '127.0.0.1',
+          port             : 80
         },
         https: {
-          enable            : false,
-          hostname          : "127.0.0.1",
-          port              : 443,
-          secureCookies     : true
+          enabled          : false,
+          hostname         : '127.0.0.1',
+          port             : 443,
+          secureCookies    : true
         },
-        connectionQueue     : null,
-        templateEngine      : "handlebars",
+        connectionQueue    : null,
+        templateEngine     : 'templateLiterals',
         compression: {
-          enable            : false,
-          force             : false,
-          mimeTypes         : "text/plain text/html text/css application/x-javascript application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml"
+          enabled          : false,
+          force            : false,
+          mimeTypes        : [
+                              'application/javascript',
+                              'application/x-javascript',
+                              'application/xml',
+                              'application/xml+rss',
+                              'image/svg+xml',
+                              'text/css',
+                              'text/html',
+                              'text/javascript',
+                              'text/plain',
+                              'text/xml'
+                             ]
         },
-        sessions            : false,
-        sessionTimeout      : 20,
+        sessions: {
+          enabled          : false,
+          lifespan         : 20 // minutes
+        },
         layout: {
-          controller        : "",
-          view              : ""
+          controller       : '',
+          view             : ''
         },
-        legalFormat: {
-          html              : true,
-          json              : false,
-          jsonp             : false
+        contentTypes       : [
+                              'text/html',
+                              'text/plain',
+                              'application/json',
+                              'application/javascript'
+                             ],
+        forms: {
+          enabled          : true,
+          maxPayloadSize   : 524288 // 0.5MB
         },
-        form: {},
         cache: {
           application: {
-            enable          : true,
-            lifespan        : 15,
-            resetOnAccess   : true,
-            overwrite       : false,
-            encoding        : "utf-8",
-            synchronous     : false
+            enabled        : true,
+            lifespan       : 15, // minutes
+            resetOnAccess  : true,
+            encoding       : 'utf-8',
+            synchronous    : false
           },
           static: {
-            enable          : false,
-            lifespan        : 15,
-            resetOnAccess   : true
+            enabled        : false,
+            lifespan       : 15, // minutes
+            resetOnAccess  : true
           },
-          control           : {}
+          invalidUrlParams : 'warn',
+          control          : {}
         },
-        log: {
-          console: {
-            colors          : true,
-            error           : false,
-            status          : false
+        errors             : 'capture',
+        logs: {
+          access           : false, // performance-intensive, opt-in only
+          error: {
+            client         : true, // 400 errors
+            server         : true // 500 errors
           },
-          file: {
-            error           : false,
-            status          : false,
-            maxFileSize     : 10000,
-            watcher: {
-              interval      : 60000
+          debug            : false,
+          maxFileSize      : 10000,
+          watcher: {
+            options: {
+              interval     : 60000
             }
           }
         },
         development: {
           debug: {
             scope: {
-              config        : true,
-              context       : true,
-              cookie        : true,
-              form          : true,
-              payload       : true,
-              request       : true,
-              response      : true,
-              route         : true,
-              session       : true,
-              url           : true,
+              config       : true,
+              context      : true,
+              cookie       : true,
+              form         : true,
+              payload      : true,
+              route        : true,
+              session      : true,
+              url          : true,
             },
-            depth           : 3,
-            showHidden      : false,
-            view            : false
+            depth          : 4,
+            showHidden     : false,
+            view           : false
           },
-          enableCache       : false,
           watcher: {
-            custom          : [],
-            interval        : 500,
-            killSession     : false
+            custom         : [],
+            killSession    : false,
+            options: {
+              ignored      : /(^|[/\\])\../ // Ignore dotfiles
+            }
           }
         },
-        urlPaths:  {
-          app               : "/"
-        },
-        directories:  {
-          app               : "[resolved based on location of start.js]",
-          hooks             : "[directories.app]/hooks",
-          logs              : "[directories.app]/logs",
-          controllers       : "[directories.app]/patterns/controllers",
-          models            : "[directories.app]/patterns/models",
-          views             : "[directories.app]/patterns/views",
-          web               : "web"
+        urlPath            : '/',
+        directories: {
+          app              : <appDirectory>,
+          controllers      : <appDirectory> + '/controllers',
+          logs             : <appDirectory> + '/logs',
+          models           : <appDirectory> + '/models',
+          views            : <appDirectory> + '/views',
+          web              : new URL('../../../web', import.meta.url).pathname
         }
       }
     }
@@ -325,7 +319,7 @@ The only difference is how you pass key files. As you can see in the examples ab
 
 #### Config settings
 
-Here's a complete rundown of citizen's settings and what they mean:
+Here's a complete rundown of citizen's settings and what they do:
 
 <table>
   <caption>citizen config options</caption>
@@ -335,7 +329,9 @@ Here's a complete rundown of citizen's settings and what they mean:
         Setting
       </th>
       <th>
-        Values
+        Type
+      <th>
+        Possible Values
       </th>
       <th>
         Description
@@ -347,22 +343,28 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>host</code>
     </td>
     <td>
+        String
+    </td>
+    <td>
       <p>
         The operating system's hostname
       </p>
     </td>
     <td>
-      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is different from the HTTP hostname setting under the <code>citizen</code> node (see below).
+      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is not to be confused with the HTTP server <code>hostname</code> (see below).
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       citizen
     </td>
   </tr>
   <tr>
     <td>
       <code>mode</code>
+    </td>
+    <td>
+        String
     </td>
     <td>
       <ul>
@@ -374,32 +376,32 @@ Here's a complete rundown of citizen's settings and what they mean:
         </li>
       </ul>
       <p>
-        Default: <code>production</code>
+        Default: <code>NODE_ENV</code> or <code>production</code>
       </p>
     </td>
     <td>
-      The application mode determines certain runtime behaviors. Production mode silences console logs and enables all application features. Development mode enables verbose console logs, disables caching, and enables the file watcher for hot module reloading for controllers, models, and hooks.
+      The application mode determines certain runtime behaviors. Production mode silences console logs. Development mode enables verbose console logs and enables the file watcher for hot module reloading.
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       http
     </td>
   </tr>
   <tr>
     <td>
-      <code>enable</code>
+      <code>enabled</code>
     </td>
     <td>
-      <p>
         Boolean
-      </p>
+    </td>
+    <td>
       <p>
         Default: <code>true</code>
       </p>
     </td>
     <td>
-      This setting controls the HTTP server, which is enabled by default.
+      Enables the HTTP server.
     </td>
   </tr>
   <tr>
@@ -407,15 +409,15 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>hostname</code>
     </td>
     <td>
-      <p>
         String
-      </p>
+    </td>
+    <td>
       <p>
         Default: <code>127.0.0.1</code>
       </p>
     </td>
     <td>
-      The hostname at which your app can be accessed via HTTP. The default is localhost, but you can specify an empty string to accept requests at any hostname.
+      The hostname at which your app can be accessed via HTTP. You can specify an empty string to accept requests at any hostname.
     </td>
   </tr>
   <tr>
@@ -423,19 +425,19 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>port</code>
     </td>
     <td>
-      <p>
         Number
-      </p>
+    </td>
+    <td>
       <p>
-        Default: <code>80</code>
+        Default: <code>3000</code>
       </p>
     </td>
     <td>
-      The port number on which citizen's HTTP server should listen for requests.
+      The port number on which citizen's HTTP server listens for requests.
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       https
     </td>
   </tr>
@@ -444,15 +446,15 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>enable</code>
     </td>
     <td>
-      <p>
         Boolean
-      </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
     </td>
     <td>
-      This setting controls the HTTPS server, which is disabled by default.
+      Enables the HTTPS server.
     </td>
   </tr>
   <tr>
@@ -460,9 +462,9 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>hostname</code>
     </td>
     <td>
-      <p>
         String
-      </p>
+    </td>
+    <td>
       <p>
         Default: <code>127.0.0.1</code>
       </p>
@@ -476,15 +478,15 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>port</code>
     </td>
     <td>
-      <p>
         Number
-      </p>
+    </td>
+    <td>
       <p>
         Default: <code>443</code>
       </p>
     </td>
     <td>
-      The port number on which citizen's HTTPS server should listen for requests.
+      The port number on which citizen's HTTPS server listens for requests.
     </td>
   </tr>
   <tr>
@@ -492,15 +494,15 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>secureCookies</code>
     </td>
     <td>
-      <p>
         Boolean
-      </p>
+    </td>
+    <td>
       <p>
         Default: <code>true</code>
       </p>
     </td>
     <td>
-      By default, all cookies set during an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
+      By default, all cookies set within an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
     </td>
   </tr>
   <tr>
@@ -508,9 +510,9 @@ Here's a complete rundown of citizen's settings and what they mean:
       <code>connectionQueue</code>
     </td>
     <td>
-      <p>
-        A positive integer
-      </p>
+        Integer
+    </td>
+    <td>
       <p>
         Default: <code>null</code>
       </p>
@@ -552,7 +554,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       layout
     </td>
   </tr>
@@ -605,7 +607,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       legalFormat
     </td>
   </tr>
@@ -658,7 +660,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       form
     </td>
   </tr>
@@ -729,12 +731,12 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       cache
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       application
     </td>
   </tr>
@@ -835,7 +837,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       static
     </td>
   </tr>
@@ -904,7 +906,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       log
     </td>
   </tr>
@@ -962,7 +964,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       file
     </td>
   </tr>
@@ -1015,7 +1017,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">watcher</td>
+    <td colspan="4">watcher</td>
   </tr>
   <tr>
     <td>
@@ -1034,12 +1036,12 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       development
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       debug
     </td>
   </tr>
@@ -1105,7 +1107,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       watcher
     </td>
   </tr>
@@ -1141,7 +1143,7 @@ Here's a complete rundown of citizen's settings and what they mean:
     </td>
   </tr>
   <tr>
-    <td colspan="3">
+    <td colspan="4">
       urlPaths
     </td>
   </tr>
@@ -1174,7 +1176,7 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
 <table>
   <tr>
     <td>
-      <code>app.start()</code>
+      <code>app.server.start()</code>
     </td>
     <td>
       Starts a citizen web application server.
@@ -1186,7 +1188,7 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
       <code>app.cache.exists()</code><br />
       <code>app.cache.get()</code><br />
       <code>app.cache.clear()</code><br />
-      <code>app.log()</code>
+      <code>app.helpers.log()</code>
     </td>
     <td>
       <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful.
@@ -1198,7 +1200,7 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
       <code>app.models</code>
     </td>
     <td>
-      Contains your supplied patterns, which you can use instead of <code>require</code>.
+      Contains your supplied patterns, which you can use instead of <code>import</code> or <code>require</code>.
     </td>
   </tr>
   <tr>
@@ -1215,7 +1217,7 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
 
 ## Routing and URLs
 
-The citizen URL structure determines which controller and action to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that can double as a unique identifier. The structure looks like this:
+The citizen URL structure determines which route controller and action to fire, passes URL parameters, and makes a bit of room for SEO-friendly content that can double as a unique identifier. The structure looks like this:
 
     http://www.site.com/controller/seo-content/action/myAction/param/val/param2/val2
 
@@ -1223,11 +1225,11 @@ For example, let's say your site's base URL is:
 
     http://www.cleverna.me
 
-The default controller is `index`, so the above is the equivalent of the following:
+The default route controller is `index`, and the default action is `handler()`, so the above is the equivalent of the following:
 
-    http://www.cleverna.me/index
+    http://www.cleverna.me/index/action/handler
 
-If you have an `article` controller, you'd request it like this:
+If you have an `article` route controller, you'd request it like this:
 
     http://www.cleverna.me/article
 
@@ -1245,9 +1247,8 @@ citizen also lets you optionally insert relevant content into your URLs, like so
 
     http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
-This SEO content must always follow the controller name and precede any name/value pairs. You can access it generically via `route.descriptor` or within the `url` scope (`url.article` in this case), which means you can use it as a unique identifier (more on URL parameters in the [Controllers section](#controllers)).
+This SEO content must always follow the controller name and precede any name/value pairs, including the controller action. You can access it generically via `route.descriptor` or within the `url` scope (`url.article` in this case), which means you can use it as a unique identifier (more on URL parameters in the [Route Controllers section](#route-controllers)).
 
-The SEO content can consist of letters, numbers, dots (.), and the tilde (~) character.
 
 
 
@@ -1256,34 +1257,43 @@ The SEO content can consist of letters, numbers, dots (.), and the tilde (~) cha
 citizen relies on a simple model-view-controller convention. The article pattern mentioned above might use the following structure:
 
     app/
-      patterns/
-        controllers/
+      controllers/
+        routes/
           article.js
-        models/
+      models/
+        article.js
+      views/
+        article.html  // The default view file name should match the controller name
+
+At least one route controller is required for a given URL, and a route controller's default view file must share its name.
+
+All views for a given route controller can exist in the `app/views/` directory, or they can be placed in a directory whose name matches that of the controller for cleaner organization:
+
+    app/
+      controllers/
+        routes/
           article.js
-        views/
-          article/       // Directory name matches the controller name
-            article.hbs  // Default view name matches the controller name
-            edit.hbs     // Secondary view, which must be called explicitly
+      models/
+        data.js
+      views/
+        article/
+          article.html  // The default view
+          edit.html     // Alternate article views
+          delete.html
 
-At least one controller is required for a given URL, and a controller's default view directory and default view file must share its name. Additional views should reside in this same directory. More on views in the [Views section](#views).
+More on views in the [Views section](#views).
 
-Models and views are optional and don't necessarily need to be associated with a particular controller. If your controller doesn't need a model, you don't need to create one. If your controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the [controller handoff directive](#controller-handoff).)
+Models and views are optional and don't necessarily need to be associated with a particular controller. If your route controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the [controller next() directive](#controller-handoff).)
 
 
 
-### Controllers
+### Route Controllers
 
-A citizen controller is just a Node module. Each controller requires at least one public  method to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
+A citizen route controller is just a Node module. Each controller requires at least one public  method to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
 
-    // article controller
+    // Default route controller action
 
-    module.exports = {
-      handler: handler
-    }
-
-    // Default action
-    async function handler(params, context) {
+    export const handler = async (params, request, response, context) => {
 
       // Do some stuff
 
@@ -1292,25 +1302,17 @@ A citizen controller is just a Node module. Each controller requires at least on
       }
     }
 
-The citizen server calls `handler()` after it processes the initial request and passes it 2 arguments: an object containing the parameters of the request and the current request's context.
+The citizen server calls `handler()` after it processes the initial request and passes it 4 arguments: an object containing the parameters of the request, the Node.js `request` and `response` objects, and the current request's context.
 
 <table>
   <caption>Contents of the <code>params</code> argument</caption>
   <tr>
-    <td><code>request</code></td>
-    <td>The request object generated by the server, just in case you need direct access</td>
-  </tr>
-  <tr>
-    <td><code>response</code></td>
-    <td>The response object generated by the server</td>
-  </tr>
-  <tr>
     <td><code>route</code></td>
-    <td>Details of the route, such as the requested URL and the name of the route (controller)</td>
+    <td>Details of the requested route, such as the requested URL and the name of the route controller</td>
   </tr>
   <tr>
     <td><code>url</code></td>
-    <td>Any URL parameters that were passed including the descriptor, if provided</td>
+    <td>Any parameters derived from the URL</td>
   </tr>
   <tr>
     <td><code>form</code></td>
@@ -1344,33 +1346,29 @@ For example, based on the previous article URL...
       page: '2'
     }
 
-The controller name becomes a property in the URL scope that references the descriptor, which makes it well-suited for use as a unique identifier. This content is also available in the `params.route` object as `route.descriptor`.
+The controller name becomes a property in the URL scope that references the descriptor, which makes it well-suited for use as a unique identifier. This content is also available in the `params.route` object as `params.route.descriptor`.
 
-The `context` argument contains any data that's been generated by the request up to this point. There are various events that can populate this argument with content and directives, which are then passed to your controller so you can access that content or see what directives have been set by previous events.
+The `context` argument contains any data or directives that have been generated by previous controllers in the chain using their `return` statement.
 
-To return the results of the controller action, include a `return` statement with any content and [directives](#controller-directives) you want to pass to citizen.
+To return the results of the controller action, include a `return` statement with any data and [directives](#controller-directives) you want to pass to citizen.
 
 Using the above URL parameters, I can retrieve the article content from the model and pass it back to the server:
 
     // article controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function handler(params, context) {
+    export const handler = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.data.getArticle({
         article: params.url.article,
         page: params.url.page
       })
-      const author = await app.models.article.getAuthor({
+      const author = await app.models.data.getAuthor({
         author: article.author
       })
 
-      // Return the article for view rendering using the content directive
+      // Return the article for view rendering using the local directive
       return {
-        content: {
+        local: {
           article: article,
           author: author
         }
@@ -1383,124 +1381,77 @@ Alternate actions can be requested using the `action` URL parameter. For example
 
     // article controller
 
-    module.exports = {
-      handler: handler,
-      edit: edit
-    }
-
-    async function handler(params, context) {
+    export const handler = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.data.getArticle({
         article: params.url.article,
         page: params.url.page
       })
-      const author = await app.models.article.getAuthor({
+      const author = await app.models.data.getAuthor({
         author: article.author
       })
 
-      // Return the article for view rendering using the content directive
+      // Return the article for view rendering using the local directive
       return {
-        content: {
+        local: {
           article: article,
           author: author
         }
       }
     }
 
-    async function edit(params, context) {
+    export const edit = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.data.getArticle({
         article: params.url.article,
         page: params.url.page
       })
 
-      // Use the /patterns/views/article/edit.hbs view for this action (more on
-      // alternate views in later sections).
+      // Use the /views/article/edit.html view for this action
       return {
-        content: {
+        local: {
           article: article
         },
         view: 'edit'
       }
     }
 
-You place any data you want to pass back to citizen within the `return` statement. All the content you want to render in your view should be passed to citizen within an object called `content`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the [Controller Directives](#controller-directives) section). You can even add your own objects to the request context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
-
-
-#### Private controllers
-
-To make a controller private—inaccessible via HTTP, but accessible within your app—add a plus sign (`+`) to the beginning of the file name:
-
-    app/
-      patterns/
-        controllers/
-          +_header.js  // Partial, only accessible internally
-          _head.js     // Partial, accessible via www.cleverna.me/_head
-          article.js   // Accessible via www.cleverna.me/article
+You place any data you want to pass back to citizen within the `return` statement. All the data you want to render in your view should be passed to citizen within an object called `local`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the [Controller Directives](#controller-directives) section). You can even add your own objects to the context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
 
 
 #### Cross domain requests
 
-If you want to make a controller action available to third parties, see the [CORS section](#cross-origin-resource-sharing-cors).
+If you want to make a route controller action available to third parties, see the [CORS section](#cross-origin-resource-sharing-cors).
 
 
 
 ### Models
 
-Models are optional and their structure is completely up to you. citizen doesn't talk to your models directly; it only stores them in `app.models` for your convenience.
+Models are optional modules and their structure is completely up to you. citizen doesn't talk to your models directly; it only stores them in `app.models` for your convenience. You can also import them manually into your controllers if you prefer.
 
-Here's what a simple model for the article pattern might look like:
-
-    // article model
-
-    module.exports = {
-      getArticle: getArticle
-    }
-
-    async function getArticle(article, page) {
-      const client = await app.db.connect()
-      const result = await client.query({
-        text: 'select title, summary, text, author, published from articles where id = $1 and page = $2;',
-        values: [ article, page ]
-      })
-      client.release()
-
-      return result.rows
-    }
-
-    async function getAuthor(author) {
-      const client = await app.db.connect()
-      const result = await client.query({
-        text: 'select name, email from users where id = $1;',
-        values: [ author ]
-      })
-      client.release()
-
-      return result.rows
-    }
 
 
 ### Views
 
-citizen installs [Handlebars](https://npmjs.org/package/handlebars) by default, but you can install any engine supported by [consolidate.js](https://github.com/tj/consolidate.js) and set the `templateEngine` config setting accordingly. Make sure you use the correct file extension with your views so citizen knows how to parse them. citizen only supports one template engine at a time; you can't mix and match templates.
+citizen uses template literals for view rendering by default, but you can install [consolidate.js](https://github.com/tj/consolidate.js) and use any supported template engine. Just update the `templateEngine` config setting accordingly.
 
-In `article.hbs`, you can reference objects you placed within the `content` object passed into the controller's return statement. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
+In `article.html`, you can reference variables you placed within the `local` object passed into the route controller's return statement. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
-    {{! article.hbs }}
+    <!-- article.html -->
 
     <!doctype html>
     <html>
       <body>
         <main>
           <h1>
-            {{article.title}} — Page {{url.page}}
+            ${local.article.title} — Page ${url.page}
           </h1>
-          <h2>{{author.name}}, {{article.published}}</h2>
+          <h2>${local.author.name}, ${local.article.published}</h2>
           <p>
-            {{article.summary}}
+            ${local.article.summary}
           </p>
           <section>
-            {{article.text}}
+            ${local.article.text}
           </section>
         </main>
       </body>
@@ -1512,11 +1463,11 @@ In `article.hbs`, you can reference objects you placed within the `content` obje
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your return statement](#alternate-views).
 
 
-#### JSON and JSONP
+#### JSON and JSON-P
 
-You can tell a controller to return its content as JSON by adding the `format` URL parameter, letting the same resource serve both a complete HTML view and JSON for AJAX requests and RESTful APIs.
+You can tell a route controller to return its local variables as JSON or JSON-P by setting the appropriate HTTP `Accept` header in your request, letting the same resource serve both a complete HTML view and JSON for AJAX requests and RESTful APIs.
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 
 Returns...
 
@@ -1532,23 +1483,11 @@ Returns...
       }
     }
 
-Whatever you've added to the controller's return statement `content` object will be returned.
-
-To enable JSON output at the controller level:
-
-    return {
-      content: {
-        article: article,
-        author: author
-      },
-      legalFormat: {
-        json: true
-      }
-    }
+Whatever you've added to the controller's return statement `local` object will be returned.
 
 You can also specify indivdidual nodes to return instead of returning the entire content object by using the `output` URL parameter:
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/author
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/output/author
 
 Returns...
 
@@ -1558,18 +1497,18 @@ Returns...
     }
 
 
-Use dash notation in the output parameter to go deeper into the node tree:
+Use the tilde (~) as a delimiter in the output parameter to go deeper into the node tree:
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/json/output/author-email
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/output/author~email
 
 Returns...
 
     jsmith@cleverna.me
 
 
-For JSONP, use `format` paired with `callback` in the URL:
+For JSONP, use `callback` in the URL:
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/format/jsonp/callback/foo
+    http://www.cleverna.me/article/My-Clever-Article-Title/callback/foo
 
 Returns:
 
@@ -1585,100 +1524,46 @@ Returns:
       }
     })
 
-To enable JSONP output at the controller level:
-
-    return {
-      legalFormat: {
-        jsonp: true
-      }
-    }
-
 The `output` URL parameter works with JSONP as well.
 
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo/output/author-email
+    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo/output/author~email
 
 Returns...
 
     foo("jsmith@cleverna.me")
 
 
-Do you always want a particular controller action to return JSON without the URL flag? Simple:
-
-    async function handler(params) {
-
-      // All requests handled by this controller action will output JSON
-      params.route.format = 'json'
-
-      return {
-        content: {
-          article: article,
-          author: author
-        },
-        legalFormat: {
-          json: true
-        }
-      }
-    }
-
-
-Are you building a RESTful API and want every request across all controllers to return JSON without using the URL flag? Also simple, via optional hooks such as `request.js`:
-
-    // File: /app/hooks/request.js
-    // All requests will be returned in JSON format because this function runs
-    // at the beginning of every request. Learn more in the "Application Event Hooks
-    // and the Context Argument" section.
-
-    function start(params) {
-      // Set the output format to JSON
-      params.route.format = 'json'
-
-      return {
-        // Set JSON as a legal output format
-        legalFormat: {
-          json: true
-        }
-      }
-    }
-
-
-##### JSON security risks
-
-The JSON output from any controller action is driven by the returned content object. Anything you place in the content object will be present in the JSON output — whether it's present in the HTML view or not.
-
-**Take care not to place sensitive data in the content object thinking it will never be exposed because you don't reference it in your view template, because it WILL show up in your JSON.**
-
-
 ## Handling Errors
 
-citizen does a great job of handling unexpected errors without exiting the process (and thereby crashing your server). The following controller action will throw an error, but the server will respond with a 500 and keep running:
+citizen can handle unexpected errors without exiting the process. The following controller action will throw an error, but the server will respond with a 500 and keep running:
 
-    async function handler(params, context) {
-      // app.models.article.foo() throws an error
-      const foo = await app.models.article.foo()
+    export const handler = async (params) => {
+      // app.models.article.foo() doesn't exist, so this action will throw an error
+      const foo = await app.models.article.foo(params.url.article)
 
       return {
-        content: foo
+        local: foo
       }
     }
 
 You can also throw an error manually and customize the error message:
 
-    async function handler(params, context) {
+    export const handler = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.data.getArticle({
         article: params.url.article,
         page: params.url.page
       })
 
-      // If everything is fine, return the content
+      // If the article exists, return it
       if ( article ) {
         return {
-          content: article
+          local: article
         }
-      // If there's a problem, throw an error
+      // If the article doesn't exist, throw an error
       } else {
         let err = new Error('The requested article does not exist.')
-        // The default error code is 500, but you can specify a different code
+        // The HTTP status code defaults to 500, but you can specify your own
         err.statusCode = 404
         throw err
       }
@@ -1691,24 +1576,20 @@ The app skeleton created by the [scaffold utility](#scaffold) includes optional 
 
 ### Error Views
 
-To create custom error views for server errors, create a directory called `/app/patterns/views/error` and populate it with templates named after the HTTP response code or Node error code.
+To create custom error views for server errors, create a directory called `/app/views/error` and populate it with templates named after the HTTP response code or Node error code.
 
     app/
-      patterns/
-        views/
-          error/
-            404.hbs      // Handles 404 errors
-            500.hbs      // Handles 500 errors
-            ENOENT.hbs   // Handles bad file read operations
-            error.hbs    // Handles any error without its own template
-
-
-These error views are only used when citizen is in `production` mode. In `development` mode, citizen dumps the raw error/stack to the view.
+      views/
+        error/
+          404.html      // Displays 404 errors
+          500.html      // Displays 500 errors
+          ENOENT.html   // Displays bad file read operations
+          error.html    // Displays any error without its own template
 
 
 ## Controller Directives
 
-In addition to the view content, the controller action's return statement can also pass directives to render alternate views, set cookies and session variables, initiate redirects, call and render includes, cache views (or entire routes), and hand off the request to another controller for further processing.
+In addition to the view data, the route controller action's return statement can also pass directives to render alternate views, set cookies and session variables, initiate redirects, call and render includes, cache route controller actions/views (or entire requests), and hand off the request to another controller for further processing.
 
 
 ### Alternate Views
@@ -1717,46 +1598,32 @@ By default, the server renders the view whose name matches that of the controlle
 
     // article controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function handler(params, context) {
+    export const edit = async (params) => {
       const article = await app.models.article.getArticle({
         article: params.url.article,
         page: params.url.page
       })
 
       return {
-        content: article,
-        // This tells the server to render app/patterns/views/article/edit.hbs
+        local: article,
+        // This tells the server to render app/views/article/edit.html
         view: 'edit'
       }
     }
 
 
-### Formats
+### Content Types
 
-citizen returns HTML by default, and you can enable JSON or JSONP in the global config. However, if you want to enable custom formats at the controller action level, use the `legalFormat` directive.
-
-If you don't enable a format, either in the controller action or global config, trying to use that format will throw an error.
-
-    return {
-      legalFormat: {
-        html: false,
-        json: true,
-        jsonp: true
-      }
-    }
+citizen returns HTML, JSON, JSON-P, and plain text. Use the HTTP Accept header in your request to determine the output ("text/html", "application/json", "application/javascript", or "text/plain").
 
 
 ### Cookies
 
-You set cookies by returning a `cookie` object within the controller action.
+You set cookies by returning a `cookies` object within the controller action.
 
 Here's an example of a complete cookie object's default settings:
 
-    cookie.foo = {
+    myCookie = {
       value: 'myValue',
 
       // Valid expiration options are:
@@ -1782,22 +1649,17 @@ The following sample login controller tells the server to set `username` and `pa
 
     // login controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function loginForm(params, context) {
+    export const loginForm = async (params) => {
       let authenticate = await app.models.login.authenticate({
-            // Form values, just like URL parameters, are passed via the params
-            // argument
+            // Form values, just like URL parameters, are passed via the params argument
             username: params.form.username,
             password: params.form.password
           }),
           // If a directive is an empty object, that's fine. citizen just ignores it.
-          cookie = {}
+          cookies = {}
 
       if ( authenticate.success ) {
-        cookie = {
+        cookies = {
           // The cookie gets its name from the property name
           username: {
             value: authenticate.username,
@@ -1811,33 +1673,29 @@ The following sample login controller tells the server to set `username` and `pa
       }
 
       return {
-        content: {
+        local: {
           authenticate: authenticate
         },
-        cookie: cookie
+        cookies: cookies
       }
     }
 
 Alternatively, you can pass strings into the cookie directive, which will create cookies using the default attributes. The following code sets the same cookies, but they expire at the end of the browser session:
 
     return {
-      cookie: {
+      cookies: {
         username: authenticate.username,
         passwordHash: authenticate.passwordHash
       }
     }
 
-Cookies sent by the client are available in `params.cookie` within the controller and simply `cookie` within the view context:
+Cookies sent by the client are available in `params.cookie` within the controller and simply `cookie` within the view:
 
     <!doctype html>
     <html>
       <body>
         <section>
-          {{#if cookie.username}}
-            Welcome, {{cookie.username}}.
-          {{else}}
-            <a href="/login">Login</a>
-          {{/if}}
+          Welcome, ${cookie.username}.
         </section>
       </body>
     </html>
@@ -1846,14 +1704,12 @@ Cookie variables you set within your controller aren't immediately available wit
 
 #### Proxy Header
 
-If you use citizen behind a proxy, such as NGINX or Apache, make sure you have `X-Forwarded-Host` and `X-Forwarded-Proto` headers in your server configuration so citizen's handling of secure cookies works correctly.
+If you use citizen behind a proxy, such as NGINX or Apache, make sure you have an HTTP `Forwarded` header in your server configuration so citizen's handling of secure cookies works correctly.
 
 Here's an example of how you might set this up in NGINX:
 
     location / {
-      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Host   $host;
-      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_set_header Forwarded         "for=$remote_addr;host=$host;proto=$scheme;";
       proxy_pass                          http://127.0.0.1:8080;
     }
 
@@ -1876,7 +1732,7 @@ Setting session variables is pretty much the same as setting cookie variables:
 
 Like cookies, session variables you've just assigned aren't available during the same request within the `params.session` scope, so use a local instance if you need to access this data right away.
 
-Sessions expire based on the `sessionTimeout` config property, which represents the length of a session in minutes. The default is 20 minutes. The `timer` is reset with each request from the user. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client.
+Sessions expire based on the `sessions.lifespan` config property, which represents the length of a session in minutes. The default is 20 minutes. The `timer` is reset with each request from the user. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client.
 
 To forcibly clear and expire the current user's session:
 
@@ -1895,14 +1751,13 @@ The `redirect` object takes a URL string in its shorthand version, or three opti
 
     // Initiate a temporary redirect using the Location header
     return {
-      redirect: 'http://cleverna.me/login'
+      redirect: '/login'
     }
 
-    // Initiate a permanent redirect using the Refresh header, delaying the redirect
-    // by 5 seconds
+    // Initiate a permanent redirect using the Refresh header, delaying the redirect by 5 seconds
     return {
       redirect: {
-        url: 'http://cleverna.me/new-url',
+        url: '/new-url',
         statusCode: 301,
         refresh: 5
       }
@@ -1910,20 +1765,18 @@ The `redirect` object takes a URL string in its shorthand version, or three opti
 
 Unlike the Location header, if you use the `refresh` option, citizen will send a rendered view to the client because the redirect occurs client-side.
 
-Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctzn_referer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctzn_referer` so you can send them there instead of the page containing the link to the secure page.
+Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctzn_referer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctzn_referer` so you can send them there instead of the previous page.
 
 If you haven't enabled sessions, citizen falls back to creating a cookie named `ctzn_referer` instead.
 
 #### Proxy Header
 
-If you use citizen behind a proxy, such as NGINX or Apache, make sure you have `X-Forwarded-Host` and `X-Forwarded-Proto` headers in your server configuration so `ctzn_referer` works correctly.
+If you use citizen behind a proxy, such as NGINX or Apache, make sure you have an HTTP `Forwarded` header in your server configuration so `ctzn_referer` works correctly.
 
 Here's an example of how you might set this up in NGINX:
 
     location / {
-      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Host   $host;
-      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_set_header Forwarded         "for=$remote_addr;host=$host;proto=$scheme;";
       proxy_pass                          http://127.0.0.1:8080;
     }
 
@@ -1931,10 +1784,10 @@ Here's an example of how you might set this up in NGINX:
 
 ### HTTP Headers
 
-You can set HTTP headers using the `header` directive:
+You can set HTTP headers using the `headers` directive:
 
     return {
-      header: {
+      headers: {
         'Cache-Control':  'max-age=86400',
         'Date':           new Date().toISOString()
       }
@@ -1942,75 +1795,28 @@ You can set HTTP headers using the `header` directive:
 
 
 
-### Including Controllers
+### Include Controllers
 
-citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse because each has its own controller, model, and view(s). Here's the syntax:
-
-    async function handler(params, context) {
-      return {
-        include: {
-
-          // The include name referenced in your view gets its name from the
-          // property name. This include calls the _header controller with the
-          // default action and view.
-          header: {
-            controller: '_header'
-          },
-
-          // This include calls the _footer controller using the "myAction" action.
-          footer: {
-            controller: '_footer',
-            action: 'myAction'
-          },
-
-          // This include calls the _login-form controller using the "myAction"
-          // action and "myView" view.
-          loginForm: {
-            controller: '_login-form',
-            action: 'myAction',
-            view: 'myView'
-          },
-
-          // This include calls the index controller, but processes it as if it
-          // had been requested from a different URL. In this case, the include
-          // will return JSON.
-          index: {
-            route: '/index/format/json'
-          },
-
-          // This include calls the index controller, but processes it as if it
-          // had been requested from a different URL and uses an alternate view.
-          index: {
-            route: '/index/format/json',
-            view: 'myView'
-          }
-        }
-      }
-    }
-
+citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse because each has its own route controller, model, and view(s). Includes can be used just to perform an action, or they can return a rendered view.
 
 Let's say our article pattern's template has the following contents. The head section contains dynamic meta data, and the header's content changes depending on whether the user is logged in or not:
 
     <!doctype html>
     <html>
       <head>
-        <title>{{metaData.title}}</title>
-        <meta name="description" content="{{metaData.description}}">
-        <meta name="keywords" content="{{metaData.keywords}}">
+        <title>${local.metaData.title}</title>
+        <meta name="description" content="${local.metaData.description}">
+        <meta name="keywords" content="${local.metaData.keywords}">
         <link rel="stylesheet" type="text/css" href="site.css">
       </head>
       <body>
         <header>
-          {{#if cookie.username}}
-            <p>Welcome, {{cookie.username}}</p>
-          {{else}}
-            <a href="/login">Login</a>
-          {{/if}}
+          ${ cookie.username ? '<p>Welcome, ' + cookie.username + '</p>' : '<a href="/login">Login</a>' }
         </header>
         <main>
-          <h1>{{title}} — Page {{url.page}}</h1>
-          <p>{{summary}}</p>
-          <section>{{text}}</section>
+          <h1>${local.article.title} — Page ${url.page}</h1>
+          <p>${local.article.summary}</p>
+          <section>${local.article.text}</section>
         </main>
       </body>
     </html>
@@ -2018,32 +1824,26 @@ Let's say our article pattern's template has the following contents. The head se
 It probably makes sense to use includes for the head section and header because you'll use that code everywhere, but rather than simple partials, you can create citizen includes. The head section can use its own model for populating the meta data, and since the header is different for authenticated users, let's pull that logic out of the view and put it in the header's controller. I like to follow the convention of starting partials with an underscore, but that's up to you:
 
     app/
-      patterns/
-        controllers/
+      controllers/
+        routes/
           _head.js
-          _header.js  // Doesn't pull data, so it doesn't need a model
+          _header.js
           article.js
-        models/
-          _head.js
-          article.js
-        views/
-          _head/
-            _head.hbs
-          _header/
-            _header.hbs
-            _header-authenticated.hbs  // A different header for logged in users
-          article/
-            article.hbs
+      models/
+        _head.js
+        article.js
+      views/
+        _head.html
+        _header/
+          _header.html
+          _header-authenticated.html  // A different header for logged in users
+        article.html
 
 When the article controller is fired, it has to tell citizen which includes it needs. We do that with the `include` directive:
 
     // article controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function handler(params, context) {
+    export const handler = async (params) => {
       // Get the article
       const article = await app.models.article.getArticle({
         article: params.url.article,
@@ -2051,52 +1851,42 @@ When the article controller is fired, it has to tell citizen which includes it n
       })
 
       return {
-        content: article,
+        local: article,
         include: {
-          head: {
-            // If only the controller is specified, the default action handler() is
-            // called and the default view is rendered (_head.hbs in this case).
-            controller: '_head'
-          },
-          header: {
-            controller: '_header',
-            // If the username cookie exists, use the authenticated action. If not,
-            // use handler.
-            action: params.cookie.username ? 'authenticated' : 'handler'
+          // Include shorthand is a string containing the pathname to the desired route controller
+          _head: '/_head/action/article',
 
-            // You can also specify the view here like this:
-            // view: '_header-authenticated'
-            // But we'll do that in the header controller instead. If you do specify
-            // a view here, it will override whatever view is set in the controller.
+          // Long-form include notation can explicitly define a route controller, action, and view
+          _header: {
+            controller: '_header',
+
+            // If the username cookie exists, use the authenticated action. If not, use the default action.
+            action: params.cookie.username ? 'authenticated' : 'handler'
           }
         }
       }
     }
 
-citizen include patterns have the same requirements as regular patterns, including a controller with a public action. The `include` directive above tells citizen to call the _head and _header controllers, pass them the same arguments that were passed to the article controller (params and context), render their respective views, and add the resulting views to the view context.
+citizen include patterns have the same requirements as regular patterns, including a controller with a public action. The `include` directive above tells citizen to call the _head and _header controllers, pass them the same arguments that were passed to the article controller (params, request, response, context), render their respective views, and add the resulting views to the view context.
 
 Here's what our head section controller might look like:
 
     // _head controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function handler(params, context) {
+    export const article = async (params) => {
       let metaData = await app.models._head({ article: params.url.article })
 
       return {
-        content: metaData
+        local: metaData
       }
     }
 
 And the head section view:
 
     <head>
-      <title>{{title}}</title>
-      <meta name="description" content="{{description}}">
-      <meta name="keywords" content="{{keywords}}">
+      <title>${local.title}</title>
+      <meta name="description" content="${local.description}">
+      <meta name="keywords" content="${local.keywords}">
       <link rel="stylesheet" type="text/css" href="site.css">
     </head>
 
@@ -2104,18 +1894,13 @@ Here's what our header controller might look like:
 
     // _header controller
 
-    module.exports = {
-      handler: handler,
-      authenticated: authenticated
-    }
-
-    function handler(params, context) {
+    export const handler = () => {
       return {
         view: '_header'
       }
     }
 
-    function authenticated(params, context) {
+    export const authenticated = () => {
       return {
         view: '_header-authenticated'
       }
@@ -2124,112 +1909,115 @@ Here's what our header controller might look like:
 
 And the header views:
 
-    {{! _header view (/patterns/views/_header/_header.hbs) }}
+    <!-- /views/_header/_header.html -->
 
     <header>
       <a href="/login">Login</a>
     </header>
 
 
-    {{! _header-authenticated view  (/patterns/views/_header/_header-authenticated.hbs) }}
+    <!-- /views/_header/_header-authenticated.html -->
 
     <header>
-      <p>Welcome, {{cookie.username}}</p>
+      <p>Welcome, ${cookie.username}</p>
     </header>
 
 
-The rendered includes are stored in the `include` scope. The `include` object contains rendered HTML views, so you need to skip escaping (`{{{...}}}` in Handlebars) within the article view:
+The rendered includes are stored in the `include` scope:
 
-    {{! article.hbs }}
+    <!-- /views/article.html -->
 
     <!doctype html>
     <html>
-      {{{include.head}}}
+      ${include._head}
       <body>
-        {{{include.header}}}
+        ${include._header}
         <main>
-          <h1>{{title}} — Page {{url.page}}</h1>
-          <p>{{summary}}</p>
-          <section>{{text}}</section>
+          <h1>${local.title} — Page ${url.page}</h1>
+          <p>${local.summary}</p>
+          <section>${local.text}</section>
         </main>
       </body>
     </html>
 
-citizen includes are self-contained. While they receive the same request context (URL parameters, form inputs, etc.) as the calling controller, content generated by the calling controller isn't automatically passed to its includes, and content generated inside an include isn't passed back to the caller. citizen includes also can't make use of cookie, session, redirect, or handoff directives, nor can they use their own includes (nested includes). Any of these directives within an include will be ignored. They only use the content directive (to populate their own views), the view directive for setting the view used by the include, and the cache directive for controller caching.
+citizen includes are self-contained. While they receive the same request context (URL parameters, form inputs, etc.) as the calling controller, data generated by the calling controller isn't passed to its includes, and data generated inside an include isn't passed back to the caller.
 
-A pattern meant to be used as an include can be accessed via HTTP just like any other controller. You could request the `_head` controller like so:
+A pattern meant to be used as an include can be accessed via HTTP just like any other route controller. You could request the `_head` controller like so:
 
     http://cleverna.me/_head
 
-Perhaps you'd have it return meta data as JSON for the article pattern:
-
-    // http://cleverna.me/_head/article/My-Clever-Article-Title/format/json
-
-    {
-      "title": "My Clever Article Title",
-      "description": "My article's description.",
-      "keywords": "clever, article, keywords"
-    }
-
-
-Of course, if you don't write the controller in a manner to accept direct requests and return content, it'll return nothing (or throw an error). When accessed via HTTP, the controller has access to all controller directives.
-
-**Reminder:** To make a controller private — inaccessible via HTTP, but accessible within your app — add a plus sign (`+`) to the beginning of the file name:
-
-    app/
-      patterns/
-        controllers/
-          +_header.js  // Only accessible internally
-          _head.js     // Accessible via www.cleverna.me/_head
-          article.js   // Accessible via www.cleverna.me/article
+Of course, if you don't write the controller in a manner to accept direct requests and return data, it'll return nothing (or throw an error). When accessed via HTTP, the controller has access to all controller directives.
 
 
 #### Should I use a citizen include or a view partial?
 
 citizen includes provide rich functionality, but they do have limitations and can be overkill in certain situations.
 
-* **Do you only need to share a chunk of markup across different views?** Use a standard view partial. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
-* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with view partials.
-* **Do you need the ability to render different includes based on logic?** citizen includes can have multiple views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using view partials would require registering multiple partials and putting the logic in the view template.
-* **Do you want the include to be accessible from the web?** Since a citizen include has a controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
+* **Do you only need to share a chunk of markup across different views?** Use a standard view partial as defined by whatever template engine you're using. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
+* **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with view partials. However, you can build an include that returns a complete data set and view.
+* **Do you need the ability to render different includes based on logic?** citizen includes can have multiple actions and views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using view partials would require registering multiple partials and putting the logic in the view template.
+* **Do you want the include to be accessible from the web?** Since a citizen include has a route controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
 
 
-### Controller Handoff
+### Controller Handoff Using `next`
 
-citizen allows the requested controller to give another controller the responsibility of handling the request and rendering its own view via a directive called `handoff`. The requested controller passes its content and directives to a secondary controller that assumes responsibility for the request, adding its own content and directives and rendering its own view. This is also a method for passing your own custom content and directives to the receiving controller.
+citizen allows you to string multiple route controllers together in series from a single request using the `next` directive. The requested controller passes its data to a secondary controller that assumes responsibility for the request, adding its own data and directives and rendering its own view. This is also a method for passing your own custom data and directives to the receiving controller.
 
-A common use case for `handoff` would be to create a layout controller that serves as a template for every page on your site, rendering all the includes necessary and leaving only the core content and markup to the initially requested controller. Let's modify the article controller and view so it hands off rendering responsibility to a separate layout controller:
+You can string as many route controllers together in a single request as you'd like. Each route controller will have its data, context, and view output stored in the `params.route.chain` object, then loop over the chain to render every route controller:
+
+    <!doctype html>
+    <html>
+      ${include._head}
+      <body>
+        ${include._header}
+        <main>
+          <!-- Loop over the route.chain object to output the view from each controller in the chain -->
+          ${Object.keys(route.chain).map( controller => { return route.chain[controller].output }).join('')}
+        </main>
+      </body>
+    </html>
+
+
+It's assumed the last controller in the chain provides the master view, so it has no `output`; that's what the server sends to the client.
+
+You can skip rendering a controller's view in the chain by setting view to false:
+
+    return {
+      // Don't render the article controller's view as part of the chain
+      view: false,
+      next: '/_layout.html
+    }
+
+
+A common use case for `next` would be to create a layout controller that serves as a template for every page on your site, rendering all the global view content and leaving only the core content and markup to the initially requested controller. Let's modify the article controller and view so it hands off rendering responsibility to a separate layout controller:
 
     // article controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function handler(params, context) {
+    export const handler = async (params) => {
       const article = await app.models.article.getArticle({
         article: params.url.article,
         page: params.url.page
       })
 
       return {
-        content: article,
-        handoff: {
-          // Pass this request to app/patterns/controller/+_layout.js
-          controller: '+_layout',
+        local: article,
 
-          // Specifying the action is optional. The layout controller will use its
-          // default action, handler(), unless you specify a different action here.
+        // Shorthand for next is a string containing the pathname to the route controller
+        next: '/_layout'
+
+        // Or, you can be explicit
+        next: {
+          // Pass this request to app/controllers/routes/_layout.js
+          controller: '_layout',
+
+          // Specifying the action is optional. The layout controller will use its default action, handler(), unless you specify a different action here.
           action: 'handler',
 
-          // Specifying the view is optional. The layout controller will use its
-          // default view unless you tell it to use a different one.
-          view: '+_layout'
+          // Specifying the view is optional. The layout controller will use its default view unless you tell it to use a different one.
+          view: '_layout'
         },
 
-        // A custom directive to drive some logic in the layout controller.
-        // You could even pass a function here for layout to call.
-        // Just don't use any reserved citizen directive names.
+        // A custom directive to drive some logic in the layout controller. You could even pass a function here for _layout.js to call. Just don't use any reserved citizen directive names.
         myDirective: {
           doSomething: true
         }
@@ -2239,36 +2027,27 @@ A common use case for `handoff` would be to create a layout controller that serv
 
 The view of the originally requested controller (article.hbs in this case) is rendered and stored in the `route.chain` object:
 
-    {{! article.hbs, which is stored in the route.chain scope }}
+    <!-- article.html, which is stored in the route.chain scope -->
 
-    <h1>{{title}}</h1>
-    <p>{{summary}}</p>
-    <section>{{text}}</section>
+    <h1>${local.title}</h1>
+    <p>${local.summary}</p>
+    <section>${local.text}</section>
 
 
 The layout controller handles the includes, follows your custom directive, and renders its own view:
 
     // layout controller
 
-    module.exports = {
-      handler: handler
-    }
-
-    async function handler(params, context) {
+    export const handler = async (params, context) => {
       // Access my custom directive using the context argument
       if ( context.myDirective && context.myDirective.doSomething ) {
         await doSomething()
       }
 
       return {
-        // No need to specify previous directives here, such as content, because
-        // citizen keeps track of the article pattern's request context throughout
-        // the handoff process.
         include: {
-          head: {
-            controller: '_head'
-          },
-          header: {
+          _head: '/_head',
+          _header: {
             controller: '_header',
             action: params.cookie.username ? 'authenticated' : 'handler'
           }
@@ -2281,55 +2060,6 @@ The layout controller handles the includes, follows your custom directive, and r
     }
 
 
-You can use `handoff` to chain requests across as many controllers as you want, with each controller's directives added to the request context. All controllers in the chain are stored in the `route` object as an array called `route.chain`:
-
-    [
-      { controller: 'article',
-        action: 'handler',
-        view: 'article',
-        viewContent: '<h1>My Article Title</h1><p>The article summary.</p><section>The article text.</section>'
-      },
-      { controller: '+_layout',
-        action: 'handler',
-        view: '+_layout'
-      }
-    ]
-
-You can loop over this object to render all the chained views:
-
-    {{! +_layout.hbs }}
-
-    <!doctype html>
-    <html>
-      {{{include.head}}}
-      <body>
-        {{{include.header}}}
-        <main>
-          {{! Loop over each controller in the chain and incorporate its rendered view }}
-          {{#each route.chain}}
-            {{viewContent}}
-          {{/each}}
-        </main>
-      </body>
-    </html>
-
-
-
-It's assumed the last controller in the chain provides the master view, so it has no `viewContent`; that's what the server sends to the client.
-
-You can skip rendering a controller's view in the handoff chain by setting view to false:
-
-    // article controller
-
-    return {
-      // Don't render the article controller's view as part of the chain
-      view: false,
-      handoff: {
-        controller: 'next-controller'
-      }
-    }
-
-
 ### Default Layout
 
 As mentioned in the config section at the beginning of this document, you can specify a default layout controller in your config so you don't have to specify it in every controller:
@@ -2337,13 +2067,13 @@ As mentioned in the config section at the beginning of this document, you can sp
     {
       "citizen": {
         "layout": {
-          "controller": "+_layout",
-          "view":       "+_layout"
+          "controller": "_layout",
+          "view":       "_layout"
         }
       }
     }
 
-If you use this method, there's no need to use handoff for the layout.
+If you use this method, there's no need to use `next` for the layout.
 
 
 ## Performance
@@ -2358,7 +2088,7 @@ Both dynamic routes and static assets can be compressed before sending them to t
     {
       "citizen": {
         "compression": {
-          "enable": true
+          "enabled": true
         }
       }
     }
@@ -2368,36 +2098,34 @@ Proxies, firewalls, and other network circumstances can strip the request header
     {
       "citizen": {
         "compression": {
-          "enable": true,
+          "enabled": true,
           "force":  "gzip"
         }
       }
     }
 
-If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original and compressed versions of the route will be cached, so your cache's memory utilization will increase.
+If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original (identity) and compressed (gzip and deflate) versions of the route will be cached, so your cache's memory utilization will increase.
 
 
 ### Caching Dynamic Requests (Controllers and Routes)
 
-In many cases, a requested route or controller will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller chain and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive.
+In many cases, a requested URL or route controller action will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller chain and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive.
 
 
-#### cache.route
+#### cache.request
 
-If a given route (URL) will result in the exact same rendered view with every request, you can cache that view with the `route` attribute. This is the fastest cache option because it pulls a fully rendered view from memory and skips all controller processing.
+If a given request (URL) will result in the exact same rendered view with every request, you can cache that request with the `request` property. This is the fastest cache option because it pulls a fully rendered view from memory and skips all controller processing.
 
-Let's say you chain the article controller with the layout controller like we did above. If you put the following cache directive in your controller action, the requested route's view will be cached and subsequent requests will skip the article and layout controllers entirely.
+Let's say you chain the article controller with the layout controller like we did above. If you put the following cache directive in your route controller action, the requested URL's response will be cached and subsequent requests will skip the article and layout controllers entirely.
 
     return {
-      handoff: {
-        controller: '+_layout'
-      },
+      next: '/_layout',
       cache: {
-        route: true
+        request: true
       }
     }
 
-Each of the following routes would generate its own cache item:
+Each of the following URLs would generate its own cache item:
 
 http://cleverna.me/article
 
@@ -2405,14 +2133,14 @@ http://cleverna.me/article/My-Article
 
 http://cleverna.me/article/My-Article/page/2
 
-Note that if you put the `cache.route` directive *anywhere* in your controller chain, the route will be cached.
+For the request cache directive to work, it must be placed in the first controller in the chain; in other words, the original requested route controller.
 
-The example above is shorthand for default cache settings. The `cache.route` directive can also be an object with options:
+The example above is shorthand for default cache settings. The `cache.request` directive can also be an object with options:
 
     // Cache the requested route with some additional options
     return {
       cache: {
-        route: {
+        request: {
           // Optional. This setting lets the server respond with a 304 Not Modified
           // status if the cache content hasn't been updated since the client last
           // accessed the route. Defaults to the current time if not specified.
@@ -2434,33 +2162,22 @@ The example above is shorthand for default cache settings. The `cache.route` dir
     }
 
 
-#### cache.controller
+#### cache.action
 
-If a given route chain will vary across requests, you can still cache individual controllers to speed up rendering. The `controller` property tells citizen to cache the controller, while the `scope` option determines how the controller and its resulting view are cached.
+If a given route chain will vary across requests, you can still cache individual controllers to speed up rendering using the `action` property.
 
-    // Cache this controller using the default settings
+    // Cache this controller action using the default settings
     return {
-      handoff: {
-        controller: '+_layout'
-      },
       cache: {
-        controller: true
+        action: true
       }
     }
 
     // Cache this controller with additional options
     return {
       cache: {
-        controller: {
-          // Optional. If caching the controller, 'global' (default) will cache one
-          // instance of the controller and use it globally, while 'route' will cache
-          // a unique instance of the controller for every route that calls it.
-          scope: 'route',
-
-          // Optional. List of directives to cache with the controller.
-          directives: ['handoff', 'cookie'],
-
-          // These options function the same as in route caching (see above)
+        action: {
+          // These options function the same as request caching (see above)
           urlParams: ['article', 'page'],
           lifespan: 15,
           resetOnAccess: true
@@ -2468,20 +2185,20 @@ If a given route chain will vary across requests, you can still cache individual
       }
     }
 
+When you cache controller actions, their context is also cached. Setting a cookie or session variable in a cached controller action means all future requests for that action will set the same cookie or session variable—probably not something you want to do with user data.
 
-#### cache.route and cache.controller options
+
+#### cache.request and cache.action options
 
 
-##### `lastModified` (route cache only)
+##### `lastModified` (request cache only)
 
-This setting lets the server respond with a faster `304 Not Modified` response if the content of the route cache hasn't changed since the client last accessed it. By default, it's set to the time at which the route was cached, but you can specify a custom date in ISO format that reflects the last modification to the route's content. This way, if you restart your app or clear the cache for some reason, returning clients will still get a 304.
+This setting lets the server respond with a faster `304 Not Modified` response if the content of the request cache hasn't changed since the client last accessed it. By default, it's set to the time at which the request was cached, but you can specify a custom date in ISO format that reflects the last modification to the request's content. This way, if you restart your app or clear the cache for some reason, returning clients will still get a 304.
 
     return {
-      handoff: {
-        controller: '+_layout'
-      },
+      next: '/_layout',
       cache: {
-        route: {
+        request: {
           // Use toISOString() to format your date appropriately
           lastModified: myDate.toISOString()   // 2015-03-05T08:59:51.491Z
         }
@@ -2494,11 +2211,9 @@ This setting lets the server respond with a faster `304 Not Modified` response i
 The `urlParams` property helps protect against invalid cache items (or worse: an attack meant to flood your server's resources by overloading the cache).
 
     return {
-      handoff: {
-        controller: '+_layout'
-      },
+      next: '/_layout',
       cache: {
-        route: {
+        request: {
           urlParams: ['article', 'page']
         }
       }
@@ -2521,39 +2236,6 @@ http://cleverna.me/article/My-Article-Title/dosattack/2
 http://cleverna.me/article/My-Article-Title/page/2/dosattack/3
 
 The server logs an error when invalid URL parameters are present, but continues processing without caching the result.
-
-
-##### `directives` (controller cache only)
-
-By default, any directives you specify in a cached controller aren't cached; they're implemented the first time the controller is called and then ignored after that. This is to prevent accidental storage of private data in the cache through session or cookie directives.
-
-If you want directives to persist within the cache, include them in the `directives` property as an array:
-
-    return {
-      handoff: {
-        controller: '+_layout'
-      },
-      cookie: {
-        myCookie: {
-          value: 'howdy',
-          expires: 'never'
-        }
-      },
-      myCustomDirective: {
-        doSomething: true
-      },
-      cache: {
-        controller: {
-          scope: 'route',
-
-          // Cache handoff and myCustomDirective so that if this controller is
-          // called from the cache, it hands off to the layout controller and acts
-          // upon myCustomDirective every time. The cookie directive will only be
-          // acted upon the first time the controller is called, however.
-          directives: ['handoff', 'myCustomDirective']
-        }
-      }
-    }
 
 
 ##### `lifespan`
@@ -2588,9 +2270,9 @@ Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the ro
 
 #### Cache Limitations and Warnings
 
-As mentioned previously, if you use the handoff directive to call a series of controllers and any one of those controllers sets `cache.route` to true, the final view will be cached. Therefore, caching any controllers in that chain might be redundant. In most cases, you'll want to choose between caching an entire route or caching individual controllers, but not both.
+In most cases, you'll probably want to choose between caching an entire route or caching individual controller actions, but not both.
 
-When caching an include controller, the view directive doesn't work. Set the view within the include directive of the calling controller.
+When caching an include controller action, the view directive doesn't work. Set the view within the include directive of the calling controller or include a URL parameter in the route to drive view logic within the include.
 
 citizen's cache is a RAM cache stored in the V8 heap, so be careful with your caching strategy. Use the `lifespan` and `resetOnAccess` options so URLs that receive a lot of traffic stay in the cache, while less popular URLs naturally fall out of the cache over time.
 
@@ -2603,13 +2285,13 @@ By caching static assets in memory, you speed up file serving considerably. To e
       "citizen": {
         "cache": {
           "static": {
-            "enable": true
+            "enabled": true
           }
         }
       }
     }
 
-With static caching enabled, all static files citizen serves will be cached in the V8 heap, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
+With static caching enabled, all static files citizen serves will be cached in the V8 heap, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's last modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
 
 To clear a file from the cache in a running app:
 
@@ -2618,7 +2300,7 @@ To clear a file from the cache in a running app:
 
 ### Client-Side Caching
 
-citizen automatically sets ETag headers for cached routes and static assets. You don't need to do anything to make them work. The Cache-Control header is entirely manual, however.
+citizen automatically sets ETag headers for cached requests and static assets. You don't need to do anything to make them work. The Cache-Control header is entirely manual, however.
 
 To set the Cache-Control header for static assets, use the `citizen.cache.control` setting in your config:
 
@@ -2639,7 +2321,7 @@ To set the Cache-Control header for static assets, use the `citizen.cache.contro
 
 The key name is the pathname that points to the static asset in your web directory. If your app's URL path is `/my/app`, then this value should be something like `/my/app/styles.css`. The value is the Cache-Control header value you want to assign to that asset.
 
-You can use strings that match the exact pathname like above, or you can also use regular expressions. Mixing the two is fine:
+You can use strings that match the exact pathname like above, or you can also use wildcards. Mixing the two is fine:
 
     {
       "citizen": {
@@ -2659,38 +2341,37 @@ Here's [a great tutorial on client-side caching](https://developers.google.com/w
 
 ## Forms
 
-citizen uses [formidable](https://www.npmjs.com/package/formidable) to parse form data. When a user submits a form, the resulting form data is available in your controller via `params.form`.
+citizen includes basic request payload parsing. When a user submits a form, the parsed form data is available in your controller via `params.form`. If you want to use a third-party package to parse the form data yourself, you can disable form parsing in the config and access the raw payload via `request.payload`.
 
     // login controller
 
-    function handler(params, context) {
+    export const handler = (params) => {
       // Set some defaults for the login view
       params.form.username = ''
       params.form.password = ''
       params.form.remember = false
     }
 
-    // Using a separate action in your controller for form submissions
-    // is probably a good idea
-    async function form(params, context) {
+    // Using a separate action in your controller for form submissions is probably a good idea
+    export const form = async (params) => {
       let authenticate = await app.models.user.authenticate({
             username: params.form.username,
             password: params.form.password
           }),
-          cookie = {}
+          cookies = {}
 
       if ( authenticate.success ) {
         if ( params.form.remember ) {
-          cookie.username: params.form.username
+          cookies.username: authenticate.username
         }
 
         return {
-          cookie: cookie,
+          cookies: cookies,
           redirect: '/'
         }
       } else {
         return {
-          content: {
+          local: {
             message: 'Login failed.'
           }
         }
@@ -2700,9 +2381,9 @@ citizen uses [formidable](https://www.npmjs.com/package/formidable) to parse for
 If it's a multipart form containing a file, the form object passed to your controller will look something like this:
 
     {
-      foo: 'bar',
-      fizz: 'buzz',
-      fileFieldName: {
+      field1: 'bar',
+      field2: 'buzz',
+      fileField1: {
         size: 280,
         path: '/tmp/upload_6d9c4e3121f244abdff36311a3b19a16',
         name: 'image.png',
@@ -3286,7 +2967,7 @@ Use `node node_modules/citizen/util/scaffold pattern -h` to see all available op
 
 (The MIT License)
 
-Copyright (c) 2014-2019 [Jay Sylvester](http://jaysylvester.com)
+Copyright (c) 2014-2024 [Jay Sylvester](https://jaysylvester.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 

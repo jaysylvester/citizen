@@ -11,13 +11,14 @@
     * Setting the mode in your citizen configuration takes precedence over NODE_ENV
   * Log files are split into access.log, error.log, and debug.log and can be enabled independently
     * If running only a single citizen app server instance, access logs will likely affect performance
-    * Debug logs are extremely verbose—helpful in emergencies, but not something you want to enable all the time
+    * Debug logs are extremely verbose—helpful if required, but not something you want to enable all the time
+    * Client (400) and server (500) errors can be enabled/disabled separately
   * citizen now uses the HTTP "Accept" header to determine the response format
     * Supported response types are "text/html", "text/plain", "application/json", and "application/javascript" (JSON-P)
   * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
   * Handling of 500 errors can be configured
     * "capture" (default) will write the error to the log, render an error view to the client, and keep the process/server running
-    * "exit" will send a 500 to the client without rendering a view, write the error to the log, and then throw the error, exiting the process
+    * "exit" will send a 500 to the client without rendering a view, write the error to the log, throw the error, then exit the process
   * The previously required x-citizen-uri header for routing behind proxy servers is deprecated in favor of industry standard Forwarded headers
     * X-Forwarded header support has been deprecated and will be removed from future versions
   * Previously reserved URL parameters (type, ajax, show, and task) have been released for dev use
@@ -25,21 +26,33 @@
   * cache.set() now automatically expires/clears the specified cache key if it already exists and creates a new cache item rather than throwing an error
   * The file watcher, which relies upon chokidar, now accepts all settings available in chokidar via a new options configuration
     * Please reference the chokidar documentation for available options if your environment requires customizations (usePolling for networked file systems, for example)
-  * The handoff directive now accepts a route property similar to the include route property, which allows simulating a different route when handing off to the next controller in the chain
+  * The "next" directive (previously "handoff") now accepts a route property similar to the include route property, which allows simulating a different route when handing off to the next controller in the chain
   * Views no longer require subfolders
-    * Old pattern (still supported): views for a given controller go within a folder matching that controller name, with the default view also matching the controller name, helpful for organizing multiple views related to a single controller
-    * New pattern: views can reside within the /app/patterns/views folder directly, with the default view for a controller matching the controller name, so controllers with a single view no longer require a subfolder
+    * Old pattern (still supported): views for a given route controller go within a folder matching that controller name, with the default view also matching the controller name
+    * New pattern: views can reside within the /app/views folder directly, with the default view for a controller matching the controller name, so controllers with a single view no longer require a subfolder
+  * Request and controller action caching are bypassed in the event of an application (500) error
 
   BREAKING CHANGES
-  * The default rendering engine is now based on template literals, and consolidate is no longer included as a dependency
+  * New default directory structure, but you can keep the old structure by editing the directory config
+  * The default rendering engine is now based on template literals, and consolidate is no longer included as a dependency by default
     * To use another template engine, install consolidate and your preferred library (handlebars, pug, etc.) and update config.citizen.templateEngine
-  * Properties returned by controllers for use within views (public variables) must now be placed within a property called "local"
+  * The "handoff" directive has been renamed to "next"
+  * The "route" property has been removed from the include directive
+    * Route controller includes now accept a pathname string as shorthand for an included route
+  * Controller and request cache directives have changed in format and functionality
+    * Cache directive properties are now "action" (formerly "controller") and "request" (formerly "route")
+    * Cache "request" only applies if the controller action in which it's called is the action specified in the original request; subsequent controllers in the chain can no longer prompt a request cache
+  * The /type/direct URL parameter used to bypass controller handoff has been replaced with /direct/true
+    * "direct" is now reserved for the framework and can't be used by apps
+  * The /direct/true URL parameter is no longer required to bypass the layout controller
+    * Follow the partial naming convention by putting an underscore (_) at the beginning of the controller file name and when requested from the client it will no longer render the layout
+    * /direct/true is still available to force controllers to skip layout rendering
   * app.start() is now app.server.start()
   * app.log() is now app.helpers.log()
   * The server requestStart event now fires before checking if the controller exists
     * This is logically consistent with the intention behind requestStart (i.e., it fires at the start of the request)
     * This allows you to incorporate logic into requestStart even if the requested controller doesn't exist (custom 404 handling, for example)
-    * This is considered a breaking change because the requestStart context won't inherit the controller config like it did previous, so if you depend on anything in your controller config within the requestStart event, that functionality should be moved to the controller action itself, which fires after requestStart
+    * This is considered a breaking change because the requestStart context won't inherit the controller config like it did previously, so if you depend on anything in your controller config within the requestStart event, that functionality should be moved to the controller action itself, which fires after requestStart
   * All instances of the "enable" property in the config have been renamed to "enabled"
   * The "sessions" configuration setting is now an object that takes two arguments:
     * "enabled" (boolean)
@@ -53,7 +66,7 @@
   * The "urlPaths" configuration option has been removed
     * It never worked reliably, and this sort of thing should really be handled by a proxy anyway
   * The "content" directive, which contains all data local to the controller/view, has been renamed to "local"
-    * Local variable references within views should contain the local namespace (local.myVar)
+    * Local variables within views should reference the local namespace (local.myVar)
   * The "cookie" and "header" directives have been renamed to "cookies" and "headers" to better reflect that multiple cookies and headers can be created
   * The "legalFormat" config option is now "contentTypes"
     * "contentTypes" is an array that lists available output MIME types ("text/html", "text/plain", "application/json", "application/javascript")
@@ -67,8 +80,6 @@
   * Controller action CORS configuration has been incorporated into the new controller/action configuration feature
   * The delimiter for the JSON "output" URL parameter value used to return specific nodes is now a tilde ("~")
     * To output a specific node in a JSON request, separate nodes with a tilde (/output/drill~down~to~node)
-  * The /type/direct URL flag used to bypass controller handoff has been replaced with /direct/true
-    * "direct" is now reserved for the framework and can't be used by apps
   * The cache.set() overwrite option has been removed, as has the error/warning that occurred when attempting to overwrite existing cache items
   * The file watcher options have changed to match chokidar's options, so adjust accordingly
   * The ctzn_debug URL parameter is now a boolean that enables debug output in the view
