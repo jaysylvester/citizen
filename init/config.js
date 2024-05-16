@@ -61,7 +61,8 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
                                 ],
           forms: {
             enabled           : true,
-            maxPayloadSize    : 524288 // 0.5MB
+            maxPayloadSize    : 524288, // 0.5MB
+            writeFiles        : true
           },
           cache: {
             application: {
@@ -122,6 +123,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             controllers       : appPath + '/patterns/controllers',
             models            : appPath + '/patterns/models',
             views             : appPath + '/patterns/views',
+            uploads           : '/tmp',
             web               : new URL('../../../web', import.meta.url).pathname
           }
         }
