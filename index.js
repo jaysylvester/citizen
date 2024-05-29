@@ -51,12 +51,12 @@ global.CTZN = {
 
 
 // Export citizen data and methods meant for public consumption
-import { clear, exists, get, set } from './lib/cache.js'
-import { log }                     from './lib/helpers.js'
-import { start }                   from './lib/server.js'
-import { end }                     from './lib/session.js'
+import { clear, get, set } from './lib/cache.js'
+import { log }             from './lib/helpers.js'
+import { start }           from './lib/server.js'
+import { end }             from './lib/session.js'
 
-const cache   = { clear, exists, get, set }
+const cache   = { clear, get, set }
 const helpers = { log }
 const server  = { start }
 const session = { end }
