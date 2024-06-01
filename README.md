@@ -1485,27 +1485,6 @@ Returns...
 
 Whatever you've added to the controller's return statement `local` object will be returned.
 
-You can also specify indivdidual nodes to return instead of returning the entire content object by using the `output` URL parameter:
-
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/output/author
-
-Returns...
-
-    {
-      "name": "John Smith",
-      "email": "jsmith@cleverna.me"
-    }
-
-
-Use the tilde (~) as a delimiter in the output parameter to go deeper into the node tree:
-
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/output/author~email
-
-Returns...
-
-    jsmith@cleverna.me
-
-
 For JSONP, use `callback` in the URL:
 
     http://www.cleverna.me/article/My-Clever-Article-Title/callback/foo
@@ -1524,13 +1503,6 @@ Returns:
       }
     })
 
-The `output` URL parameter works with JSONP as well.
-
-    http://www.cleverna.me/article/My-Clever-Article-Title/page/2/format/jsonp/callback/foo/output/author~email
-
-Returns...
-
-    foo("jsmith@cleverna.me")
 
 
 ## Handling Errors
@@ -1581,8 +1553,8 @@ To create custom error views for server errors, create a directory called `/app/
     app/
       views/
         error/
-          404.html      // Displays 404 errors
-          500.html      // Displays 500 errors
+          404.html      // Displays 404 errors specifically
+          500.html      // Displays any 500-level error
           ENOENT.html   // Displays bad file read operations
           error.html    // Displays any error without its own template
 
@@ -2384,40 +2356,36 @@ If it's a multipart form containing a file, the form object passed to your contr
       field1: 'bar',
       field2: 'buzz',
       fileField1: {
-        size: 280,
-        path: '/tmp/upload_6d9c4e3121f244abdff36311a3b19a16',
-        name: 'image.png',
-        type: 'image/png',
-        hash: null,
-        lastModifiedDate: Fri Feb 27 2015 06:01:36 GMT-0500 (EST)
+        filename    : 'file.png',
+        contentType : 'image/png',
+        binary      : <binary data>
       }
     }
 
-See the [formidable documentation](https://www.npmjs.com/package/formidable) for available form settings. You can pass global form settings via `citizen.form` in the config or at the controller action level via controller config (see below).
+You can pass global form settings via `citizen.form` in the config or at the controller action level via controller config (see below).
 
 The following config sets the upload directory for all forms to the path specified. It also sets the `maxFieldsSize` setting for the editForm() action in the article controller to 500k:
 
     {
       "citizen": {
-        "form": {
-          "uploadDir":  '/absolute/path/to/upload/directory',
-          "maxFieldsSize": 500
+        "forms": {
+          "maxPayloadSize": 500000  // Bytes, so 0.5MB
         }
       }
     }
 
-Unlike formidable, the `maxFieldsSize` option includes images in a multipart form in its calculations. citizen includes this enhancement because formidable provides no built-in way of limiting file upload sizes.
+The `maxPayloadSize` option includes files in a multipart form in its calculations.
 
 You can also set options for individual form actions within controllers using the `config` export. These settings extend and override the global form settings.
 
-    // login controller
+    // image upload controller
 
     module.exports = {
       config: {
-        form: {
-          // Options for the loginForm() controller action
-          loginForm: {
-            maxFieldsSize: 1000
+        forms: {
+          // Options for the upload() controller action
+          upload: {
+            maxPayloadSize: 10000000  // 10MB
           }
         }
       }
@@ -2431,22 +2399,18 @@ citizen makes it easy to build progressively enhanced HTML forms that work both 
 
     <section class="login-form">
       <p id="message">
-        {{#if message}}
-          {{message}}
-        {{else}}
-          Please log in below.
-        {{/if}}
+        ${ local.message ? local.message : 'Please log in below.' }
       </p>
       <form id="login-form" action="/login/action/form" method="post" novalidate>
         <section class="data">
           <ul>
             <li>
               <label for="username">Username</label>
-              <input id="username" name="username" value="{{form.username}}" required autofocus>
+              <input id="username" name="username" value="${form.username}" required autofocus>
             </li>
             <li>
               <label for="password">Password</label>
-              <input id="password" name="password" value="{{form.password}}" required>
+              <input id="password" name="password" value="${form.password}" required>
             </li>
           </ul>
         </section>
@@ -2459,19 +2423,19 @@ citizen makes it easy to build progressively enhanced HTML forms that work both 
 
 This will perform a traditional POST to the server and reload the login page to display any messages. You can easily enhance this with a little JavaScript on the client to submit via AJAX and return a JSON response:
 
-    var loginForm = document.querySelector('#login-form'),
+    let loginForm = document.querySelector('#login-form'),
         message = document.querySelector('#message')
 
     loginForm.addEventListener('submit', function (e) {
-      var request = new XMLHttpRequest(),
+      let request = new XMLHttpRequest(),
           formData = new FormData(loginForm)
 
       e.preventDefault()
 
       // Appending /format/json to the form action tells the server to
       // respond with JSON instead of a rendered HTML view
-      request.open(loginForm.method, loginForm.action + '/format/json', true)
-
+      request.open(loginForm.method, loginForm.action, true)
+      request.setRequestHeader('Accept', 'application/json')
       request.send(formData)
 
       request.onload = function() {
@@ -2482,36 +2446,33 @@ This will perform a traditional POST to the server and reload the login page to 
     })
 
 
-By appending `/format/json` to the action URL via JavaScript, we receive a JSON response from the controller and can then parse this response and update the view on the client. This is a form that provides a good user experience, but still works without JavaScript.
+By using `setRequestHeader()` to set the `Accept` header to `application/json`, we request a JSON response from the controller, which we can then parse and update the view on the client. This is a form that provides a good user experience, but still works without JavaScript.
 
 
-## Application Event Hooks and the Context Argument
+## Application Event Hooks
 
-Certain events will occur throughout the life of your citizen application. You can act on these application events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a custom cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
+Certain events will occur throughout the life of your citizen application, or within each request. You can act on these  events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
 
 To take advantage of these events, include a directory called "hooks" in your app with any or all of following modules and exports:
 
     app/
-      hooks/
-        application.js // exports start() and error()
-        request.js     // exports start() and end()
-        response.js    // exports start() and end()
-        session.js     // exports start() and end()
+      controllers/
+        hooks/
+          application.js  // exports start() and error()
+          request.js      // exports start() and end()
+          response.js     // exports start() and end()
+          session.js      // exports start() and end()
 
-`request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what they output—content, citizen directives, custom directives—is up to you.
+`request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what actions they perform and what they output—content, citizen directives, custom directives—is up to you.
 
 All files and exports are optional. citizen parses them at app start and only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
 
 Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to the login page if it doesn't exist. We also avoid a redirect loop by making sure the requested controller isn't the login controller:
 
-    // app/hooks/request.js
+    // app/controllers/hooks/request.js
 
-    module.exports = {
-      start: start
-    }
-
-    function start(params, context) {
-      let redirect = {}
+    export const start = (params) => {
+      let redirect = false
 
       if ( !params.cookie.username && params.route.controller !== 'login' ) {
         redirect = '/login'
@@ -2522,15 +2483,11 @@ Here's an example of a request module that checks for a username cookie at the b
       }
     }
 
-`session.end` is slightly different in terms of the arguments in receives, which consist of a copy of the expired session (no longer active) and any context passed from citizen:
+`session.end` is slightly different in terms of the arguments in receives, which consists only of a copy of the expired session (no longer active):
 
-    // app/hooks/session.js
+    // app/controllers/hooks/session.js
 
-    module.exports = {
-      end: end
-    }
-
-    function end(expiredSession, context) {
+    export const end = (expiredSession) => {
       // do something whenever a session ends
     }
 
@@ -2542,11 +2499,10 @@ By default, all controllers respond to requests from the host only. citizen supp
 
 To enable cross-domain access for individual controller actions, add a `cors` object with the necessary headers to your controller's exports:
 
-    module.exports = {
-      handler: handler,
-      cors: {
-        // Each controller action has its own CORS headers
-        handler: {
+    export const config = {
+      // Each controller action can have its own CORS headers
+      handler: {
+        cors: {
           'Access-Control-Allow-Origin': 'http://www.foreignhost.com',
           'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
           'Access-Control-Max-Age': 600,
@@ -2566,28 +2522,26 @@ For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) a
 
 ### Proxy Header
 
-If you use citizen behind a proxy, such as NGINX or Apache, make sure you have `X-Forwarded-Host` and `X-Forwarded-Proto` headers in your server configuration so citizen handles CORS requests correctly. Different protocols (HTTPS on your load balancer and HTTP in your citizen app) will cause CORS requests to fail without these headers.
+If you use citizen behind a proxy, such as NGINX or Apache, make sure you have a `Forwarded` header in your server configuration so citizen handles CORS requests correctly. Different protocols (HTTPS on your load balancer and HTTP in your citizen app) will cause CORS requests to fail without these headers.
 
 Here's an example of how you might set this up in NGINX:
 
     location / {
-      proxy_set_header X-Forwarded-For    $proxy_add_x_forwarded_for;
-      proxy_set_header X-Forwarded-Host   $host;
-      proxy_set_header X-Forwarded-Proto  $scheme;
+      proxy_set_header Forwarded         "for=$remote_addr;host=$host;proto=$scheme;";
       proxy_pass                          http://127.0.0.1:8080;
     }
 
 
 ## Helpers
 
-citizen has helper functions that it uses internally, but might be of use to you, so it returns them for public use.
+citizen has helper functions that it uses internally, but might be of use to you, so it exposes them for public use.
 
 
 ### cache.set(options)
 
 You can store any object in citizen's cache. The primary benefits of using cache() over storing content in your own global app variables are built-in cache expiration and extension, as well as wrappers for reading, parsing, and storing file content.
 
-citizen's default cache time is 15 minutes, which you can change in the config (see [Configuration](#configuration)). Cached item lifespans are extended whenever they are accessed unless you pass `resetOnAccess: false` or change that setting in the config.
+citizen's default cache time is 15 minutes, which you can change in the config (see [Configuration](#configuration)). Cached item lifespans are extended whenever they're accessed unless you pass `resetOnAccess: false` or change that setting in the config.
 
     // Cache a string in the default app scope for 15 minutes (default). Keys
     // must be unique within a given scope.
@@ -2674,30 +2628,6 @@ This is a way to check for the existence of a given key or scope in the cache wi
       controller: 'article'
     })
 
-    // Check if the controller cache has any instances of the specified controller
-    // and action
-    var controllerExists = app.cache.exists({
-      controller: 'article',
-      action: 'edit'
-    })
-
-    // Check if the controller cache has any instances of the specified controller,
-    // action, and view
-    var controllerExists = app.cache.exists({
-      controller: 'article',
-      action: 'edit',
-      view: 'edit'
-    })
-
-    // Check if the controller cache has an instance of the specified controller,
-    // action, and view for a given route
-    var controllerExists = app.cache.exists({
-      controller: 'article',
-      action: 'edit',
-      view: 'edit',
-      route: '/article/My-Article/page/2'
-    })
-
 
 ### cache.get(options)
 
@@ -2767,42 +2697,11 @@ Clear a cache object using a key or a scope.
     app.cache.clear({ file: '/path/to/articles.txt' })
 
 
-`clear()` can also be used to remove cached routes and controllers from their respective caches.
+`cache.clear()` can also be used to delete cached requests and controller actions.
 
-    // Clear the specified route from the cache
     app.cache.clear({
       route: '/article/My-Article/page/2/action/edit'
     })
-
-    // Clear the specified controller from the cache, including all actions and views
-    app.cache.clear({
-      controller: 'article'
-    })
-
-    // Clear the specified controller/action pairing from the cache. All cached views
-    // related to this pairing will be deleted.
-    app.cache.clear({
-      controller: 'article',
-      action: 'edit'
-    })
-
-    // Clear the specified controller/action/view combination from the cache
-    app.cache.clear({
-      controller: 'article',
-      action: 'edit',
-      view: 'edit'
-    })
-
-    // Clear the specified controller/action/view/route combination from the cache
-    app.cache.clear({
-      controller: 'article',
-      action: 'edit',
-      view: 'edit',
-      route: '/article/My-Article/page/2/action/edit'
-    })
-
-    // Clear the entire controller scope
-    app.cache.clear({ scope: 'controllers' })
 
     // Clear the entire route scope
     app.cache.clear({ scope: 'routes' })
@@ -2917,25 +2816,24 @@ Resulting file structure:
     app/
       config/
         citizen.json
+      controllers/
+        hooks/
+          application.js
+          request.js
+          response.js
+          session.js
+        routes/
+          index.js
+      models/
+        index.js
+      views/
+        error/
+          404.html
+          500.html
+          ENOENT.html
+          error.html
+        index.html
       logs/
-      hooks/
-        application.js
-        request.js
-        response.js
-        session.js
-      patterns/
-        controllers/
-          index.js
-        models/
-          index.js
-        views/
-          error/
-            404.hbs
-            500.hbs
-            ENOENT.hbs
-            error.hbs
-          index/
-            index.hbs
       start.js
     web/
 
@@ -2951,14 +2849,14 @@ Creates a complete citizen MVC pattern. The pattern command takes a pattern name
 For example, `node scaffold pattern article` will create the following pattern:
 
     app/
-      patterns/
-        controllers/
+      controllers/
+        routes/
           article.js
-        models/
-          article.js
-        views/
-          article/
-            article.hbs
+      models/
+        article.js
+      views/
+        article/
+          article.html
 
 Use `node node_modules/citizen/util/scaffold pattern -h` to see all available options for customizing your patterns.
 
