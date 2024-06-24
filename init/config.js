@@ -88,9 +88,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             debug            : false,
             maxFileSize      : 10000,
             watcher: {
-              options: {
-                interval     : 60000
-              }
+              interval       : 60000
             }
           },
           development: {
@@ -112,9 +110,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             watcher: {
               custom         : [],
               killSession    : false,
-              options: {
-                ignored      : /(^|[/\\])\../ // Ignore dotfiles
-              }
+              ignored        : /(^|[/\\])\../ // Ignore dotfiles
             }
           },
           urlPath            : '/',
