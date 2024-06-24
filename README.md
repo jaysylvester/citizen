@@ -331,7 +331,7 @@ Here's a complete rundown of citizen's settings and what they do:
       <th>
         Type
       <th>
-        Possible Values
+        Default Value
       </th>
       <th>
         Description
@@ -364,7 +364,7 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>mode</code>
     </td>
     <td>
-        String
+      String
     </td>
     <td>
       <ul>
@@ -376,11 +376,53 @@ Here's a complete rundown of citizen's settings and what they do:
         </li>
       </ul>
       <p>
-        Default: <code>NODE_ENV</code> or <code>production</code>
+        Default: Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
       </p>
     </td>
     <td>
       The application mode determines certain runtime behaviors. Production mode silences console logs. Development mode enables verbose console logs and enables the file watcher for hot module reloading.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>errors</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <ul>
+        <li>
+          <code>capture</code>
+        </li>
+        <li>
+          <code>exit</code>
+        </li>
+      </ul>
+      <p>
+        Default: <code>capture</code>
+      </p>
+    </td>
+    <td>
+      When your application throws an error, the default behavior is for citizen to try to recover from the error and keep the application running. Setting `errors` to `exit` tells citizen to log the error and exit the process instead.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>urlPath</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+    </td>
+    <td>
+      <p>
+        Default: <code>/</code>
+      </p>
+    </td>
+    <td>
+      Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
     </td>
   </tr>
   <tr>
@@ -529,12 +571,14 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
     </td>
     <td>
-      Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID on the server.
+      Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID within the application server.
     </td>
   </tr>
   <tr>
@@ -545,6 +589,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Positive integer
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>20</code>
       </p>
@@ -566,6 +612,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         String
       </p>
+    </td>
+    <td>
       <p>
         Default: (empty)
       </p>
@@ -582,6 +630,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         String
       </p>
+    </td>
+    <td>
       <p>
         Default: (empty)
       </p>
@@ -598,101 +648,72 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         String
       </p>
+    </td>
+    <td>
       <p>
-        Default: <code>handlebars</code>
+        Default: <code>templateLiterals</code>
       </p>
     </td>
     <td>
-      citizen installs Handlebars by default, but you can change the template engine to any engine supported by <a href="https://github.com/tj/consolidate.js">consolidate.js</a>.
+      citizen uses template literal syntax for view rendering by default. Optionally, you can install <a href="https://github.com/tj/consolidate.js">consolidate</a> and use any engine it supports (for example, install Handlebars and set <code>templateEngine</code> to <code>handlebars</code>).
     </td>
   </tr>
   <tr>
     <td colspan="4">
-      legalFormat
+      forms
     </td>
   </tr>
   <tr>
     <td>
-      <code>html</code>
+      <code>enabled</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>true</code>
       </p>
     </td>
     <td>
-      citizen provides HTML output by default based on your views. You can disable HTML entirely if you plan to use citizen for building an API that returns JSON or JSONP only.
+      citizen provides basic payload processing for simple forms. If you prefer to use a separate form package, set this to <code>false</code>.
     </td>
   </tr>
   <tr>
     <td>
-      <code>json</code>
+      <code>maxPayloadSize</code>
     </td>
     <td>
       <p>
-        Boolean
+        Positive Integer (bytes)
       </p>
-      <p>
-        Default: <code>false</code>
-      </p>
-    </td>
-    <td>
-      JSON output is disabled by default. Set this value to <code>true</code> to enable global JSON output from all controllers. To enable JSON at the controller action level, see the <a href="#formats">legalFormat directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>jsonp</code>
     </td>
     <td>
       <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>false</code>
+        Default: <code>524288</code> (0.5MB)
       </p>
     </td>
     <td>
-      JSONP output is disabled by default. Set this value to <code>true</code> to enable global JSONP output from all controllers. To enable JSONP at the controller action level, see the <a href="#formats">legalFormat directive</a> and  <a href="#json-and-jsonp">JSON and JSONP</a> for details.
+      Set a max payload size to prevent your server from being overloaded by form input data.
     </td>
   </tr>
   <tr>
     <td colspan="4">
-      form
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>{ options }</code>
-    </td>
-    <td>
-      <p>
-        Object
-      </p>
-      <p>
-        Default: Same as <a href="https://www.npmjs.com/package/formidable">formidable</a>
-      </p>
-    </td>
-    <td>
-      citizen uses <a href="https://www.npmjs.com/package/formidable">formidable</a> to parse form data. The defaults match that of formidable. Provide settings in the form node to set default settings for all your forms. See <a href="#forms">Forms</a> for details.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="3">
       compression
     </td>
   </tr>
   <tr>
     <td>
-      <code>enable</code>
+      <code>enabled</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
@@ -709,6 +730,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean or String
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
@@ -723,11 +746,14 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        String
+        Array
       </p>
     </td>
     <td>
-      A space-delimited list of MIME types that should be compressed if compression is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the list in its entirety.
+      <p>See default config above.</p>
+    </td>
+    <td>
+      An array of MIME types that will be compressed if compression is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the array in its entirety.
     </td>
   </tr>
   <tr>
@@ -736,24 +762,62 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
   </tr>
   <tr>
-    <td colspan="4">
-      application
+    <td>
+      <code>control</code>
+    </td>
+    <td>
+      <p>
+        Object containing key/value pairs
+      </p>
+    </td>
+    <td>
+      <p>
+        Default: <code>{}</code>
+      </p>
+    </td>
+    <td>
+      Use this setting to set Cache-Control headers for route controllers and static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
     </td>
   </tr>
   <tr>
     <td>
-      <code>enable</code>
+      <code>invalidUrlParams</code>
+    </td>
+    <td>
+      <p>
+        String
+      </p>
+    </td>
+    <td>
+      <p>
+        Default: <code>warn</code>
+      </p>
+    </td>
+    <td>
+      The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and `invalidUrlParams` determines whether to log a warning when encountering bad URLs or throw an client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      cache.application
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>true</code>
       </p>
     </td>
     <td>
-      Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods. Set this to <code>false</code> to disable the cache when in production mode, which is useful for debugging when not in development mode.
+      Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods.
     </td>
   </tr>
   <tr>
@@ -764,8 +828,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Number
       </p>
+    </td>
+    <td>
       <p>
-        Default: <code>15</code>
+        Default: <code>15</code> (minutes)
       </p>
     </td>
     <td>
@@ -780,6 +846,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>true</code>
       </p>
@@ -790,28 +858,14 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
   <tr>
     <td>
-      <code>overwrite</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>false</code>
-      </p>
-    </td>
-    <td>
-      Determines whether a call to cache.set() will overwrite an existing cache key. By default, an error is thrown if the cache key already exists. You can either pass the overwrite flag as an option in cache.set() or set this to <code>true</code> to always overwrite.
-    </td>
-  </tr>
-  <tr>
-    <td>
       <code>encoding</code>
     </td>
     <td>
       <p>
         String
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>utf-8</code>
       </p>
@@ -828,6 +882,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
@@ -838,17 +894,19 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
   <tr>
     <td colspan="4">
-      static
+      cache.static
     </td>
   </tr>
   <tr>
     <td>
-      <code>enable</code>
+      <code>enabled</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
@@ -865,6 +923,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Number
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>15</code>
       </p>
@@ -881,6 +941,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>true</code>
       </p>
@@ -890,114 +952,44 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
   </tr>
   <tr>
-    <td>
-      <code>control</code>
-    </td>
-    <td>
-      <p>
-        Key/value pairs
-      </p>
-      <p>
-        Default: <code>{}</code>
-      </p>
-    </td>
-    <td>
-      Use this setting to set Cache-Control headers for static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
-    </td>
-  </tr>
-  <tr>
     <td colspan="4">
-      log
+      logs
     </td>
   </tr>
   <tr>
     <td>
-      console
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>colors</code>
+      <code>access</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
-      <p>
-        Default: <code>true</code>
-      </p>
     </td>
     <td>
-      Enables color coding in console logs.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>error</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
       <p>
         Default: <code>false</code>
       </p>
     </td>
     <td>
-      Controls whether errors should be logged to the console.
+      Enables HTTP access log files. Disabled by default because access logs can explode quickly and ideally it should be handled by a web server.
     </td>
   </tr>
   <tr>
     <td>
-      <code>status</code>
+      <code>debug</code>
     </td>
     <td>
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
     </td>
     <td>
-      Controls whether status messages should be logged to the console when in production mode. (Development mode always logs to the console.)
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      file
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>error</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>false</code>
-      </p>
-    </td>
-    <td>
-      Controls whether errors should be logged to a file.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>status</code>
-    </td>
-    <td>
-      <p>
-        Boolean
-      </p>
-      <p>
-        Default: <code>false</code>
-      </p>
-    </td>
-    <td>
-      Controls whether status messages should be logged to a file. Applies to both development and production modes.
+      Enables debug log files. Useful for debugging production issues, but extremely verbose (the same logs you would see in the console in development mode).
     </td>
   </tr>
   <tr>
@@ -1008,16 +1000,79 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Number
       </p>
+    </td>
+    <td>
       <p>
-        Default: <code>10000</code>
+        Default: <code>10000</code> (kb)
       </p>
     </td>
     <td>
-      Determines the maximum file size of log files in kilobytes. Default is 10000 (10 megs). When the limit is reached, the log file is renamed and a new log file is created.
+      Determines the maximum file size of log files in kilobytes. Default is 10000 (10 megs). When the limit is reached, the log file is renamed with a time stamp and a new log file is created.
     </td>
   </tr>
   <tr>
-    <td colspan="4">watcher</td>
+    <td colspan="4">
+      logs.error
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>client</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+    </td>
+    <td>
+      <p>
+        Default: <code>true</code>
+      </p>
+    </td>
+    <td>
+      Enables logging of 400-level client errors.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>server</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+    </td>
+    <td>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Enables logging of 500-level server/application errors.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>status</code>
+    </td>
+    <td>
+      <p>
+        Boolean
+      </p>
+    </td>
+    <td>
+      <p>
+        Default: <code>false</code>
+      </p>
+    </td>
+    <td>
+      Controls whether status messages should be logged to the console when in production mode. (Development mode always logs to the console.)
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      logs.watcher
+    </td>
   </tr>
   <tr>
     <td>
@@ -1027,8 +1082,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Number
       </p>
+    </td>
+    <td>
       <p>
-        Default: <code>60000</code>
+        Default: <code>60000</code> (ms)
       </p>
     </td>
     <td>
@@ -1042,7 +1099,7 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
   <tr>
     <td colspan="4">
-      debug
+      development.debug
     </td>
   </tr>
   <tr>
@@ -1054,6 +1111,8 @@ Here's a complete rundown of citizen's settings and what they do:
         Object
       </p>
     </td>
+    </td>
+    <td>
     <td>
       This setting determines which scopes are logged in the debug output in development mode. By default, all scopes are enabled.
     </td>
@@ -1066,6 +1125,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Positive integer
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>3</code>
       </p>
@@ -1082,6 +1143,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
@@ -1098,6 +1161,8 @@ Here's a complete rundown of citizen's settings and what they do:
       <p>
         Boolean
       </p>
+    </td>
+    <td>
       <p>
         Default: <code>false</code>
       </p>
@@ -1108,7 +1173,7 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
   <tr>
     <td colspan="4">
-      watcher
+      development.watcher
     </td>
   </tr>
   <tr>
@@ -1120,50 +1185,17 @@ Here's a complete rundown of citizen's settings and what they do:
         Array
       </p>
     </td>
+    </td>
+    <td>
     <td>
       You can tell citizen's hot module reloader to watch your own custom modules. This array can contain objects with <code>watch</code> (relative directory path to your modules within the app directory) and <code>assign</code> (the variable to which you assign these modules) properties. Example:
       <br><br>
       <code>[ { "watch": "/toolbox", "assign": "app.toolbox" } ]</code>
     </td>
   </tr>
-  <tr>
-    <td>
-      <code>interval</code>
-    </td>
-    <td>
-      <p>
-        Number
-      </p>
-      <p>
-        Default: <code>500</code>
-      </p>
-    </td>
-    <td>
-      Determines the polling interval in milliseconds for hot module reloading on operating systems that don't support file system events. Shorter intervals are more CPU intensive.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      urlPaths
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>app</code>
-    </td>
-    <td>
-      <p>
-        String
-      </p>
-      <p>
-        Default: <code>/</code>
-      </p>
-    </td>
-    <td>
-      Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
-    </td>
-  </tr>
 </table>
+
+citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher, so `watcher` for both logs and development mode also accept any option allowed by chokidar.
 
 
 These settings are exposed publicly via `app.config.host` and `app.config.citizen`.
@@ -2079,7 +2111,7 @@ Proxies, firewalls, and other network circumstances can strip the request header
 If you have [route caching](#caching-dynamic-requests-controllers-and-routes) enabled, both the original (identity) and compressed (gzip and deflate) versions of the route will be cached, so your cache's memory utilization will increase.
 
 
-### Caching Dynamic Requests (Controllers and Routes)
+### Caching Requests and Controller Actions
 
 In many cases, a requested URL or route controller action will generate the same view every time based on the same input parameters, so it doesn't make sense to run the controller chain and render the view from scratch for each request. citizen provides flexible caching capabilities to speed up your server side rendering via the `cache` directive.
 
@@ -2597,7 +2629,7 @@ citizen's default cache time is 15 minutes, which you can change in the config (
       resetOnAccess: false
     })
 
-`app`, `controllers`, `routes`, and `files` are reserved scope names, so you can't use them for your own custom scopes.
+`app`, `routes`, and `files` are reserved scope names, so you can't use them for your own custom scopes.
 
 
 ### cache.exists(options)
@@ -2623,9 +2655,9 @@ This is a way to check for the existence of a given key or scope in the cache wi
     })
     // scopeExists is true
 
-    // Check if the controller cache has any instances of the specified controller
+    // Check if the route cache has any instances of the specified route
     var controllerExists = app.cache.exists({
-      controller: 'article'
+      route: '/article'
     })
 
 
@@ -2700,7 +2732,7 @@ Clear a cache object using a key or a scope.
 `cache.clear()` can also be used to delete cached requests and controller actions.
 
     app.cache.clear({
-      route: '/article/My-Article/page/2/action/edit'
+      route: '/article/My-Article/page/2'
     })
 
     // Clear the entire route scope
@@ -2710,7 +2742,7 @@ Clear a cache object using a key or a scope.
     app.cache.clear({ scope: 'files' })
 
     // Clear the entire app scope
-    app.cache.clear({ scope: 'app' })
+    app.cache.clear()
 
 
 ### log(options)
@@ -2753,7 +2785,9 @@ Log files appear in the folder you specify in `config.citizen.directories.logs`.
 
 **Warning: `development` mode is inherently insecure. Don't use it in a production environment.**
 
-If you set `"mode": "development"` in your config file, citizen dumps the current pattern's context and request parameters to the console. You can dump it to the view instead by setting `development.debug.view` in your config file to `true`, or use the `ctzn_dump` URL parameter on a per-request basis:
+If you set `"mode": "development"` in your config file, citizen dumps all major operations to the console.
+
+You can also dump the request context and parameters to the view by setting `development.debug.view` in your config file to `true`, or use the `ctzn_dump` URL parameter on a per-request basis:
 
     // config file: always dumps debug output in the view
     {
