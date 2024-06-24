@@ -49,12 +49,14 @@ Use citizen as the foundation for a traditional server-side web application, a m
 - View rendering using template literals or any engine supported by [consolidate](https://github.com/tj/consolidate.js)
 - Few direct dependencies
 
-Have questions, suggestions, or need help? Want to contribute? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
+Have questions, suggestions, or contributions? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
+
+Clearly, this is way more content than any NPM/Github README should contain. I'm working on a site for this documentation.
 
 
 ## Is it production ready?
 
-I use citizen on [my personal site](https://jaysylvester.com) and [originaltrilogy.com](https://originaltrilogy.com). OT.com handles a moderate amount of traffic (at least a couple hundred thousand views each month) on a $30 cloud hosting plan running a single instance of citizen, where the app/process runs for months at a time without crashing. It's very stable.
+I use citizen on [my personal site](https://jaysylvester.com) and [originaltrilogy.com](https://originaltrilogy.com). OT.com handles a moderate amount of traffic (a few hundred thousand views each month) on a $30 cloud hosting plan running a single instance of citizen, where the app/process runs for months at a time without crashing. It's very stable.
 
 
 ## Quick Start
@@ -269,9 +271,7 @@ The following represents citizen's default configuration, which is extended by y
           debug            : false,
           maxFileSize      : 10000,
           watcher: {
-            options: {
-              interval     : 60000
-            }
+            interval       : 60000
           }
         },
         development: {
@@ -293,9 +293,7 @@ The following represents citizen's default configuration, which is extended by y
           watcher: {
             custom         : [],
             killSession    : false,
-            options: {
-              ignored      : /(^|[/\\])\../ // Ignore dotfiles
-            }
+            ignored        : /(^|[/\\])\../ // Ignore dotfiles
           }
         },
         urlPath            : '/',
@@ -347,7 +345,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        The operating system's hostname
+        (empty string)
       </p>
     </td>
     <td>
@@ -367,20 +365,33 @@ Here's a complete rundown of citizen's settings and what they do:
       String
     </td>
     <td>
-      <ul>
-        <li>
-          <code>production</code>
-        </li>
-        <li>
-          <code>development</code>
-        </li>
-      </ul>
       <p>
-        Default: Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
+        Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
       </p>
     </td>
     <td>
-      The application mode determines certain runtime behaviors. Production mode silences console logs. Development mode enables verbose console logs and enables the file watcher for hot module reloading.
+      The application mode determines certain runtime behaviors. Possible values are <code>production</code> and <code>development</code> Production mode silences console logs. Development mode enables verbose console logs, URL debug options, and hot module reloading.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>contentTypes</code>
+    </td>
+    <td>
+      Array
+    </td>
+    <td>
+      <code>
+        [
+          'text/html',
+          'text/plain',
+          'application/json',
+          'application/javascript'
+        ]
+      </code>
+    </td>
+    <td>
+      An allowlist of response formats for each request, based on the client's <code>Accept</code> request header. When configuring available formats for individual route controllers or actions, the entire array of available formats must be provided.
     </td>
   </tr>
   <tr>
@@ -400,7 +411,7 @@ Here's a complete rundown of citizen's settings and what they do:
         </li>
       </ul>
       <p>
-        Default: <code>capture</code>
+        <code>capture</code>
       </p>
     </td>
     <td>
@@ -418,7 +429,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>/</code>
+        <code>/</code>
       </p>
     </td>
     <td>
@@ -439,7 +450,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -455,7 +466,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>127.0.0.1</code>
+        <code>127.0.0.1</code>
       </p>
     </td>
     <td>
@@ -471,7 +482,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>3000</code>
+        <code>3000</code>
       </p>
     </td>
     <td>
@@ -492,7 +503,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -508,7 +519,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>127.0.0.1</code>
+        <code>127.0.0.1</code>
       </p>
     </td>
     <td>
@@ -524,7 +535,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>443</code>
+        <code>443</code>
       </p>
     </td>
     <td>
@@ -540,7 +551,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -556,7 +567,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>null</code>
+        <code>null</code>
       </p>
     </td>
     <td>
@@ -574,7 +585,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -592,7 +603,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>20</code>
+        <code>20</code>
       </p>
     </td>
     <td>
@@ -615,7 +626,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: (empty)
+        (empty)
       </p>
     </td>
     <td>
@@ -633,7 +644,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: (empty)
+        (empty)
       </p>
     </td>
     <td>
@@ -651,7 +662,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>templateLiterals</code>
+        <code>templateLiterals</code>
       </p>
     </td>
     <td>
@@ -674,7 +685,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -692,7 +703,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>524288</code> (0.5MB)
+        <code>524288</code> (0.5MB)
       </p>
     </td>
     <td>
@@ -715,7 +726,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -733,7 +744,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -772,7 +783,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>{}</code>
+        <code>{}</code>
       </p>
     </td>
     <td>
@@ -790,11 +801,11 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>warn</code>
+        <code>warn</code>
       </p>
     </td>
     <td>
-      The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and `invalidUrlParams` determines whether to log a warning when encountering bad URLs or throw an client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
+      The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and <code>invalidUrlParams</code> determines whether to log a warning when encountering bad URLs or throw a client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
     </td>
   </tr>
   <tr>
@@ -813,7 +824,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -831,7 +842,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>15</code> (minutes)
+        <code>15</code> (minutes)
       </p>
     </td>
     <td>
@@ -849,7 +860,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -867,7 +878,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>utf-8</code>
+        <code>utf-8</code>
       </p>
     </td>
     <td>
@@ -885,7 +896,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -908,7 +919,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -926,7 +937,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>15</code>
+        <code>15</code>
       </p>
     </td>
     <td>
@@ -944,7 +955,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -967,7 +978,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -985,7 +996,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -1003,7 +1014,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>10000</code> (kb)
+        <code>10000</code> (kb)
       </p>
     </td>
     <td>
@@ -1026,7 +1037,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>true</code>
+        <code>true</code>
       </p>
     </td>
     <td>
@@ -1044,7 +1055,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -1062,7 +1073,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -1085,7 +1096,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>60000</code> (ms)
+        <code>60000</code> (ms)
       </p>
     </td>
     <td>
@@ -1128,7 +1139,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>3</code>
+        <code>3</code>
       </p>
     </td>
     <td>
@@ -1146,7 +1157,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -1164,7 +1175,7 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       <p>
-        Default: <code>false</code>
+        <code>false</code>
       </p>
     </td>
     <td>
@@ -1618,7 +1629,15 @@ By default, the server renders the view whose name matches that of the controlle
 
 ### Content Types
 
-citizen returns HTML, JSON, JSON-P, and plain text. Use the HTTP Accept header in your request to determine the output ("text/html", "application/json", "application/javascript", or "text/plain").
+citizen returns HTML, JSON, JSON-P, and plain text. Use the HTTP `Accept` header in your client request to determine the output ("text/html", "application/json", "application/javascript", or "text/plain").
+
+To force a specific content type for a given request, set `response.contentType` in the route controller to your desired output:
+
+    export const handler = async (params, request, response) => {
+      response.contentType = 'application/json'
+    }
+
+You can force a global response type across all requests within an [event hook](#application-event-hooks).
 
 
 ### Cookies
@@ -1797,6 +1816,8 @@ You can set HTTP headers using the `headers` directive:
       }
     }
 
+You can also set headers directly using Node's `response.setHeader()` method, but using citizen's `headers` directive preserves those headers in the route cache, so they'll be applied whenever that controller action is pulled from the cache.
+
 
 
 ### Include Controllers
@@ -1919,6 +1940,7 @@ And the header views:
       <a href="/login">Login</a>
     </header>
 
+&nbsp;
 
     <!-- /views/_header/_header-authenticated.html -->
 
@@ -1944,13 +1966,13 @@ The rendered includes are stored in the `include` scope:
       </body>
     </html>
 
-citizen includes are self-contained. While they receive the same request context (URL parameters, form inputs, etc.) as the calling controller, data generated by the calling controller isn't passed to its includes, and data generated inside an include isn't passed back to the caller.
+citizen includes are self-contained and delivered to the calling controller as a fully-rendered view. While they receive the same data (URL parameters, form inputs, request context, etc.) as the calling controller, data generated inside an include isn't passed back to the caller.
 
-A pattern meant to be used as an include can be accessed via HTTP just like any other route controller. You could request the `_head` controller like so:
+A pattern meant to be used as an include can be accessed via HTTP just like any other route controller. You could request the `_head` controller like so and receive a chunk of HTML or JSON as a response:
 
     http://cleverna.me/_head
 
-Of course, if you don't write the controller in a manner to accept direct requests and return data, it'll return nothing (or throw an error). When accessed via HTTP, the controller has access to all controller directives.
+Of course, if you don't write the controller in a manner to accept direct requests and return data, it'll return nothing. When accessed via HTTP, the controller has access to all controller directives.
 
 
 #### Should I use a citizen include or a view partial?
@@ -1960,12 +1982,12 @@ citizen includes provide rich functionality, but they do have limitations and ca
 * **Do you only need to share a chunk of markup across different views?** Use a standard view partial as defined by whatever template engine you're using. The syntax is easy and you don't have to create a full MVC pattern like you would with a citizen include.
 * **Do you need to loop over a chunk of markup to render a data set?** The server processes citizen includes and returns them as fully-rendered HTML (or JSON), not compiled templates. You can't loop over them and inject data like you can with view partials. However, you can build an include that returns a complete data set and view.
 * **Do you need the ability to render different includes based on logic?** citizen includes can have multiple actions and views because they're full MVC patterns. Using a citizen include, you can call different actions and views based on logic and keep that logic in the controller where it belongs. Using view partials would require registering multiple partials and putting the logic in the view template.
-* **Do you want the include to be accessible from the web?** Since a citizen include has a route controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and single page apps.
+* **Do you want the include to be accessible from the web?** Since a citizen include has a route controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and client-side rendering.
 
 
 ### Controller Handoff Using `next`
 
-citizen allows you to string multiple route controllers together in series from a single request using the `next` directive. The requested controller passes its data to a secondary controller that assumes responsibility for the request, adding its own data and directives and rendering its own view. This is also a method for passing your own custom data and directives to the receiving controller.
+citizen allows you to string multiple route controllers together in series from a single request using the `next` directive. The requested controller passes its data to a subsequent controller that assumes responsibility for the request, adding its own data and directives and rendering its own view. This is also a method for passing your own custom data and directives to the receiving controller.
 
 You can string as many route controllers together in a single request as you'd like. Each route controller will have its data, context, and view output stored in the `params.route.chain` object, then loop over the chain to render every route controller:
 
@@ -1982,14 +2004,16 @@ You can string as many route controllers together in a single request as you'd l
     </html>
 
 
-It's assumed the last controller in the chain provides the master view, so it has no `output`; that's what the server sends to the client.
+The last controller in the chain provides the master view.
 
 You can skip rendering a controller's view in the chain by setting view to false:
 
-    return {
-      // Don't render the article controller's view as part of the chain
-      view: false,
-      next: '/_layout.html
+    // This controller action won't render a view
+    export const handler = async () => {
+      return {
+        view: false,
+        next: '/_layout'
+      }
     }
 
 
@@ -2029,7 +2053,7 @@ A common use case for `next` would be to create a layout controller that serves 
     }
 
 
-The view of the originally requested controller (article.hbs in this case) is rendered and stored in the `route.chain` object:
+The view of the originally requested controller (article.html in this case) is rendered and stored in the `route.chain` object:
 
     <!-- article.html, which is stored in the route.chain scope -->
 
@@ -2044,7 +2068,7 @@ The layout controller handles the includes, follows your custom directive, and r
 
     export const handler = async (params, context) => {
       // Access my custom directive using the context argument
-      if ( context.myDirective && context.myDirective.doSomething ) {
+      if ( context.myDirective?.doSomething ) {
         await doSomething()
       }
 
@@ -2168,7 +2192,7 @@ The example above is shorthand for default cache settings. The `cache.request` d
 
 #### cache.action
 
-If a given route chain will vary across requests, you can still cache individual controllers to speed up rendering using the `action` property.
+If a given route chain will vary across requests, you can still cache individual controller actions to speed up rendering using the `action` property.
 
     // Cache this controller action using the default settings
     return {
@@ -2195,9 +2219,9 @@ When you cache controller actions, their context is also cached. Setting a cooki
 #### cache.request and cache.action options
 
 
-##### `lastModified` (request cache only)
+##### `lastModified`
 
-This setting lets the server respond with a faster `304 Not Modified` response if the content of the request cache hasn't changed since the client last accessed it. By default, it's set to the time at which the request was cached, but you can specify a custom date in ISO format that reflects the last modification to the request's content. This way, if you restart your app or clear the cache for some reason, returning clients will still get a 304.
+This setting lets the server respond with a faster `304 Not Modified` response if the content of the request cache hasn't changed since the client last accessed it. By default, it's set to the time at which the request was cached, but you can specify a custom date in ISO format that reflects the last modification to the request's content.
 
     return {
       next: '/_layout',
@@ -2239,17 +2263,17 @@ http://cleverna.me/article/My-Article-Title/dosattack/2
 
 http://cleverna.me/article/My-Article-Title/page/2/dosattack/3
 
-The server logs an error when invalid URL parameters are present, but continues processing without caching the result.
+The server logs a warning when invalid URL parameters are present, but continues processing without caching the result.
 
 
 ##### `lifespan`
 
-This setting determines how long the route or controller should remain in the cache, in minutes.
+This setting determines how long the request or controller action should remain in the cache, in minutes.
 
     return {
       cache: {
-        route: {
-          // This route cache will expire in 10 minutes
+        request: {
+          // This cached request will expire in 10 minutes
           lifespan: 10
         }
       }
@@ -2258,12 +2282,12 @@ This setting determines how long the route or controller should remain in the ca
 
 ##### `resetOnAccess`
 
-Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the route or controller cache whenever it's accessed, keeping it in the cache until traffic subsides.
+Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the route or controller cache whenever it's accessed, keeping it in the cache until traffic subsides. Defaults to `true`.
 
     return {
       cache: {
-        route: {
-          // This route cache will expire in 10 minutes, but if a request accesses it
+        request: {
+          // This cached request will expire in 10 minutes, but if a request accesses it
           // before then, the cache timer will be reset to 10 minutes from now
           lifespan: 10,
           resetOnAccess: true
@@ -2274,9 +2298,15 @@ Used with the `lifespan` setting, `resetOnAccess` will reset the timer of the ro
 
 #### Cache Limitations and Warnings
 
-In most cases, you'll probably want to choose between caching an entire route or caching individual controller actions, but not both.
+In most cases, you'll probably want to choose between caching an entire request (URL) or caching individual controller actions, but not both.
 
-When caching an include controller action, the view directive doesn't work. Set the view within the include directive of the calling controller or include a URL parameter in the route to drive view logic within the include.
+When caching an include controller action, the route pathname pointing to that include is used as the cache key. If you use logic to render different views using the same controller action, the first rendered view will be cached. You can pass an additional URL parameter in such cases to get past this limitation and create a unique cache item for different include views.
+
+    export const handler = async (context) => {
+      return: {
+        include: context.authenticated ? '/_header/authenticated/true' : '/_header'
+      }
+    }
 
 citizen's cache is a RAM cache stored in the V8 heap, so be careful with your caching strategy. Use the `lifespan` and `resetOnAccess` options so URLs that receive a lot of traffic stay in the cache, while less popular URLs naturally fall out of the cache over time.
 
@@ -2295,11 +2325,13 @@ By caching static assets in memory, you speed up file serving considerably. To e
       }
     }
 
-With static caching enabled, all static files citizen serves will be cached in the V8 heap, so keep an eye on your app's memory usage to make sure you're not using too many resources. citizen handles all the caching and response headers (ETags, 304 status codes, etc.) for you using each file's last modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
+citizen handles response headers automatically (ETags, 304 status codes, etc.) using each file's last modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
 
 To clear a file from the cache in a running app:
 
     app.cache.clear({ file: '/absolute/path/to/file.jpg' })
+
+With static caching enabled, all static files citizen serves will be cached in the V8 heap, so keep an eye on your app's memory usage to make sure you're not using too many resources.
 
 
 ### Client-Side Caching
@@ -2357,7 +2389,7 @@ citizen includes basic request payload parsing. When a user submits a form, the 
     }
 
     // Using a separate action in your controller for form submissions is probably a good idea
-    export const form = async (params) => {
+    export const submit = async (params) => {
       let authenticate = await app.models.user.authenticate({
             username: params.form.username,
             password: params.form.password
@@ -2412,8 +2444,8 @@ You can also set options for individual form actions within controllers using th
 
     // image upload controller
 
-    module.exports = {
-      config: {
+    export const config = {
+      controller: {
         forms: {
           // Options for the upload() controller action
           upload: {
@@ -2433,7 +2465,7 @@ citizen makes it easy to build progressively enhanced HTML forms that work both 
       <p id="message">
         ${ local.message ? local.message : 'Please log in below.' }
       </p>
-      <form id="login-form" action="/login/action/form" method="post" novalidate>
+      <form id="login-form" action="/login/action/submit" method="post" novalidate>
         <section class="data">
           <ul>
             <li>
@@ -2464,14 +2496,13 @@ This will perform a traditional POST to the server and reload the login page to 
 
       e.preventDefault()
 
-      // Appending /format/json to the form action tells the server to
-      // respond with JSON instead of a rendered HTML view
       request.open(loginForm.method, loginForm.action, true)
+      // Set the Accept header to 'application/json' to receive a JSON response
       request.setRequestHeader('Accept', 'application/json')
       request.send(formData)
 
       request.onload = function() {
-        var loginResponse = JSON.parse(request.responseText)
+        let loginResponse = JSON.parse(request.responseText)
 
         message.innerHTML = loginResponse.message
       }
@@ -2483,7 +2514,7 @@ By using `setRequestHeader()` to set the `Accept` header to `application/json`, 
 
 ## Application Event Hooks
 
-Certain events will occur throughout the life of your citizen application, or within each request. You can act on these  events, execute functions, set directives, and pass the results to the next event or your controller via the `context` argument. For example, you might set a cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
+Certain events will occur throughout the life of your citizen application, or within each request. You can act on these  events, execute functions, set directives, and pass the results to the next event or controller via the `context` argument. For example, you might set a cookie at the beginning of every new session, or check for cookies at the beginning of every request and redirect the user to a login page if they're not authenticated.
 
 To take advantage of these events, include a directory called "hooks" in your app with any or all of following modules and exports:
 
@@ -2497,7 +2528,7 @@ To take advantage of these events, include a directory called "hooks" in your ap
 
 `request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what actions they perform and what they output—content, citizen directives, custom directives—is up to you.
 
-All files and exports are optional. citizen parses them at app start and only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
+All files and exports are optional. citizen parses them at startup and only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
 
 Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to the login page if it doesn't exist. We also avoid a redirect loop by making sure the requested controller isn't the login controller:
 
@@ -2515,7 +2546,7 @@ Here's an example of a request module that checks for a username cookie at the b
       }
     }
 
-`session.end` is slightly different in terms of the arguments in receives, which consists only of a copy of the expired session (no longer active):
+`session.end` is slightly different in terms of the arguments it receives, which consists only of a copy of the expired session (no longer active):
 
     // app/controllers/hooks/session.js
 
@@ -2559,8 +2590,8 @@ If you use citizen behind a proxy, such as NGINX or Apache, make sure you have a
 Here's an example of how you might set this up in NGINX:
 
     location / {
-      proxy_set_header Forwarded         "for=$remote_addr;host=$host;proto=$scheme;";
-      proxy_pass                          http://127.0.0.1:8080;
+      proxy_set_header Forwarded  "for=$remote_addr;host=$host;proto=$scheme;";
+      proxy_pass                  http://127.0.0.1:3000;
     }
 
 
@@ -2571,7 +2602,7 @@ citizen has helper functions that it uses internally, but might be of use to you
 
 ### cache.set(options)
 
-You can store any object in citizen's cache. The primary benefits of using cache() over storing content in your own global app variables are built-in cache expiration and extension, as well as wrappers for reading, parsing, and storing file content.
+You can store any object in citizen's cache. The benefits of using `cache` over storing content in your own global app variables are built-in cache expiration and extension, as well as wrappers for reading, parsing, and storing file content.
 
 citizen's default cache time is 15 minutes, which you can change in the config (see [Configuration](#configuration)). Cached item lifespans are extended whenever they're accessed unless you pass `resetOnAccess: false` or change that setting in the config.
 
@@ -2584,7 +2615,7 @@ citizen's default cache time is 15 minutes, which you can change in the config (
 
     // Cache a string under a custom scope, which is used for retrieving or clearing
     // multiple cache items at once. Keys must be unique within a given scope.
-    // Reserved scope names are "app", "controllers", "routes", and "files".
+    // Reserved scope names are "app", "routes", and "files".
     app.cache.set({
       key: 'welcome-message',
       scope: 'site-messages',
@@ -2596,16 +2627,6 @@ citizen's default cache time is 15 minutes, which you can change in the config (
       key: 'welcome-message',
       value: 'Welcome to my site.',
       lifespan: 'application'
-    })
-
-    // Cache a string for the life of the application, and overwrite the
-    // existing key. The overwrite property is required any time you want to
-    // write to an existing key. This prevents accidental overwrites.
-    app.cache.set({
-      key: 'welcome-message',
-      value: 'Welcome to our site.',
-      lifespan: 'application',
-      overwrite: true
     })
 
     // Cache a file buffer using the file path as the key. This is a wrapper for
@@ -2637,26 +2658,26 @@ citizen's default cache time is 15 minutes, which you can change in the config (
 This is a way to check for the existence of a given key or scope in the cache without resetting the cache timer on that item. Returns `false` if a match isn't found.
 
     // Check for the existence of the specified key
-    var keyExists = app.cache.exists({ key: 'welcome-message' })          // keyExists is true
-    var keyExists = app.cache.exists({ file: '/path/to/articles.txt' })   // keyExists is true
-    var keyExists = app.cache.exists({ file: 'articles' })                // keyExists is true
-    var keyExists = app.cache.exists({ key: 'foo' })                      // keyExists is false
+    let keyExists = app.cache.exists({ key: 'welcome-message' })          // keyExists is true
+    let keyExists = app.cache.exists({ file: '/path/to/articles.txt' })   // keyExists is true
+    let keyExists = app.cache.exists({ file: 'articles' })                // keyExists is true
+    let keyExists = app.cache.exists({ key: 'foo' })                      // keyExists is false
 
     // Check the specified scope for the specified key
-    var keyExists = app.cache.exists({
+    let keyExists = app.cache.exists({
       scope: 'site-messages',
       key: 'welcome-message'
     })
     // keyExists is true
 
     // Check if the specified scope exists and contains items
-    var scopeExists = app.cache.exists({
+    let scopeExists = app.cache.exists({
       scope: 'site-messages'
     })
     // scopeExists is true
 
     // Check if the route cache has any instances of the specified route
-    var controllerExists = app.cache.exists({
+    let controllerExists = app.cache.exists({
       route: '/article'
     })
 
@@ -2668,30 +2689,30 @@ Retrieve an individual key or an entire scope. Returns `false` if the requested 
 Optionally, you can override the `resetOnAccess` attribute when retrieving a cache item by specifying it inline.
 
     // Retrieve the specified key from the default (app) scope
-    var welcomeMessage = app.cache.get({
+    let welcomeMessage = app.cache.get({
       key: 'welcome-message'
     })
 
     // Retrieve the specified key from the specified scope and reset its cache timer
     // even if resetOnAccess was initially set to false when it was stored
-    var welcomeMessage = app.cache.get({
+    let welcomeMessage = app.cache.get({
       scope: 'site-messages',
       key: 'welcome-message',
       resetOnAccess: true
     })
 
     // Retrieve all keys from the specified scope
-    var siteMessages = app.cache.get({
+    let siteMessages = app.cache.get({
       scope: 'site-messages'
     })
 
     // Retrieve a cached file
-    var articles = app.cache.get({
+    let articles = app.cache.get({
       file: '/path/to/articles.txt'
     })
 
     // Retrieve a cached file with its custom key
-    var articles = app.cache.get({
+    let articles = app.cache.get({
       file: 'articles'
     })
 
@@ -2741,7 +2762,7 @@ Clear a cache object using a key or a scope.
     // Clear the entire file scope
     app.cache.clear({ scope: 'files' })
 
-    // Clear the entire app scope
+    // Clear the entire cache
     app.cache.clear()
 
 
@@ -2749,7 +2770,7 @@ Clear a cache object using a key or a scope.
 
 Makes it easy to log comments to either the console or a file (or both) in a way that's dependent on the mode of the framework.
 
-When citizen is in production mode, log() does nothing by default. In development mode, log() will log whatever you pass to it. This means you can place it throughout your application's code and it will only write to the log in development mode. You can override this behavior globally with the log settings in your config file or inline with the `console` or `file` options when calling log().
+When citizen is in production mode, `log()` does nothing by default. In development mode, `log()` will log whatever you pass to it. This means you can place it throughout your application's code and it will only write to the log in development mode. You can override this behavior globally with the log settings in your config file or inline with the `console` or `file` options when calling `log()`.
 
     app.log({
       // Optional. Valid settings are "status" (default) or "error".
@@ -2762,16 +2783,13 @@ When citizen is in production mode, log() does nothing by default. In developmen
       // number, log() will run util.inspect on it and dump the contents.
       contents: someObject,
 
-      // Optional. By default, log() uses the config.citizen.logs.console setting
-      // to determine whether to log to the console, but this option overrides it.
+      // Optional. Disables console logs.
       console: false,
 
-      // Optional. By default, log() uses the config.citizen.logs.file setting
-      // to determine whether to log to a file, but this option overrides it.
+      // Optional. Disables file logging.
       file: false,
 
-      // Optional. By default, log() uses "citizen.log" as the file name for your logs.
-      // Use this option to override the default inline.
+      // Optional. File name you'd like to write your log to.
       file: 'my-log-file.log',
 
       // Optional. Disables the timestamp that normally appears in front of the log
@@ -2787,7 +2805,7 @@ Log files appear in the folder you specify in `config.citizen.directories.logs`.
 
 If you set `"mode": "development"` in your config file, citizen dumps all major operations to the console.
 
-You can also dump the request context and parameters to the view by setting `development.debug.view` in your config file to `true`, or use the `ctzn_dump` URL parameter on a per-request basis:
+You can also dump the request context to the view by setting `development.debug.view` in your config file to `true`, or use the `ctzn_debug` URL parameter on a per-request basis:
 
     // config file: always dumps debug output in the view
     {
@@ -2801,26 +2819,26 @@ You can also dump the request context and parameters to the view by setting `dev
     }
 
 
-By default, the pattern's complete context is dumped. You can specify the exact object to debug with the `ctzn_debug` URL parameter:
+By default, citizen dumps the pattern's complete context. You can specify the exact object to debug with the `ctzn_inspect` URL parameter:
 
     // Dumps the server params object
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params
 
     // Dumps the user's session scope
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params.session
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params.session
 
     // Dumps the user's session scope to the view
-    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/params.session/ctzn_dump/view
+    http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params.session/ctzn_dump/view
 
 
-The debug output traverses objects 3 levels deep by default. To display deeper output, use the `development.debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
+The debug output traverses objects 4 levels deep by default. To display deeper output, use the `development.debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
 
     // config file: debug 4 levels deep
     {
       "citizen": {
         "development": {
           "debug": {
-            "depth": 4
+            "depth": 6
           }
         }
       }
