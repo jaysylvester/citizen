@@ -25,7 +25,7 @@ global.CTZN = {
   reserved    : {
     cookie: [
       'ctzn_referer',
-      'ctzn_sessionID'
+      'ctzn_session_id'
     ],
     session: [
       'cors',
