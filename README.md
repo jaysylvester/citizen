@@ -1,37 +1,24 @@
 STUFF TO ADD
-- Use 'Accept': 'application/json' header to receive JSON responses
-- Reformat all examples using ES module syntax
-- Explain ESM vs CJS and file extensions (.js vs .cjs)
-- replace app.start() with app.server.start()
-- replace app.log() with app.helpers.log()
 - new controller config for CORS, forms, etc.
 - options to specify keepAliveTimeout, maxHeadersCount, requestTimeout, timeout in both http and https
 - replace /type/direct with /direct/true
 - Update the scaffold util and docs
 - Remove formidable
   - Uploaded files are stored in binary format in the form parameter, to decode/write: Buffer.from(data, 'binary')
-- chokidar options
-  - Add note to use polling (options: { usePolling: true }) if necessary for hot module reloading to work correctly
-- Application cache enabled by default, static is not
-- Make a note in the route cache section that HTTP headers are preserved in the cache
-- legalFormats changed to contentTypes, all enabled by default
-- url.format deprecated
-- cache overwrite removed, default behavior is to overwrite
-- new logging options
-- ctzn_debug and ctzn_inspect (get rid of ctzn_dump)
 - server options (same as Node http options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
-- cookie and header directives are now cookies and headers
+- header directive is now headers
 - error handling options (capture, exit)
 - HTTP Forwarded header now supported, X-Forwarded-For/Host/Proto deprecated and will be removed from future versions
-- New local directive for variables local to the controller/view
-- New view file options (old pattern of dedicated folder or placing views directly within the app views folder)
+
+TODO
+- If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
 
 
 # citizen
 
 citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable web sites instead of digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
 
-Use citizen as the foundation for a traditional server-side web application, a modular single-page application (SPA), or a REST API.
+Use citizen as the foundation for a traditional server-side web application, a modular single-page app (SPA), or a REST API.
 
 
 ## Benefits
@@ -70,14 +57,14 @@ These commands will create a new directory for your web app, install citizen, us
 
 If everything went well, you'll see confirmation in the console that the web server is running. Go to http://127.0.0.1:3000 in your browser and you'll see a bare index template.
 
-citizen uses template literals as its default template engine, but you can install [consolidate.js](https://github.com/tj/consolidate.js), update the [template config](#config-settings), and modify the default view templates accordingly.
+citizen uses template literals as its default template engine. You can install [consolidate.js](https://github.com/tj/consolidate.js), update the [template config](#config-settings), and modify the default view templates accordingly.
 
 For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
 
 
-### Demo App
+<!-- ### Demo App
 
-Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basic responsive web site built with citizen that demonstrates some of the framework's functionality.
+Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basic responsive web site built with citizen that demonstrates some of the framework's functionality. -->
 
 
 ### App Directory Structure
@@ -344,9 +331,7 @@ Here's a complete rundown of citizen's settings and what they do:
         String
     </td>
     <td>
-      <p>
-        (empty string)
-      </p>
+      (empty string)
     </td>
     <td>
       To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is not to be confused with the HTTP server <code>hostname</code> (see below).
@@ -365,9 +350,7 @@ Here's a complete rundown of citizen's settings and what they do:
       String
     </td>
     <td>
-      <p>
-        Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
-      </p>
+      Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
     </td>
     <td>
       The application mode determines certain runtime behaviors. Possible values are <code>production</code> and <code>development</code> Production mode silences console logs. Development mode enables verbose console logs, URL debug options, and hot module reloading.
@@ -402,20 +385,24 @@ Here's a complete rundown of citizen's settings and what they do:
       String
     </td>
     <td>
-      <ul>
-        <li>
-          <code>capture</code>
-        </li>
-        <li>
-          <code>exit</code>
-        </li>
-      </ul>
-      <p>
-        <code>capture</code>
-      </p>
+      <code>capture</code>
     </td>
     <td>
-      When your application throws an error, the default behavior is for citizen to try to recover from the error and keep the application running. Setting `errors` to `exit` tells citizen to log the error and exit the process instead.
+      When your application throws an error, the default behavior is for citizen to try to recover from the error and keep the application running. Setting this option to <code>exit</code> tells citizen to log the error and exit the process instead.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>templateEngine</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>templateLiterals</code>
+    </td>
+    <td>
+      citizen uses template literal syntax for view rendering by default. Optionally, you can install <a href="https://github.com/tj/consolidate.js">consolidate</a> and use any engine it supports (for example, install Handlebars and set <code>templateEngine</code> to <code>handlebars</code>).
     </td>
   </tr>
   <tr>
@@ -423,14 +410,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>urlPath</code>
     </td>
     <td>
-      <p>
-        String
-      </p>
+      String
     </td>
     <td>
-      <p>
-        <code>/</code>
-      </p>
+      <code>/</code>
     </td>
     <td>
       Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
@@ -449,9 +432,7 @@ Here's a complete rundown of citizen's settings and what they do:
         Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       Enables the HTTP server.
@@ -465,9 +446,7 @@ Here's a complete rundown of citizen's settings and what they do:
         String
     </td>
     <td>
-      <p>
-        <code>127.0.0.1</code>
-      </p>
+      <code>127.0.0.1</code>
     </td>
     <td>
       The hostname at which your app can be accessed via HTTP. You can specify an empty string to accept requests at any hostname.
@@ -481,9 +460,7 @@ Here's a complete rundown of citizen's settings and what they do:
         Number
     </td>
     <td>
-      <p>
-        <code>3000</code>
-      </p>
+      <code>3000</code>
     </td>
     <td>
       The port number on which citizen's HTTP server listens for requests.
@@ -496,15 +473,13 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
   <tr>
     <td>
-      <code>enable</code>
+      <code>enabled</code>
     </td>
     <td>
         Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Enables the HTTPS server.
@@ -518,9 +493,7 @@ Here's a complete rundown of citizen's settings and what they do:
         String
     </td>
     <td>
-      <p>
-        <code>127.0.0.1</code>
-      </p>
+      <code>127.0.0.1</code>
     </td>
     <td>
       The hostname at which your app can be accessed via HTTPS. The default is localhost, but you can specify an empty string to accept requests at any hostname.
@@ -534,9 +507,7 @@ Here's a complete rundown of citizen's settings and what they do:
         Number
     </td>
     <td>
-      <p>
-        <code>443</code>
-      </p>
+      <code>443</code>
     </td>
     <td>
       The port number on which citizen's HTTPS server listens for requests.
@@ -550,9 +521,7 @@ Here's a complete rundown of citizen's settings and what they do:
         Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       By default, all cookies set within an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
@@ -566,27 +535,26 @@ Here's a complete rundown of citizen's settings and what they do:
         Integer
     </td>
     <td>
-      <p>
-        <code>null</code>
-      </p>
+      <code>null</code>
     </td>
     <td>
       The maximum number of incoming requests to queue. If left unspecified, the operating system determines the queue limit.
     </td>
   </tr>
   <tr>
+    <td colspan="4">
+      sessions
+    </td>
+  </tr>
+  <tr>
     <td>
-      <code>sessions</code>
+      <code>enabled</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID within the application server.
@@ -594,17 +562,13 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
   <tr>
     <td>
-      <code>sessionTimeout</code>
+      <code>lifespan</code>
     </td>
     <td>
-      <p>
-        Positive integer
-      </p>
+      Positive Integer
     </td>
     <td>
-      <p>
-        <code>20</code>
-      </p>
+      <code>20</code> (minutes)
     </td>
     <td>
       If sessions are enabled, this number represents the length of a user's session in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
@@ -620,17 +584,13 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>controller</code>
     </td>
     <td>
-      <p>
-        String
-      </p>
+      String
     </td>
     <td>
-      <p>
-        (empty)
-      </p>
+      (empty)
     </td>
     <td>
-      If you use a global layout controller, you can specify the name of that controller here instead of using the handoff directive in all your controllers.
+      If you use a global layout controller, you can specify the name of that controller here instead of using the `next` directive in all your controllers.
     </td>
   </tr>
   <tr>
@@ -638,35 +598,13 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>view</code>
     </td>
     <td>
-      <p>
-        String
-      </p>
+      String
     </td>
     <td>
-      <p>
-        (empty)
-      </p>
+      (empty)
     </td>
     <td>
       By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>templateEngine</code>
-    </td>
-    <td>
-      <p>
-        String
-      </p>
-    </td>
-    <td>
-      <p>
-        <code>templateLiterals</code>
-      </p>
-    </td>
-    <td>
-      citizen uses template literal syntax for view rendering by default. Optionally, you can install <a href="https://github.com/tj/consolidate.js">consolidate</a> and use any engine it supports (for example, install Handlebars and set <code>templateEngine</code> to <code>handlebars</code>).
     </td>
   </tr>
   <tr>
@@ -679,14 +617,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>enabled</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       citizen provides basic payload processing for simple forms. If you prefer to use a separate form package, set this to <code>false</code>.
@@ -697,17 +631,13 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>maxPayloadSize</code>
     </td>
     <td>
-      <p>
-        Positive Integer (bytes)
-      </p>
+      Positive Integer
     </td>
     <td>
-      <p>
-        <code>524288</code> (0.5MB)
-      </p>
+      <code>524288</code>
     </td>
     <td>
-      Set a max payload size to prevent your server from being overloaded by form input data.
+      Maximum form payload size, in bytes. Set a max payload size to prevent your server from being overloaded by form input data.
     </td>
   </tr>
   <tr>
@@ -720,14 +650,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>enabled</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Enables gzip and deflate compression for rendered views and static assets.
@@ -738,14 +664,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>force</code>
     </td>
     <td>
-      <p>
-        Boolean or String
-      </p>
+      Boolean or String
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Forces gzip or deflate encoding for all clients, even if they don't report accepting compressed formats. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since all modern clients support gzip, it's usually safe to force it by setting this to <code>gzip</code>, but you can also force <code>deflate</code>.
@@ -756,9 +678,7 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>mimeTypes</code>
     </td>
     <td>
-      <p>
-        Array
-      </p>
+      Array
     </td>
     <td>
       <p>See default config above.</p>
@@ -777,14 +697,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>control</code>
     </td>
     <td>
-      <p>
-        Object containing key/value pairs
-      </p>
+      Object containing key/value pairs
     </td>
     <td>
-      <p>
-        <code>{}</code>
-      </p>
+      <code>{}</code>
     </td>
     <td>
       Use this setting to set Cache-Control headers for route controllers and static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
@@ -795,14 +711,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>invalidUrlParams</code>
     </td>
     <td>
-      <p>
-        String
-      </p>
+      String
     </td>
     <td>
-      <p>
-        <code>warn</code>
-      </p>
+      <code>warn</code>
     </td>
     <td>
       The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and <code>invalidUrlParams</code> determines whether to log a warning when encountering bad URLs or throw a client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
@@ -818,14 +730,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>enabled</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods.
@@ -836,14 +744,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>lifespan</code>
     </td>
     <td>
-      <p>
-        Number
-      </p>
+      Number
     </td>
     <td>
-      <p>
-        <code>15</code> (minutes)
-      </p>
+      <code>15</code>
     </td>
     <td>
       The length of time a cached application asset remains in memory, in minutes.
@@ -854,14 +758,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>resetOnAccess</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       Determines whether to reset the cache timer on a cached asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
@@ -872,14 +772,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>encoding</code>
     </td>
     <td>
-      <p>
-        String
-      </p>
+      String
     </td>
     <td>
-      <p>
-        <code>utf-8</code>
-      </p>
+      <code>utf-8</code>
     </td>
     <td>
       When you pass a file path to cache.set(), the encoding setting determines what encoding should be used when reading the file.
@@ -890,14 +786,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>synchronous</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       When you pass a file path to cache.set(), this setting determines whether the file should be read synchronously or asynchronously. By default, file reads are asynchronous.
@@ -913,14 +805,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>enabled</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to <code>true</code>, which caches file buffers in memory.
@@ -931,14 +819,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>lifespan</code>
     </td>
     <td>
-      <p>
-        Number
-      </p>
+      Number
     </td>
     <td>
-      <p>
-        <code>15</code>
-      </p>
+      <code>15</code>
     </td>
     <td>
       The length of time a cached static asset remains in memory, in minutes.
@@ -949,14 +833,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>resetOnAccess</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       Determines whether to reset the cache timer on a cached static asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
@@ -972,14 +852,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>access</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Enables HTTP access log files. Disabled by default because access logs can explode quickly and ideally it should be handled by a web server.
@@ -990,14 +866,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>debug</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Enables debug log files. Useful for debugging production issues, but extremely verbose (the same logs you would see in the console in development mode).
@@ -1008,17 +880,13 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>maxFileSize</code>
     </td>
     <td>
-      <p>
-        Number
-      </p>
+      Number
     </td>
     <td>
-      <p>
-        <code>10000</code> (kb)
-      </p>
+      <code>10000</code>
     </td>
     <td>
-      Determines the maximum file size of log files in kilobytes. Default is 10000 (10 megs). When the limit is reached, the log file is renamed with a time stamp and a new log file is created.
+      Determines the maximum file size of log files, in kilobytes. When the limit is reached, the log file is renamed with a time stamp and a new log file is created.
     </td>
   </tr>
   <tr>
@@ -1031,14 +899,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>client</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>true</code>
-      </p>
+      <code>true</code>
     </td>
     <td>
       Enables logging of 400-level client errors.
@@ -1049,14 +913,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>server</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Enables logging of 500-level server/application errors.
@@ -1067,14 +927,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>status</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Controls whether status messages should be logged to the console when in production mode. (Development mode always logs to the console.)
@@ -1090,17 +946,13 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>interval</code>
     </td>
     <td>
-      <p>
-        Number
-      </p>
+      Number
     </td>
     <td>
-      <p>
-        <code>60000</code> (ms)
-      </p>
+      <code>60000</code>
     </td>
     <td>
-      For operating systems that don't support file events, this timer (in milliseconds) determines how often log files will be polled for changes prior to archiving.
+      For operating systems that don't support file events, this timer determines how often log files will be polled for changes prior to archiving, in milliseconds.
     </td>
   </tr>
   <tr>
@@ -1118,9 +970,7 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>scope</code>
     </td>
     <td>
-      <p>
-        Object
-      </p>
+      Object
     </td>
     </td>
     <td>
@@ -1133,14 +983,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>depth</code>
     </td>
     <td>
-      <p>
-        Positive integer
-      </p>
+      Positive integer
     </td>
     <td>
-      <p>
-        <code>3</code>
-      </p>
+      <code>3</code>
     </td>
     <td>
       When citizen dumps an object in the debug content, it inspects it using Node's util.inspect. This setting determines the depth of the inspection, meaning the number of nodes that will be inspected and displayed. Larger numbers mean deeper inspection and slower performance.
@@ -1151,14 +997,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>view</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Set this to true to dump debug info directly into the HTML view.
@@ -1169,14 +1011,10 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>enableCache</code>
     </td>
     <td>
-      <p>
-        Boolean
-      </p>
+      Boolean
     </td>
     <td>
-      <p>
-        <code>false</code>
-      </p>
+      <code>false</code>
     </td>
     <td>
       Development mode disables the cache. Change this setting to <code>true</code> to enable the cache in development mode.
@@ -1192,9 +1030,7 @@ Here's a complete rundown of citizen's settings and what they do:
       <code>custom</code>
     </td>
     <td>
-      <p>
-        Array
-      </p>
+      Array
     </td>
     </td>
     <td>
@@ -1326,7 +1162,7 @@ All views for a given route controller can exist in the `app/views/` directory, 
 
 More on views in the [Views section](#views).
 
-Models and views are optional and don't necessarily need to be associated with a particular controller. If your route controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the [controller next() directive](#controller-handoff).)
+Models and views are optional and don't necessarily need to be associated with a particular controller. If your route controller is going to pass its output to another controller for further processing and final rendering, you don't need to include a matching view. (See the [controller next directive](#controller-chaining).)
 
 
 
@@ -1409,7 +1245,7 @@ Using the above URL parameters, I can retrieve the article content from the mode
         author: article.author
       })
 
-      // Return the article for view rendering using the local directive
+      // Any data you want available to the view should be placed in the local directive
       return {
         local: {
           article: article,
@@ -1459,7 +1295,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
       }
     }
 
-You place any data you want to pass back to citizen within the `return` statement. All the data you want to render in your view should be passed to citizen within an object called `local`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (explained later in the [Controller Directives](#controller-directives) section). You can even add your own objects to the context and pass them from controller to controller (more in the [Controller Handoff section](#controller-handoff).)
+You place any data you want to pass back to citizen within the `return` statement. All the data you want to render in your view should be passed to citizen within an object called `local`, as shown above. Additional objects can be passed to citizen to set directives that provide instructions to the server (see [Controller Directives](#controller-directives)). You can even add your own objects to the context and pass them from controller to controller (more in the [Controller Chaining section](#controller-chaining).)
 
 
 #### Cross domain requests
@@ -1476,9 +1312,9 @@ Models are optional modules and their structure is completely up to you. citizen
 
 ### Views
 
-citizen uses template literals for view rendering by default, but you can install [consolidate.js](https://github.com/tj/consolidate.js) and use any supported template engine. Just update the `templateEngine` config setting accordingly.
+citizen uses template literals for view rendering by default. You can install [consolidate.js](https://github.com/tj/consolidate.js) and use any supported template engine. Just update the `templateEngine` config setting accordingly.
 
-In `article.html`, you can reference variables you placed within the `local` object passed into the route controller's return statement. citizen also injects the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
+In `article.html`, you can reference variables you placed within the `local` object passed into the route controller's return statement. citizen also injects properties from the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
     <!-- article.html -->
 
@@ -1504,6 +1340,19 @@ In `article.html`, you can reference variables you placed within the `local` obj
 #### Rendering alternate views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your return statement](#alternate-views).
+
+All views go in `/app/views`. If a controller has multiple views, you can organize them within a directory named after that controller.
+
+    /app
+      /controllers
+        /routes
+          article.js
+          index.js
+      /views
+        /article
+          article.html  // Default article controller view
+          edit.html
+        index.html      // Default index controller view
 
 
 #### JSON and JSON-P
@@ -1573,7 +1422,9 @@ You can also throw an error manually and customize the error message:
       // If the article exists, return it
       if ( article ) {
         return {
-          local: article
+          local: {
+            article: article
+          }
         }
       // If the article doesn't exist, throw an error
       } else {
@@ -1985,28 +1836,104 @@ citizen includes provide rich functionality, but they do have limitations and ca
 * **Do you want the include to be accessible from the web?** Since a citizen include has a route controller, you can request it via HTTP like any other controller and get back HTML, JSON, or JSONP, which is great for AJAX requests and client-side rendering.
 
 
-### Controller Handoff Using `next`
+### Controller Chaining
 
-citizen allows you to string multiple route controllers together in series from a single request using the `next` directive. The requested controller passes its data to a subsequent controller that assumes responsibility for the request, adding its own data and directives and rendering its own view. This is also a method for passing your own custom data and directives to the receiving controller.
+citizen allows you to chain multiple route controllers together in series from a single request using the `next` directive. The requested controller passes its data and rendered view to a subsequent controller, adding its own data and rendering its own view.
 
-You can string as many route controllers together in a single request as you'd like. Each route controller will have its data, context, and view output stored in the `params.route.chain` object, then loop over the chain to render every route controller:
+You can string as many route controllers together in a single request as you'd like. Each route controller will have its data and view output stored in the `params.route.chain` object.
 
+    // The index controller hands off execution to the article controller
+    export const handler = async () => {
+      return {
+        // Shorthand for next is a string containing the pathname to the route controller.
+        // URL paramaters in this route will be parsed and handed to the next controller.
+        next: '/article/My-Article/id/5'
+
+        // Or, you can be explicit, but without parameters
+        next: {
+          // Pass this request to app/controllers/routes/article.js
+          controller: 'article',
+
+          // Specifying the action is optional. The next controller will use its default action, handler(), unless you specify a different action here.
+          action: 'handler',
+
+          // Specifying the view is optional. The next controller will use its default view unless you tell it to use a different one.
+          view: 'article'
+        }
+
+        // You can also pass custom directives and data.
+        doSomething: true
+      }
+    }
+
+Each controller in the chain has access to the previous controller's context and views. The last controller in the chain provides the final rendered view. A layout controller with all your site's global elements is a common use for this.
+
+    // The article controller does its thing, then hands off execution to the _layout controller
+    export const handler = async (params, request, response, context) => {
+      let article = await getArticle({ id: params.url.id })
+
+      // The context from the previous controller is available to you in the current controller.
+      if ( context.doSomething ) {
+        await doSomething()
+      }
+
+      return {
+        local: {
+          article: article
+        },
+        next: '/_layout'
+      }
+    }
+
+The rendered view of each controller in the chain is stored in the `route.chain` object:
+
+    <!-- index.html, which is stored in route.chain.index.output -->
+    <h1>Welcome!</h1>
+
+    <!-- article.html, which is stored in route.chain.article.output -->
+    <h1>${local.article.title}</h1>
+    <p>${local.article.summary}</p>
+    <section>${local.article.text}</section>
+
+
+The layout controller handles the includes and renders its own view. Because it's the last controller in the chain, this rendered view is what will be sent to the client.
+
+    // _layout controller
+
+    export const handler = async (params) => {
+      return {
+        include: {
+          _head: '/_head',
+          _header: {
+            controller: '_header',
+            action: params.cookie.username ? 'authenticated' : 'handler'
+          },
+          _footer: '/footer
+        }
+      }
+    }
+
+&nbsp;
+
+    <!-- _layout.html -->
     <!doctype html>
     <html>
       ${include._head}
       <body>
         ${include._header}
         <main>
-          <!-- Loop over the route.chain object to output the view from each controller in the chain -->
+          <!-- You can render each controller's view explicitly -->
+          ${route.chain.index.output}
+          ${route.chain.article.output}
+
+          <!-- Or, you can loop over the route.chain object to output the view from each controller in the chain -->
           ${Object.keys(route.chain).map( controller => { return route.chain[controller].output }).join('')}
         </main>
+        ${include._footer}
       </body>
     </html>
 
-
-The last controller in the chain provides the master view.
-
-You can skip rendering a controller's view in the chain by setting view to false:
+You can skip rendering a controller's view in the chain by setting the `view` directive to false:
 
     // This controller action won't render a view
     export const handler = async () => {
@@ -2017,80 +1944,9 @@ You can skip rendering a controller's view in the chain by setting view to false
     }
 
 
-A common use case for `next` would be to create a layout controller that serves as a template for every page on your site, rendering all the global view content and leaving only the core content and markup to the initially requested controller. Let's modify the article controller and view so it hands off rendering responsibility to a separate layout controller:
-
-    // article controller
-
-    export const handler = async (params) => {
-      const article = await app.models.article.getArticle({
-        article: params.url.article,
-        page: params.url.page
-      })
-
-      return {
-        local: article,
-
-        // Shorthand for next is a string containing the pathname to the route controller
-        next: '/_layout'
-
-        // Or, you can be explicit
-        next: {
-          // Pass this request to app/controllers/routes/_layout.js
-          controller: '_layout',
-
-          // Specifying the action is optional. The layout controller will use its default action, handler(), unless you specify a different action here.
-          action: 'handler',
-
-          // Specifying the view is optional. The layout controller will use its default view unless you tell it to use a different one.
-          view: '_layout'
-        },
-
-        // A custom directive to drive some logic in the layout controller. You could even pass a function here for _layout.js to call. Just don't use any reserved citizen directive names.
-        myDirective: {
-          doSomething: true
-        }
-      }
-    }
-
-
-The view of the originally requested controller (article.html in this case) is rendered and stored in the `route.chain` object:
-
-    <!-- article.html, which is stored in the route.chain scope -->
-
-    <h1>${local.title}</h1>
-    <p>${local.summary}</p>
-    <section>${local.text}</section>
-
-
-The layout controller handles the includes, follows your custom directive, and renders its own view:
-
-    // layout controller
-
-    export const handler = async (params, context) => {
-      // Access my custom directive using the context argument
-      if ( context.myDirective?.doSomething ) {
-        await doSomething()
-      }
-
-      return {
-        include: {
-          _head: '/_head',
-          _header: {
-            controller: '_header',
-            action: params.cookie.username ? 'authenticated' : 'handler'
-          }
-        }
-      }
-    }
-
-    async function doSomething() {
-      // do something
-    }
-
-
 ### Default Layout
 
-As mentioned in the config section at the beginning of this document, you can specify a default layout controller in your config so you don't have to specify it in every controller:
+As mentioned in the config section at the beginning of this document, you can specify a default layout controller in your config so you don't have to insert it at the end of every controller chain:
 
     {
       "citizen": {
@@ -2101,7 +1957,7 @@ As mentioned in the config section at the beginning of this document, you can sp
       }
     }
 
-If you use this method, there's no need to use `next` for the layout.
+If you use this method, there's no need to use `next` for the layout. The last controller in the chain will always hand the request to the layout controller for final rendering.
 
 
 ## Performance
