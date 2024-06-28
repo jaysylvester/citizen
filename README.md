@@ -94,11 +94,13 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
 
 ### Initializing citizen and starting the web server
 
-Import the server and start your app:
+Import citizen and start your app:
 
     // start.js
-    import { server } from 'citizen'
-    server.start()
+    import citizen from 'citizen'
+    
+    global.app = citizen
+    app.server.start()
 
 Run from the terminal:
 
