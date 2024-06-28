@@ -49,7 +49,7 @@ global.CTZN = {
 }
 
 
-// Export citizen data and methods meant for public consumption
+// Exports meant for public consumption
 import { clear, exists, get, set } from './lib/cache.js'
 import { log }                     from './lib/helpers.js'
 import { start }                   from './lib/server.js'
