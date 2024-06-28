@@ -31,6 +31,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
           compression: {
             enabled          : false,
             force            : false,
+            // Mimetypes that should be sent in compressed format
             mimeTypes        : [
                                 'application/javascript',
                                 'application/x-javascript',
@@ -52,6 +53,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
             controller       : '',
             view             : ''
           },
+          // Allowable response content types
           contentTypes       : [
                                 'text/html',
                                 'text/plain',
