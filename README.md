@@ -1,9 +1,6 @@
 STUFF TO ADD
-- new controller config for CORS, forms, etc.
-- options to specify keepAliveTimeout, maxHeadersCount, requestTimeout, timeout in both http and https
-- replace /type/direct with /direct/true
-- server options (same as Node http options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
-- header directive is now headers
+- http/https server options (same as Node options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
+- reserved words
 
 TODO
 - If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
@@ -97,18 +94,13 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
 
 ### Initializing citizen and starting the web server
 
-The start.js file in your app directory can be as simple as this:
+Import the server and start your app:
 
     // start.js
+    import { server } from 'citizen'
+    server.start()
 
-    import citizen from 'citizen'
-
-    global.app = citizen
-
-    app.server.start()
-
-
-Run start.js from the command line:
+Run from the terminal:
 
     $ node start.js
 
@@ -116,16 +108,16 @@ Run start.js from the command line:
 
 ### Configuration
 
-There are two configuration options: inline and file-based.
+You can configure your citizen app with a config file, startup options, and/or custom controller configurations.
 
-The config directory is optional and contains configuration files that drive both citizen and your app in JSON format. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen retrieves its configuration file from this directory based on the following logic:
+The config directory is optional and contains configuration files in JSON format that drive both citizen and your app. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen builds its configuration based on the following hierarchy:
 
-1. citizen parses each JSON file looking for a `host` key that matches the machine's hostname, extending the default configuration with the file config.
+1. If citizen finds a config directory, it parses each JSON file looking for a `host` key that matches the machine's hostname, and if it finds one, extends the default configuration with the file config.
 2. If citizen can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
-3. If citizen can't find citizen.json or you don't have a config directory, it runs under its default configuration.
-4. Finally, citizen extends the configuration with the inline config at app startup.
+3. citizen then extends the config with your [optional startup config](#startup-configuration).
+4. Individual route controllers and and actions can have [their own custom config](#controller-configuration) that further extends the app config.
 
-Let's say you want to run citizen on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or myconfig.json, whatever you want) with the following:
+Let's say you want to run citizen on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or dev.json, whatever you want) with the following:
 
     {
       "host":       "My-MacBook-Pro.local",
@@ -136,31 +128,29 @@ Let's say you want to run citizen on port 8080 in your local dev environment and
         }
       },
       "db": {
-        server:   "localhost",  // app.config.db.server
-        username: "dbuser",     // app.config.db.username
-        password: "dbpassword"  // app.config.db.password
+        server:   "localhost",  // config.db.server
+        username: "dbuser",     // config.db.username
+        password: "dbpassword"  // config.db.password
       }
     }
 
 This config would extend the default configuration only when running on your local machine. Using this method, you can commit multiple config files from different environments to the same repository.
 
-The database settings would be accessible within your app via `app.config.db`. The `citizen` and `host` nodes are reserved for the framework; create your own node(s) to store your custom settings.
+The database settings would be accessible within your route controllers via `params.config.db`. The `citizen` and `host` nodes are reserved for the framework; create your own node(s) to store your custom settings.
 
 
-#### Inline config
+#### Startup configuration
 
-You can also pass your app's configuration directly to citizen through `app.server.start()`. If there is a config file, an inline config will extend the config file. If there's no config file, the inline configuration extends the default citizen config.
+You can also pass your app's configuration directly to citizen through `server.start()`. If there is a config file, the startup config will extend the config file. If there's no config file, the startup configuration extends the default citizen config.
 
-    // Start an HTTPS server with a PFX file running on port 3000,
-    // and add a custom namespace for your app's database config
-    app.server.start({
+    // Start an HTTPS server with a PFX file and add a custom namespace for your app's database config
+    server.start({
       citizen: {
         http: {
           enable: false
         },
         https: {
           enable: true,
-          port:   3000,
           pfx:    '/absolute/path/to/site.pfx'
         }
       },
@@ -170,6 +160,25 @@ You can also pass your app's configuration directly to citizen through `app.serv
         password: "dbpassword"  // app.config.db.password
       }
     })
+
+
+#### Controller configuration
+
+To set custom configurations at the route controller level, export a `config` object (more on route controllers and actions in the [route controllers](#route-controllers) section).
+
+    export const config = {
+      // The "controller" property sets a configuration for all actions in this controller
+      controller: {
+        contentTypes: [ 'application/json' ]
+      }
+
+      // The "submit" property is only for the submit() controller action
+      submit: {
+        form: {
+          maxPayloadSize: 1000000
+        }
+      }
+    }
 
 
 #### Default configuration
@@ -326,7 +335,7 @@ Here's a complete rundown of citizen's settings and what they do:
         String
     </td>
     <td>
-      (empty string)
+      <code>''</code>
     </td>
     <td>
       To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is not to be confused with the HTTP server <code>hostname</code> (see below).
@@ -563,10 +572,10 @@ Here's a complete rundown of citizen's settings and what they do:
       Positive Integer
     </td>
     <td>
-      <code>20</code> (minutes)
+      <code>20</code>
     </td>
     <td>
-      If sessions are enabled, this number represents the length of a user's session in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
+      If sessions are enabled, this number represents the length of a user's session, in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
     </td>
   </tr>
   <tr>
@@ -582,7 +591,7 @@ Here's a complete rundown of citizen's settings and what they do:
       String
     </td>
     <td>
-      (empty)
+      <code>''</code>
     </td>
     <td>
       If you use a global layout controller, you can specify the name of that controller here instead of using the `next` directive in all your controllers.
@@ -596,7 +605,7 @@ Here's a complete rundown of citizen's settings and what they do:
       String
     </td>
     <td>
-      (empty)
+      <code>''</code>
     </td>
     <td>
       By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
@@ -1045,7 +1054,7 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
 **Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
 
 
-### citizen methods and objects
+### citizen exports
 
 <table>
   <tr>
@@ -1059,8 +1068,8 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
   <tr>
     <td>
       <code>app.cache.set()</code><br />
-      <code>app.cache.exists()</code><br />
       <code>app.cache.get()</code><br />
+      <code>app.cache.exists()</code><br />
       <code>app.cache.clear()</code><br />
       <code>app.helpers.log()</code>
     </td>
@@ -1071,10 +1080,11 @@ These settings are exposed publicly via `app.config.host` and `app.config.citize
   <tr>
     <td>
       <code>app.controllers</code><br />
-      <code>app.models</code>
+      <code>app.models</code><br />
+      <code>app.views</code>
     </td>
     <td>
-      Contains your supplied patterns, which you can use instead of <code>import</code> or <code>require</code>.
+      Contains your supplied patterns for quick access.
     </td>
   </tr>
   <tr>
@@ -1163,7 +1173,7 @@ Models and views are optional and don't necessarily need to be associated with a
 
 ### Route Controllers
 
-A citizen route controller is just a Node module. Each controller requires at least one public  method to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
+A citizen route controller is just a Node module. Each route controller requires at least one export to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
 
     // Default route controller action
 
@@ -1180,6 +1190,10 @@ The citizen server calls `handler()` after it processes the initial request and 
 
 <table>
   <caption>Properties of the <code>params</code> object</caption>
+  <tr>
+    <td><code>config</code></td>
+    <td>Your app's configuration, including any customizations for the current controller action</td>
+  </tr>
   <tr>
     <td><code>route</code></td>
     <td>Details of the requested route, such as the requested URL and the name of the route controller</td>
@@ -1461,8 +1475,8 @@ To create custom error views for server errors, create a directory called `/app/
     app/
       views/
         error/
-          404.html      // Displays 404 errors specifically
           500.html      // Displays any 500-level error
+          404.html      // Displays 404 errors specifically
           ENOENT.html   // Displays bad file read operations
           error.html    // Displays any error without its own template
 
@@ -1630,16 +1644,16 @@ Here's an example of how you might set this up in NGINX:
 
 ### HTTP Headers
 
-You can set HTTP headers using the `headers` directive:
+You can set HTTP headers using the `header` directive:
 
     return {
-      headers: {
+      header: {
         'Cache-Control':  'max-age=86400',
         'Date':           new Date().toISOString()
       }
     }
 
-You can also set headers directly using Node's `response.setHeader()` method, but using citizen's `headers` directive preserves those headers in the [request cache](#caching-requests-and-controller-actions), so they'll be applied whenever that controller action is pulled from the cache.
+You can also set headers directly using Node's `response.setHeader()` method, but using citizen's `header` directive preserves those headers in the [request cache](#caching-requests-and-controller-actions), so they'll be applied whenever that controller action is pulled from the cache.
 
 
 
@@ -1924,6 +1938,12 @@ You can skip rendering a controller's view in the chain by setting the `view` di
         next: '/_layout'
       }
     }
+
+To bypass `next` in a request, add `/direct/true` to the URL.
+
+    http://cleverna.me/index/direct/true
+
+The requested route controller's `next` directive will be ignored and its view will be returned to the client directly.
 
 
 ### Default Layout
