@@ -10,7 +10,7 @@ TODO
 
 citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable web sites instead of digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
 
-Use citizen as the foundation for a traditional server-side web application, a modular single-page app (SPA), or a REST API.
+Use citizen as the foundation for a traditional server-side web application, modular single-page application (SPA), or RESTful API.
 
 
 ## Benefits
