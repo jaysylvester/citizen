@@ -3,7 +3,7 @@
   * ES module support
   * Hot module reloading works with the app cache enabled
     * Caching is now enabled by default to maintain consistency between development and production environments, but can still be disabled manually via the config for debugging purposes
-  * Route controllers and actions have their own config that takes precedence over the global config
+  * Route controllers and actions have their own config that extends the global config
 
   Fixes/improvements:
   * citizen checks for the NODE_ENV environment variable and sets its mode accordingly
