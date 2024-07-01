@@ -15,6 +15,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
         host                 : '',
         citizen: {
           mode               : process.env.NODE_ENV || 'production',
+          global             : 'app',
           http: {
             enabled          : true,
             hostname         : '127.0.0.1',

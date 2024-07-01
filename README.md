@@ -191,6 +191,7 @@ The following represents citizen's default configuration, which is extended by y
       host                 : '',
       citizen: {
         mode               : process.env.NODE_ENV || 'production',
+        global             : 'app',
         http: {
           enabled          : true,
           hostname         : '127.0.0.1',
@@ -360,6 +361,20 @@ Here's a complete rundown of citizen's settings and what they do:
     </td>
     <td>
       The application mode determines certain runtime behaviors. Possible values are <code>production</code> and <code>development</code> Production mode silences console logs. Development mode enables verbose console logs, URL debug options, and hot module reloading.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>global</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>app</code>
+    </td>
+    <td>
+      The convention for initializing citizen in the start file assigns the framework to a global variable. The default, which you'll see referenced throughout the documentation, is <code>app</code>. You can change this setting if you want to use another name.
     </td>
   </tr>
   <tr>
@@ -1053,7 +1068,7 @@ citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watc
 
 These settings are exposed publicly via `app.config.host` and `app.config.citizen`.
 
-**Note:** This documentation assumes your global app variable name is "app", but you can call it whatever you want. Adjust accordingly.
+This documentation assumes your global app variable name is `app`. Adjust accordingly.
 
 
 ### citizen exports
