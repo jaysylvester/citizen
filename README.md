@@ -1,6 +1,7 @@
 STUFF TO ADD
 - http/https server options (same as Node options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
 - reserved words
+- hot module reloading
 
 TODO
 - If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
@@ -100,7 +101,7 @@ Import citizen and start your app:
     import citizen from 'citizen'
     
     global.app = citizen
-    app.server.start()
+    app.start()
 
 Run from the terminal:
 
@@ -1076,7 +1077,7 @@ This documentation assumes your global app variable name is `app`. Adjust accord
 <table>
   <tr>
     <td>
-      <code>app.server.start()</code>
+      <code>app.start()</code>
     </td>
     <td>
       Starts a citizen web application server.
@@ -1087,11 +1088,18 @@ This documentation assumes your global app variable name is `app`. Adjust accord
       <code>app.cache.set()</code><br />
       <code>app.cache.get()</code><br />
       <code>app.cache.exists()</code><br />
-      <code>app.cache.clear()</code><br />
-      <code>app.helpers.log()</code>
+      <code>app.cache.clear()</code>
     </td>
     <td>
-      <a href="#helpers">Helpers</a> used internally by citizen, exposed publicly since you might find them useful.
+      <a href="#object-caching">Application cache</a> used internally by citizen, also available for your app.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>app.log()</code>
+    </td>
+    <td>
+      Basic <a href="#logs">console and file logging</a> used by citizen, exported for your use.
     </td>
   </tr>
   <tr>
@@ -1101,7 +1109,7 @@ This documentation assumes your global app variable name is `app`. Adjust accord
       <code>app.views</code>
     </td>
     <td>
-      Contains your supplied patterns for quick access.
+      It's unlikely you'll need to access controllers and views directly, but referencing <code>app.models</code> instead of importing your models manually means less code and benefits from citizen's built-in hot module reloading.
     </td>
   </tr>
   <tr>
@@ -2413,7 +2421,7 @@ Here's an example of how you might set this up in NGINX:
     }
 
 
-## Helpers
+## Object Caching
 
 citizen has helper functions that it uses internally, but might be of use to you, so it exposes them for public use.
 
@@ -2583,6 +2591,10 @@ Clear a cache object using a key or a scope.
     // Clear the entire cache
     app.cache.clear()
 
+
+## Logs
+
+citizen's `log()` helper is exposed for use in your app via `app.log()`.
 
 ### log(options)
 

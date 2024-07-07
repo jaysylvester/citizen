@@ -56,12 +56,10 @@ import { start }                   from './lib/server.js'
 import { end }                     from './lib/session.js'
 
 const cache   = { clear, exists, get, set }
-const helpers = { log }
-const server  = { start }
 const session = { end }
 
 // Allow either:
 // import citizen from 'citizen'
-export default { config, controllers, models, views, cache, helpers, server, session }
+export default { config, controllers, models, views, cache, log, start, session }
 // import { server } from 'citizen'
-export { config, controllers, models, views, cache, helpers, server, session }
+export { config, controllers, models, views, cache, log, start, session }
