@@ -120,9 +120,10 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
           directories: {
             app              : appPath,
             controllers      : appPath + '/controllers',
-            logs             : appPath + '/logs',
+            helpers          : appPath + '/helpers',
             models           : appPath + '/models',
             views            : appPath + '/views',
+            logs             : new URL('../../../logs', import.meta.url).pathname,
             web              : new URL('../../../web', import.meta.url).pathname
           }
         }

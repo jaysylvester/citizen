@@ -6,18 +6,19 @@ import patterns from './init/patterns.js'
 
 
 const controllers = {
-        routes  : await patterns.getRoutes(config.citizen.directories.controllers + '/routes'),
         hooks   : await patterns.getHooks(config.citizen.directories.controllers + '/hooks'),
-        private : await patterns.getPrivate(config.citizen.directories.controllers + '/private')
+        routes  : await patterns.getRoutes(config.citizen.directories.controllers + '/routes')
       },
-      models = await patterns.getModels(config.citizen.directories.models),
-      views  = await patterns.getViews(config.citizen.directories.views)
+      helpers = await patterns.getHelpers(config.citizen.directories.helpers),
+      models  = await patterns.getModels(config.citizen.directories.models),
+      views   = await patterns.getViews(config.citizen.directories.views)
 
 
 global.CTZN = {
   cache       : {},
   config      : config,
   controllers : controllers,
+  helpers     : helpers,
   models      : models,
   views       : views,
   sessions    : {},
@@ -60,6 +61,6 @@ const session = { end }
 
 // Allow either:
 // import citizen from 'citizen'
-export default { config, controllers, models, views, cache, log, start, session }
+export default { config, controllers, helpers, models, views, cache, log, start, session }
 // import { server } from 'citizen'
-export { config, controllers, models, views, cache, log, start, session }
+export { config, controllers, helpers, models, views, cache, log, start, session }
