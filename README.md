@@ -2,6 +2,8 @@ STUFF TO ADD
 - http/https server options (same as Node options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
 - reserved words
 - hot module reloading
+- helpers
+- new directory structure
 
 TODO
 - If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
@@ -62,34 +64,34 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
 
 ### App Directory Structure
 
-    /app
-      /config             // These files are all optional
+    app/
+      config/             // These files are all optional
         citizen.json      // Default config file
         local.json        // Examples of environment configs
         qa.json
         prod.json
-      /controllers
-        /hooks            // Application event hooks (optional)
+      controllers/
+        hooks/            // Application event hooks (optional)
           application.js
           request.js
           response.js
           session.js
-        /routes           // Public route controllers
+        routes/           // Public route controllers
           index.js
-      /logs               // Log files
-        access.log
-        error.log
-      /models             // Models (optional)
+      models/             // Models (optional)
         index.js
-      /views
-        /error            // Default error views
+      views/
+        error/            // Default error views
           404.html
           500.html
           ENOENT.html
           error.html
         index.html        // Default index view
       start.js
-    /web                  // public static assets
+    logs/                 // Log files
+      access.log
+      error.log
+    web/                  // public static assets
 
 
 
@@ -139,15 +141,15 @@ Let's say you want to run citizen on port 8080 in your local dev environment and
 
 This config would extend the default configuration only when running on your local machine. Using this method, you can commit multiple config files from different environments to the same repository.
 
-The database settings would be accessible within your route controllers via `params.config.db`. The `citizen` and `host` nodes are reserved for the framework; create your own node(s) to store your custom settings.
+The database settings would be accessible anywhere within your app via `app.config.db`. The `citizen` and `host` nodes are reserved for the framework; create your own node(s) to store your custom settings.
 
 
 #### Startup configuration
 
-You can also pass your app's configuration directly to citizen through `server.start()`. If there is a config file, the startup config will extend the config file. If there's no config file, the startup configuration extends the default citizen config.
+You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, the startup config will extend the config file. If there's no config file, the startup configuration extends the default citizen config.
 
     // Start an HTTPS server with a PFX file and add a custom namespace for your app's database config
-    server.start({
+    app.start({
       citizen: {
         http: {
           enable: false
@@ -295,9 +297,10 @@ The following represents citizen's default configuration, which is extended by y
         directories: {
           app              : <appDirectory>,
           controllers      : <appDirectory> + '/controllers',
-          logs             : <appDirectory> + '/logs',
+          helpers          : <appDirectory> + '/helpers',
           models           : <appDirectory> + '/models',
           views            : <appDirectory> + '/views',
+          logs             : new URL('../../../logs', import.meta.url).pathname
           web              : new URL('../../../web', import.meta.url).pathname
         }
       }
@@ -1059,7 +1062,7 @@ Here's a complete rundown of citizen's settings and what they do:
     <td>
       You can tell citizen's hot module reloader to watch your own custom modules. This array can contain objects with <code>watch</code> (relative directory path to your modules within the app directory) and <code>assign</code> (the variable to which you assign these modules) properties. Example:
       <br><br>
-      <code>[ { "watch": "/toolbox", "assign": "app.toolbox" } ]</code>
+      <code>[ { "watch": "/util", "assign": "app.util" } ]</code>
     </td>
   </tr>
 </table>
@@ -1117,7 +1120,7 @@ This documentation assumes your global app variable name is `app`. Adjust accord
       <code>app.config</code>
     </td>
     <td>
-      The configuration settings you supplied at startup
+      The configuration settings you supplied at startup. citizen's settings are within <code>app.config.citizen</code>.
     </td>
   </tr>
 </table>
@@ -1929,7 +1932,7 @@ The layout controller handles the includes and renders its own view. Because it'
             controller: '_header',
             action: params.cookie.username ? 'authenticated' : 'handler'
           },
-          _footer: '/footer
+          _footer: '/_footer
         }
       }
     }
@@ -2161,7 +2164,7 @@ When caching an include controller action, the route pathname pointing to that i
 
     export const handler = async (context) => {
       return: {
-        // Two different versions of this include will be cached becaues the URLs are unique
+        // Two different versions of the _header include will be cached becaues the URLs are unique
         include: context.authenticated ? '/_header/authenticated/true' : '/_header'
       }
     }
@@ -2310,7 +2313,7 @@ If it's a multipart form containing a file, the form object passed to your contr
       }
     }
 
-File contents are presented in binary format, so you'll need to use `Buffer.from(fileField1.binary, 'binary')` to create the actual file for manipulation/storage.
+File contents are presented in binary format, so you'll need to use `Buffer.from(fileField1.binary, 'binary')` to create the actual file for storage.
 
 You can pass global form settings via `citizen.form` in the config or at the controller action level via controller config (see below).
 
@@ -2319,27 +2322,13 @@ Use the `maxPayloadSize` config to limit form uploads. The following config sets
     {
       "citizen": {
         "forms": {
-          "maxPayloadSize": 500000  // Bytes, so 0.5MB
+          "maxPayloadSize": 500000  // 0.5MB
         }
       }
     }
 
 The `maxPayloadSize` option includes text inputs and files in a multipart form in its calculations. citizen throws an error if form data exceeds this amount.
 
-You can also set options for individual form actions within controllers using the `config` export. These settings extend and override the global form settings.
-
-    // image upload controller
-
-    export const config = {
-      controller: {
-        forms: {
-          // Options for the submit() controller action
-          upload: {
-            maxPayloadSize: 10000000  // 10MB
-          }
-        }
-      }
-    }
 
 
 ## Application Event Hooks
@@ -2423,7 +2412,7 @@ Here's an example of how you might set this up in NGINX:
 
 ## Object Caching
 
-citizen has helper functions that it uses internally, but might be of use to you, so it exposes them for public use.
+citizen has a built-in application cache where you can store basically anything: strings, objects, buffers, static files, etc.
 
 
 ### cache.set(options)
@@ -2594,7 +2583,7 @@ Clear a cache object using a key or a scope.
 
 ## Logs
 
-citizen's `log()` helper is exposed for use in your app via `app.log()`.
+citizen's `log()` function is exposed for use in your app via `app.log()`.
 
 ### log(options)
 
@@ -2712,8 +2701,8 @@ Resulting file structure:
           ENOENT.html
           error.html
         index.html
-      logs/
       start.js
+    logs/
     web/
 
 Run `node node_modules/citizen/util/scaffold skeleton -h` for options.

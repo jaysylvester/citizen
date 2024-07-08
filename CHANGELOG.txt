@@ -15,7 +15,7 @@
     * Client (400) and server (500) errors can be enabled/disabled separately
   * citizen now uses the HTTP "Accept" header to determine the response format
     * Supported response types are "text/html", "text/plain", "application/json", and "application/javascript" (JSON-P)
-  * citizen checks for the logs directory on startup and attempts to create it if it doesn't exist
+  * app.log() will attempt to create the logs directory if it doesn't already exist
   * Handling of 500 errors can be configured
     * "capture" (default) will write the error to the log, render an error view to the client, and keep the process/server running
     * "exit" will send a 500 to the client without rendering a view, write the error to the log, throw the error, then exit the process
