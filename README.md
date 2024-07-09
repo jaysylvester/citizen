@@ -1,9 +1,6 @@
 STUFF TO ADD
 - http/https server options (same as Node options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
 - reserved words
-- hot module reloading
-- helpers
-- new directory structure
 
 TODO
 - If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
@@ -27,7 +24,7 @@ Use citizen as the foundation for a traditional server-side web application, mod
 - Powerful code reuse options via controller-based includes and chaining
 - HTML, JSON, JSONP, and plain text served from the same pattern
 - ES module and Node (CommonJS) module support
-- Hot module reloading in development mode
+- Hot module replacement in development mode
 - View rendering using template literals or any engine supported by [consolidate](https://github.com/tj/consolidate.js)
 - Few direct dependencies
 
@@ -78,6 +75,7 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
           session.js
         routes/           // Public route controllers
           index.js
+      helpers/            // Utility modules (optional)
       models/             // Models (optional)
         index.js
       views/
@@ -1088,6 +1086,32 @@ This documentation assumes your global app variable name is `app`. Adjust accord
   </tr>
   <tr>
     <td>
+      <code>app.config</code>
+    </td>
+    <td>
+      The configuration settings you supplied at startup. citizen's settings are within <code>app.config.citizen</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>app.controllers</code><br />
+      <code>app.models</code><br />
+      <code>app.views</code>
+    </td>
+    <td>
+      It's unlikely you'll need to access controllers and views directly, but referencing <code>app.models</code> instead of importing your models manually benefits from citizen's built-in <a href="#hot-module-replacement">hot module replacement</a>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>app.helpers</code>
+    </td>
+    <td>
+      All <a href="#helpers">helper/utility modules</a> placed in <code>app/helpers/</code> are imported into the helpers object.
+    </td>
+  </tr>
+  <tr>
+    <td>
       <code>app.cache.set()</code><br />
       <code>app.cache.get()</code><br />
       <code>app.cache.exists()</code><br />
@@ -1103,24 +1127,6 @@ This documentation assumes your global app variable name is `app`. Adjust accord
     </td>
     <td>
       Basic <a href="#logs">console and file logging</a> used by citizen, exported for your use.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>app.controllers</code><br />
-      <code>app.models</code><br />
-      <code>app.views</code>
-    </td>
-    <td>
-      It's unlikely you'll need to access controllers and views directly, but referencing <code>app.models</code> instead of importing your models manually means less code and benefits from citizen's built-in hot module reloading.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>app.config</code>
-    </td>
-    <td>
-      The configuration settings you supplied at startup. citizen's settings are within <code>app.config.citizen</code>.
     </td>
   </tr>
 </table>
@@ -1186,7 +1192,7 @@ All views for a given route controller can exist in the `app/views/` directory, 
         routes/
           article.js
       models/
-        data.js
+        article.js
       views/
         article/
           article.html  // The default view
@@ -1274,7 +1280,7 @@ Using the above URL parameters, I can retrieve the article content from the mode
 
     export const handler = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.article.get({
         article: params.url.article,
         page: params.url.page
       })
@@ -1299,11 +1305,11 @@ Alternate actions can be requested using the `action` URL parameter. For example
 
     export const handler = async (params) => {
       // Get the article
-      const article = await app.models.data.getArticle({
+      const article = await app.models.article.get({
         article: params.url.article,
         page: params.url.page
       })
-      const author = await app.models.data.getAuthor({
+      const author = await app.models.article.getAuthor({
         author: article.author
       })
 
@@ -1318,7 +1324,7 @@ Alternate actions can be requested using the `action` URL parameter. For example
 
     export const edit = async (params) => {
       // Get the article
-      const article = await app.models.data.getArticle({
+      const article = await app.models.article.get({
         article: params.url.article,
         page: params.url.page
       })
@@ -1339,6 +1345,16 @@ You place any data you want to pass back to citizen within the `return` statemen
 ### Models
 
 Models are optional modules and their structure is completely up to you. citizen doesn't talk to your models directly; it only stores them in `app.models` for your convenience. You can also import them manually into your controllers if you prefer.
+
+The following function, when placed in `app/models/article.js`, will be accessible in your app via `app.models.article.get()`:
+
+    // app.models.article.get()
+    export const get = async (id) => {
+      
+      let article = // do some stuff to retrieve the article from the db using the provided ID, then...
+
+      return article
+    }
 
 
 
@@ -1439,7 +1455,30 @@ You can force a global response type across all requests within an [event hook](
 
 
 
-## Handling Errors
+## Helpers
+
+Helpers are optional utility modules and their structure is completely up to you. They're stored in `app.helpers` for your convenience. You can also import them manually into your controllers and models if you prefer.
+
+The following function, when placed in `app/helpers/validate.js`, will be accessible in your app via `app.helpers.validate.email()`:
+
+    // app.helpers.validate.email()
+    export const email = (address) => {
+      const emailRegex = new RegExp(/[a-z0-9!##$%&''*+/=?^_`{|}~-]+(?:\.[a-z0-9!##$%&''*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/i)
+
+      return emailRegex.test(address)
+    }
+
+
+
+## Hot Module Replacement
+
+citizen stores all modules in the `app` scope not just for easy retrieval, but to support hot module replacement (HMR). When you save changes to any module or view in development mode, citizen clears the existing module import and re-imports that module in real time.
+
+You'll see a console log noting the affected file, and your app will continue to run. No need to restart.
+
+
+
+## Error Handling
 
 citizen does its best to handle errors gracefully without exiting the process. The following controller action will throw an error, but the server will respond with a 500 and keep running:
 
@@ -1456,7 +1495,7 @@ You can also throw an error manually and customize the error message:
 
     export const handler = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.article.get({
         article: params.url.article,
         page: params.url.page
       })
@@ -1521,7 +1560,7 @@ By default, the server renders the view whose name matches that of the controlle
     // article controller
 
     export const edit = async (params) => {
-      const article = await app.models.article.getArticle({
+      const article = await app.models.article.get({
         article: params.url.article,
         page: params.url.page
       })
@@ -1735,7 +1774,7 @@ When the article controller is fired, it has to tell citizen which includes it n
 
     export const handler = async (params) => {
       // Get the article
-      const article = await app.models.article.getArticle({
+      const article = await app.models.article.get({
         article: params.url.article,
         page: params.url.page
       })
@@ -2702,7 +2741,6 @@ Resulting file structure:
           error.html
         index.html
       start.js
-    logs/
     web/
 
 Run `node node_modules/citizen/util/scaffold skeleton -h` for options.
