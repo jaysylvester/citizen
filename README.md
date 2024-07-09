@@ -1,16 +1,8 @@
-STUFF TO ADD
-- http/https server options (same as Node options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
-- reserved words (all begin with ctzn_, so avoid that and you'll be fine)
-
-TODO
-- If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
-
-
 # citizen
 
-citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable web sites instead of digging around Node's guts or cobbling together a Jenga tower made out of 20 different packages.
+citizen is an MVC-based web application framework designed for people interested in quickly building fast, scalable web sites instead of digging around Node's guts or cobbling together a wobbly Jenga tower made out of 50 different packages.
 
-Use citizen as the foundation for a traditional server-side web application, modular single-page application (SPA), or RESTful API.
+Use citizen as the foundation for a traditional server-side web application, a modular single-page application (SPA), or a RESTful API.
 
 
 ## Benefits
@@ -19,13 +11,13 @@ Use citizen as the foundation for a traditional server-side web application, mod
 - Convention over configuration, but still flexible
 - Zero-configuration server-side routing with SEO-friendly URLs
 - Server-side session management
-- Caching for requests, controller actions, objects, and static files
+- Key/value store: cache requests, controller actions, objects, and static files
 - Simple directives for managing cookies, sessions, redirects, caches, and more
-- Powerful code reuse options via controller-based includes and chaining
+- Powerful code reuse options via includes (components) and chaining
 - HTML, JSON, JSONP, and plain text served from the same pattern
 - ES module and Node (CommonJS) module support
 - Hot module replacement in development mode
-- View rendering using template literals or any engine supported by [consolidate](https://github.com/tj/consolidate.js)
+- View rendering using template literals or any engine supported by [consolidate](https://github.com/ladjs/consolidate)
 - Few direct dependencies
 
 Have questions, suggestions, or contributions? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
@@ -40,7 +32,7 @@ I use citizen on [my personal site](https://jaysylvester.com) and [originaltrilo
 
 ## Quick Start
 
-These commands will create a new directory for your web app, install citizen, use its scaffolding utility to create the app's skeleton, and start citizen with the web server on port 3000:
+These commands will create a new directory for your web app, install citizen, use its scaffolding utility to create the app's skeleton, and start the web server:
 
     $ mkdir myapp && cd myapp
     $ npm install citizen
@@ -49,7 +41,7 @@ These commands will create a new directory for your web app, install citizen, us
 
 If everything went well, you'll see confirmation in the console that the web server is running. Go to http://127.0.0.1:3000 in your browser and you'll see a bare index template.
 
-citizen uses template literals as its default template engine. You can install [consolidate.js](https://github.com/tj/consolidate.js), update the [template config](#config-settings), and modify the default view templates accordingly.
+citizen uses [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) in its default template engine. You can install [consolidate](https://github.com/ladjs/consolidate), update the [template config](#config-settings), and modify the default view templates accordingly.
 
 For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
 
@@ -131,9 +123,9 @@ Let's say you want to run citizen on port 8080 in your local dev environment and
         }
       },
       "db": {
-        server:   "localhost",  // config.db.server
-        username: "dbuser",     // config.db.username
-        password: "dbpassword"  // config.db.password
+        server:   "localhost",  // app.config.db.server
+        username: "dbuser",     // app.config.db.username
+        password: "dbpassword"  // app.config.db.password
       }
     }
 
@@ -144,9 +136,9 @@ The database settings would be accessible anywhere within your app via `app.conf
 
 #### Startup configuration
 
-You can also pass your app's configuration directly to citizen through `app.start()`. If there is a config file, the startup config will extend the config file. If there's no config file, the startup configuration extends the default citizen config.
+You can set your app's configuration at startup through `app.start()`. If there is a config file, the startup config will extend the config file. If there's no config file, the startup configuration extends the default citizen config.
 
-    // Start an HTTPS server with a PFX file and add a custom namespace for your app's database config
+    // Start an HTTPS server with a PFX file
     app.start({
       citizen: {
         http: {
@@ -156,11 +148,6 @@ You can also pass your app's configuration directly to citizen through `app.star
           enable: true,
           pfx:    '/absolute/path/to/site.pfx'
         }
-      },
-      db: {
-        server:   "localhost",  // app.config.db.server
-        username: "dbuser",     // app.config.db.username
-        password: "dbpassword"  // app.config.db.password
       }
     })
 
@@ -304,16 +291,15 @@ The following represents citizen's default configuration, which is extended by y
       }
     }
 
-#### HTTPS
-
-When starting an HTTPS server, in addition to the `hostname` and `port` options, citizen takes the same options as [Node's https.createServer()](http://nodejs.org/api/https.html#https_https_createserver_options_requestlistener) (which takes the same options as [tls.createServer()](http://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener)).
-
-The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
 
 
 #### Config settings
 
-Here's a complete rundown of citizen's settings and what they do:
+Here's a complete rundown of citizen's settings and what they do.
+
+When starting a server, in addition to citizen's `http` and `https` config options, you can provide the same options as Node's [http.createServer()](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener) and [https.createServer()](https://nodejs.org/api/https.html#httpscreateserveroptions-requestlistener).
+
+The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
 
 <table>
   <caption>citizen config options</caption>
@@ -1179,11 +1165,11 @@ citizen relies on a simple model-view-controller convention. The article pattern
         routes/
           article.js
       models/
-        article.js
+        article.js    // Optional, name it whatever you want
       views/
         article.html  // The default view file name should match the controller name
 
-At least one route controller is required for a given URL, and a route controller's default view file must share its name.
+At least one route controller is required for a given URL, and a route controller's default view file must share its name. Models are optional.
 
 All views for a given route controller can exist in the `app/views/` directory, or they can be placed in a directory whose name matches that of the controller for cleaner organization:
 
@@ -1207,7 +1193,7 @@ Models and views are optional and don't necessarily need to be associated with a
 
 ### Route Controllers
 
-A citizen route controller is just a Node module. Each route controller requires at least one export to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
+A citizen route controller is just a JavaScript module. Each route controller requires at least one export to serve as an action for the requested route. The default action should be named `handler()`, which is called by citizen when no action is specified in the URL.
 
     // Default route controller action
 
@@ -1220,17 +1206,17 @@ A citizen route controller is just a Node module. Each route controller requires
       }
     }
 
-The citizen server calls `handler()` after it processes the initial request and passes it 4 arguments: an object containing the parameters of the request, the Node.js `request` and `response` objects, and the current request's context.
+The citizen server calls `handler()` after it processes the initial request and passes it 4 arguments: a `params` object containing the parameters of the request, the Node.js `request` and `response` objects, and the current request's context.
 
 <table>
   <caption>Properties of the <code>params</code> object</caption>
   <tr>
     <td><code>config</code></td>
-    <td>Your app's configuration, including any customizations for the current controller action</td>
+    <td>Your app's configuration, including any <a href="#controller-configuration">customizations</a> for the current controller action</td>
   </tr>
   <tr>
     <td><code>route</code></td>
-    <td>Details of the requested route, such as the requested URL and the name of the route controller</td>
+    <td>Details of the requested route, such as the URL and the name of the route controller</td>
   </tr>
   <tr>
     <td><code>url</code></td>
@@ -1242,7 +1228,7 @@ The citizen server calls `handler()` after it processes the initial request and 
   </tr>
   <tr>
     <td><code>payload</code></td>
-    <td>Data collected from a PUT</td>
+    <td>The raw request payload</td>
   </tr>
   <tr>
     <td><code>cookie</code></td>
@@ -1732,9 +1718,9 @@ You can also set headers directly using Node's `response.setHeader()` method, bu
 
 
 
-### Include Controllers
+### Includes (Components)
 
-citizen lets you use complete MVC patterns as includes. These includes are more than just chunks of code that you can reuse because each has its own route controller, model, and view(s). Includes can be used to perform an action or return a complete rendered view.
+citizen lets you use complete MVC patterns as includes, which are citizen's version of components. Each has its own route controller, model, and view(s). Includes can be used to perform an action or return a complete rendered view. Any route controller can be an include.
 
 Let's say our article pattern's template has the following contents. The head section contains dynamic meta data, and the header's content changes depending on whether the user is logged in or not:
 
