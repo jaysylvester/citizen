@@ -1,6 +1,6 @@
 STUFF TO ADD
 - http/https server options (same as Node options): keepAliveTimeout, maxHeadersCount, requestTimeout, timeout
-- reserved words
+- reserved words (all begin with ctzn_, so avoid that and you'll be fine)
 
 TODO
 - If a controller doesn't have a view, don't throw an error. Log a warning. Setting the view directive to false shouldn't be required.
@@ -1065,7 +1065,7 @@ Here's a complete rundown of citizen's settings and what they do:
   </tr>
 </table>
 
-citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher, so `watcher` for both logs and development mode also accept any option allowed by chokidar.
+citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher, so `watcher` option for both logs and development mode also accepts any option allowed by chokidar.
 
 
 These settings are exposed publicly via `app.config.host` and `app.config.citizen`.
@@ -1629,6 +1629,10 @@ Once cookies are set on the client, they're available in `params.cookie` within 
 
 Cookie variables you set within your controller aren't immediately available within the `params.cookie` scope. citizen has to receive the context from the controller and send the response to the client first, so use a local instance of the variable if you need to access it during the same request.
 
+#### Reserved Words
+
+All cookies set by citizen start with the `ctzn_` prefix to avoid collisions. Don't start your cookie names with `ctzn_` and you should have no problems.
+
 #### Proxy Header
 
 If you use citizen behind a proxy, such as NGINX or Apache, make sure you have an HTTP `Forwarded` header in your server configuration so citizen's handling of secure cookies works correctly.
@@ -1668,6 +1672,10 @@ To forcibly clear and expire the current user's session:
         expires: 'now'
       }
     }
+
+#### Reserved Words
+
+All session variables set by citizen start with the `ctzn_` prefix to avoid collisions. Don't start your session variable names with `ctzn_` and you should have no problems.
 
 
 ### Redirects

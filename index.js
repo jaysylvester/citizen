@@ -21,32 +21,7 @@ global.CTZN = {
   helpers     : helpers,
   models      : models,
   views       : views,
-  sessions    : {},
-  // citizen throws an error if apps use any of the following variable names because they're reserved for the framework
-  reserved    : {
-    cookie: [
-      'ctzn_referer',
-      'ctzn_session_id'
-    ],
-    session: [
-      'cors',
-      'ctzn_referer',
-      'expires',
-      'id',
-      'started',
-      'timer'
-    ],
-    url: [
-      'action',
-      'callback',
-      'direct',
-      'ctzn_debug',
-      'ctzn_debugColors',
-      'ctzn_debugDepth',
-      'ctzn_debugShowHidden',
-      'ctzn_inspect'
-    ]
-  }
+  sessions    : {}
 }
 
 
