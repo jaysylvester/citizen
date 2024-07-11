@@ -1153,6 +1153,9 @@ citizen also lets you optionally insert relevant content into your URLs, like so
 
 This SEO content must always follow the controller name and precede any name/value pairs, including the controller action. You can access it generically via `route.descriptor` or within the `url` scope (`url.article` in this case), which means you can use it as a unique identifier (more on URL parameters in the [Route Controllers section](#route-controllers)).
 
+### Reserved words
+
+The URL parameters `action` and `direct` are reserved for the framework, so don't use them for your app.
 
 
 

@@ -1,7 +1,7 @@
 [1.0.0]
   New features:
   * ES module support
-  * Hot module reloading works with the app cache enabled
+  * Hot module replacement works with the app cache enabled
     * Caching is now enabled by default to maintain consistency between development and production environments, but can still be disabled manually via the config for debugging purposes
   * Route controllers and actions have their own config that extends the global config
 
@@ -47,8 +47,6 @@
   * The /direct/true URL parameter (formerly /type/direct) is no longer required to bypass the controller chain
     * Follow the partial naming convention by putting an underscore (_) at the beginning of the controller file name and when requested from the client it will be rendered directly
     * /direct/true is still available to force controllers to bypass the chain
-  * app.start() is now app.server.start()
-  * app.log() is now app.helpers.log()
   * The server requestStart event now fires before checking if the controller exists
     * This is logically consistent with the intention behind requestStart (i.e., it fires at the start of the request)
     * This allows you to incorporate logic into requestStart even if the requested controller doesn't exist (custom 404 handling, for example)
@@ -67,7 +65,6 @@
     * It never worked reliably, and this sort of thing should really be handled by a proxy anyway
   * The "content" directive, which contains all data local to the controller/view, has been renamed to "local"
     * Local variables within views should reference the local namespace (local.myVar)
-  * The "cookie" and "header" directives have been renamed to "cookies" and "headers" to better reflect that multiple cookies and headers can be created
   * The "legalFormat" config option is now "contentTypes"
     * "contentTypes" is an array that lists available output MIME types ("text/html", "text/plain", "application/json", "application/javascript")
   * The "legalFormat" directive has been removed
@@ -87,8 +84,7 @@
   * The file watcher options have changed to match chokidar's options, so adjust accordingly
   * The ctzn_debug URL parameter is now a boolean that enables debug output in the view
     * Use the ctzn_inspect URL parameter to specify the variable you want to dump to the view
-  * The undocumented fallbackController option has been removed because there are better ways to handle a nonexistent controller in the app itself
-  * cache.exists() has been removed, just use cache.get() and check for truthiness
+  * The undocumented fallbackController option has been removed because there are better ways to handle a nonexistent controller in the app itself (citizen now returns a 404 by default)
 
 [0.9.2]
   * Moved commander to dependencies
