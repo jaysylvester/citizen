@@ -4,6 +4,8 @@ citizen is an MVC-based web application framework designed for people interested
 
 Use citizen as the foundation for a traditional server-side web application, a modular single-page application (SPA), or a RESTful API.
 
+**There are numerous breaking changes in the 1.0.x release.** Please consult the changelog for an itemized list and review this updated documentation thoroughly.
+
 
 ## Benefits
 
@@ -19,8 +21,6 @@ Use citizen as the foundation for a traditional server-side web application, a m
 - Hot module replacement in development mode
 - View rendering using template literals or any engine supported by [consolidate](https://github.com/ladjs/consolidate)
 - Few direct dependencies
-
-Have questions, suggestions, or contributions? [Get in touch](https://jaysylvester.com/contact). Pull requests are welcome.
 
 Clearly, this is way more content than any NPM/Github README should contain. I'm working on a site for this documentation.
 
