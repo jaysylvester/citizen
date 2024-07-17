@@ -72,8 +72,9 @@
 * The `format` URL parameter (/format/json, etc.) has been removed
   * To request different output formats, the client must set the HTTP `Accept` request header to the desired content type (currently supported: `text/html`, `text/plain`, `application/json`, `application/javascript`)
 * The request and response objects have been separated from the params object and are now passed into controllers as separate arguments
-* params.route no longer contains the view, but it was wrong half the time anyway
-  * You can reference params.route.chain for all controllers in the chain, including their actions, views, and context
+* `params.route` no longer contains the view, but it was wrong half the time anyway
+  * You can reference `params.route.chain` for all controllers in the chain, including their actions, views, and context
+* `params.route.parsed.path` is now `params.route.parsed.pathname` or `params.route.pathname`
 * Controller action CORS configuration has been incorporated into the new controller/action configuration feature
 * The `output` URL parameter for JSON requests has been removed
   * It added processing time and made view rendering more complex

@@ -1496,7 +1496,7 @@ You can also throw an error manually and customize the error message:
             article: article
           }
         }
-      // If the article doesn't exist, throw an error
+      // If the article doesn't exist, throw a 404
       } else {
         let err = new Error('Not found.')
         // The HTTP status code defaults to 500, but you can specify your own
@@ -1505,6 +1505,8 @@ You can also throw an error manually and customize the error message:
         throw err
       }
     }
+
+Note that `params.route.controller` is updated from the requested controller to `error` if you reference it within your app.
 
 Errors are returned in the format requested by the route. If you request [JSON](#json-and-jsonp) and the route throws an error, the error will be in JSON format.
 
