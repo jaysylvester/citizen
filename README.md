@@ -1508,7 +1508,7 @@ You can also throw an error manually and customize the error message:
 
 Note that `params.route.controller` is updated from the requested controller to `error` if you reference it within your app.
 
-Errors are returned in the format requested by the route. If you request [JSON](#json-and-jsonp) and the route throws an error, the error will be in JSON format.
+Errors are returned in the format requested by the route. If you request [JSON](#json-and-json-p) and the route throws an error, the error will be in JSON format.
 
 The app skeleton created by the [scaffold utility](#scaffold) includes optional error view templates for common client and server errors, but you can create templates for any HTTP error code.
 
