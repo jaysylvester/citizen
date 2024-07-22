@@ -10,7 +10,7 @@ const getHooks = async (hookPath) => {
       modelFiles = [],
       regex = new RegExp(/.*\.(c|m)?(js)$/)
 
-  console.log('Importing event hooks:\n')
+  console.log('\nImporting event hooks:\n')
 
   try {
     modelFiles = fs.readdirSync(hookPath)
