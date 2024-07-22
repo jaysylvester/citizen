@@ -1,6 +1,6 @@
 {
   "name": "citizen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Node.js MVC web application framework. Includes routing, serving, caching, session management, and other helpful tools.",
   "keywords": [
     "api server",
