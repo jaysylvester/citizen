@@ -1,6 +1,7 @@
 // app start
 
-[useStrict]
-global.app = require('citizen')
+import citizen from 'citizen'
+
+global.app = citizen
 
 app.start()

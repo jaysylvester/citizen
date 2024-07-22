@@ -10,7 +10,15 @@
       <p>What can you do? These things happen.</p>
       <pre>
         <code>
-          {{error.inspect}}
+          ${local.error.errorCode}
+
+          ${local.error.statusCode}
+
+          ${local.error.label}
+
+          ${local.error.message}
+          
+          ${local.error.stack}
         </code>
       </pre>
     </main>

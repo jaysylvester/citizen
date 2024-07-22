@@ -1,21 +1,17 @@
 // request events
 
 // This module optionally exports the following methods:
-// start(params, context, emitter) - Called at the beginning of every request
-// end(params, context, emitter) - Called at the end of every request
+// start(params, request, response, context) - Called at the beginning of every request
+// end(params, request, response, context) - Called at the end of every request
 
 // If you have no use for this file, you can delete it.
 
-[useStrict]
-module.exports = {
-  start: start,
-  end: end
+
+export const start = (params, request, response, context) => {
+  // Anything you want to happen at the beginning of a request
 }
 
-async function start(params, context) {
-  return
-}
 
-async function end(params, context) {
-  return
+export const end = (params, request, response, context) => {
+  // Anything you want to happen at the end of a request
 }

@@ -1,21 +1,16 @@
 // session events
 
 // This module optionally exports the following methods:
-// start(params, context, emitter) - Called at the beginning of every user session
-// end(params, context, emitter) - Called at the end of every user session
+// start(params, request, response, context) - Called at the start of every user session
+// end(session, context) - Called when any user session expires
 
 // If you have no use for this file, you can delete it.
 
-[useStrict]
-module.exports = {
-  start: start,
-  end: end
+
+export const start = (params, request, response, context) => {
+  // Anything you want to happen when a new session starts
 }
 
-async function start(params, context) {
-  return
-}
-
-async function end(params, context) {
-  return
+export const end = (session) => {
+  // Anything you want to happen when a session ends. The "session" argument contains the properties of the expired session.
 }

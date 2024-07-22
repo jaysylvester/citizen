@@ -1,44 +1,47 @@
 {
-  "name":           "citizen",
-  "version":        "0.9.2",
-  "description":    "An MVC-based web application framework. Includes routing, serving, caching, and other helpful tools.",
-  "keywords":       [
-                      "api server",
-                      "application server",
-                      "cache",
-                      "caching",
-                      "citizen",
-                      "framework",
-                      "mvc",
-                      "server side",
-                      "router",
-                      "routing",
-                      "view rendering",
-                      "web application server",
-                      "web server"
-                    ],
+  "name": "citizen",
+  "version": "1.0.0",
+  "description": "Node.js MVC web application framework. Includes routing, serving, caching, session management, and other helpful tools.",
+  "keywords": [
+    "api server",
+    "application server",
+    "cache",
+    "caching",
+    "citizen",
+    "framework",
+    "mvc",
+    "server side",
+    "router",
+    "routing",
+    "view rendering",
+    "web application server",
+    "web server"
+  ],
   "author": {
-    "name":         "Jay Sylvester",
-    "email":        "jay@jaysylvester.com",
-    "url":          "https://jaysylvester.com"
+    "name": "Jay Sylvester",
+    "email": "jay@jaysylvester.com",
+    "url": "https://jaysylvester.com"
   },
   "repository": {
-    "type":         "git",
-    "url":          "https://github.com/jaysylvester/citizen"
+    "type": "git",
+    "url": "https://github.com/jaysylvester/citizen"
   },
   "bugs": {
-    "url":          "https://github.com/jaysylvester/citizen/issues"
+    "url": "https://github.com/jaysylvester/citizen/issues"
   },
-  "main":           "./lib/citizen.js",
+  "main": "./index.js",
+  "type": "module",
   "dependencies": {
-    "chokidar":     "^3.4.x",
-    "commander":    "^7.2.x",
-    "consolidate":  "^0.16.x",
-    "formidable":   "^1.2.x",
-    "handlebars":   "^4.7.x"
+    "chokidar"  : "^3.6.x",
+    "commander" : "^12.0.x"
+  },
+  "devDependencies": {
+    "@eslint/js" : "^9.0.0",
+    "eslint"     : "^9.0.0",
+    "globals"    : "^15.0.0"
   },
   "engines": {
-    "node":         ">=12.9.x"
+    "node": ">=16.0.0"
   },
-  "license":        "MIT"
+  "license": "MIT"
 }
