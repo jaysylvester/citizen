@@ -1,3 +1,7 @@
+# 1.0.1
+* Fixed an unhandled promise rejection caused by trying to set session variables when no session is present
+* Minor README and development log tweaks
+
 # 1.0.0
 
 ## New features:
