@@ -9,7 +9,6 @@ Use citizen as the foundation for a traditional server-side web application, a m
 
 ## Benefits
 
-- High performance and stability
 - Convention over configuration, but still flexible
 - Zero-configuration server-side routing with SEO-friendly URLs
 - Server-side session management
