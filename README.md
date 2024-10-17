@@ -121,7 +121,7 @@ The config directory is optional and contains configuration files in JSON format
 
 Let's say you want to run citizen on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or dev.json, whatever you want) with the following:
 
-```json
+```js
 {
   "host":       "My-MacBook-Pro.local",
   "citizen": {
@@ -828,7 +828,7 @@ The app skeleton created by the [scaffold utility](#scaffold) includes optional 
 
 citizen's default error config is `capture`, which attempts graceful recovery. If you'd prefer the process exit after an error, change `config.citizen.errors` to `exit`.
 
-  ```json
+```js
 // config file: exit the process after an error
 {
   "citizen": {
@@ -1761,7 +1761,7 @@ You can pass global form settings via `citizen.form` in the config or at the con
 
 Use the `maxPayloadSize` config to limit form uploads. The following config sets the `maxFieldsSize` to 512k:
 
-```json
+```js
 {
   "citizen": {
     "forms": {
@@ -2091,7 +2091,7 @@ If you set `"mode": "development"` in your config file, citizen dumps all major 
 
 You can also dump the request context to the view by setting `development.debug.view` in your config file to `true`, or use the `ctzn_debug` URL parameter on a per-request basis:
 
-```json
+```js
 // config file: always dumps debug output in the view
 {
   "citizen": {
@@ -2116,7 +2116,7 @@ http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params
 
 The debug output traverses objects 4 levels deep by default. To display deeper output, use the `development.debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
 
-```json
+```js
 // config file: debug 4 levels deep
 {
   "citizen": {
@@ -2129,7 +2129,7 @@ The debug output traverses objects 4 levels deep by default. To display deeper o
 }
 
 // URL
-http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_debugDepth/4
+// http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_debugDepth/4
 ```
 
 In `development` mode, you must specify the `ctzn_debug` URL parameter to display debug output. Debug output is disabled in production mode.
@@ -2229,7 +2229,7 @@ http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params
 
 The debug output traverses objects 4 levels deep by default. To display deeper output, use the `development.debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
 
-```json
+```js
 // config file: debug 4 levels deep
 {
   "citizen": {
@@ -2242,7 +2242,7 @@ The debug output traverses objects 4 levels deep by default. To display deeper o
 }
 
 // URL
-http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_debugDepth/4
+// http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_debugDepth/4
 ```
 
 In `development` mode, you must specify the `ctzn_debug` URL parameter to display debug output. Debug output is disabled in production mode.
