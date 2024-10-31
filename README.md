@@ -4,7 +4,7 @@ citizen is an MVC-based web application framework designed for people interested
 
 Use citizen as the foundation for a traditional server-side web application, a modular single-page application (SPA), or a RESTful API.
 
-**There are numerous breaking changes in the 1.0.x release.** Please consult the changelog for an itemized list and review this updated documentation thoroughly.
+**There were numerous breaking changes in the transition from 0.9.x to 1.0.x.** Please consult the changelog for an itemized list and review this updated documentation thoroughly.
 
 
 ## Benefits
@@ -152,10 +152,10 @@ You can set your app's configuration at startup through `app.start()`. If there 
 app.start({
   citizen: {
     http: {
-      enable: false
+      enabled: false
     },
     https: {
-      enable: true,
+      enabled: true,
       pfx:    '/absolute/path/to/site.pfx'
     }
   }
@@ -315,6 +315,756 @@ When starting a server, in addition to citizen's `http` and `https` config optio
 
 The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
 
+<table>
+  <caption>citizen config options</caption>
+  <thead>
+    <tr>
+      <th>
+        Setting
+      </th>
+      <th>
+        Type
+      <th>
+        Default Value
+      </th>
+      <th>
+        Description
+      </th>
+    </tr>
+  </thead>
+  <tr>
+    <td>
+      <code>host</code>
+    </td>
+    <td>
+        String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is not to be confused with the HTTP server <code>hostname</code> (see below).
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      citizen
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>mode</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
+    </td>
+    <td>
+      The application mode determines certain runtime behaviors. Possible values are <code>production</code> and <code>development</code> Production mode silences console logs. Development mode enables verbose console logs, URL debug options, and hot module replacement.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>global</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>app</code>
+    </td>
+    <td>
+      The convention for initializing citizen in the start file assigns the framework to a global variable. The default, which you'll see referenced throughout the documentation, is <code>app</code>. You can change this setting if you want to use another name.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>contentTypes</code>
+    </td>
+    <td>
+      Array
+    </td>
+    <td>
+      <code>
+        [
+          'text/html',
+          'text/plain',
+          'application/json',
+          'application/javascript'
+        ]
+      </code>
+    </td>
+    <td>
+      An allowlist of response formats for each request, based on the client's <code>Accept</code> request header. When configuring available formats for individual route controllers or actions, the entire array of available formats must be provided.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>errors</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>capture</code>
+    </td>
+    <td>
+      When your application throws an error, the default behavior is for citizen to try to recover from the error and keep the application running. Setting this option to <code>exit</code> tells citizen to log the error and exit the process instead.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>templateEngine</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>templateLiterals</code>
+    </td>
+    <td>
+      citizen uses [template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) syntax for view rendering by default. Optionally, you can install <a href="https://github.com/tj/consolidate.js">consolidate</a> and use any engine it supports (for example, install Handlebars and set <code>templateEngine</code> to <code>handlebars</code>).
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>urlPath</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>/</code>
+    </td>
+    <td>
+      Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      http
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+        Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Enables the HTTP server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+        String
+    </td>
+    <td>
+      <code>127.0.0.1</code>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTP. You can specify an empty string to accept requests at any hostname.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>port</code>
+    </td>
+    <td>
+        Number
+    </td>
+    <td>
+      <code>3000</code>
+    </td>
+    <td>
+      The port number on which citizen's HTTP server listens for requests.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      https
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+        Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables the HTTPS server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>hostname</code>
+    </td>
+    <td>
+        String
+    </td>
+    <td>
+      <code>127.0.0.1</code>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTPS. The default is localhost, but you can specify an empty string to accept requests at any hostname.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>port</code>
+    </td>
+    <td>
+        Number
+    </td>
+    <td>
+      <code>443</code>
+    </td>
+    <td>
+      The port number on which citizen's HTTPS server listens for requests.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>secureCookies</code>
+    </td>
+    <td>
+        Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      By default, all cookies set within an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>connectionQueue</code>
+    </td>
+    <td>
+        Integer
+    </td>
+    <td>
+      <code>null</code>
+    </td>
+    <td>
+      The maximum number of incoming requests to queue. If left unspecified, the operating system determines the queue limit.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      sessions
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID within the application server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>lifespan</code>
+    </td>
+    <td>
+      Positive Integer
+    </td>
+    <td>
+      <code>20</code>
+    </td>
+    <td>
+      If sessions are enabled, this number represents the length of a user's session, in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      layout
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>controller</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      If you use a global layout controller, you can specify the name of that controller here instead of using the <code>next</code> directive in all your controllers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>view</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      forms
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      citizen provides basic payload processing for simple forms. If you prefer to use a separate form package, set this to <code>false</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>maxPayloadSize</code>
+    </td>
+    <td>
+      Positive Integer
+    </td>
+    <td>
+      <code>524288</code>
+    </td>
+    <td>
+      Maximum form payload size, in bytes. Set a max payload size to prevent your server from being overloaded by form input data.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      compression
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables gzip and deflate compression for rendered views and static assets.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>force</code>
+    </td>
+    <td>
+      Boolean or String
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Forces gzip or deflate encoding for all clients, even if they don't report accepting compressed formats. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since all modern clients support gzip, it's usually safe to force it by setting this to <code>gzip</code>, but you can also force <code>deflate</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>mimeTypes</code>
+    </td>
+    <td>
+      Array
+    </td>
+    <td>
+      <p>See default config above.</p>
+    </td>
+    <td>
+      An array of MIME types that will be compressed if compression is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the array in its entirety.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      cache
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>control</code>
+    </td>
+    <td>
+      Object containing key/value pairs
+    </td>
+    <td>
+      <code>{}</code>
+    </td>
+    <td>
+      Use this setting to set Cache-Control headers for route controllers and static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>invalidUrlParams</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>warn</code>
+    </td>
+    <td>
+      The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and <code>invalidUrlParams</code> determines whether to log a warning when encountering bad URLs or throw a client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      cache.application
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>lifespan</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>15</code>
+    </td>
+    <td>
+      The length of time a cached application asset remains in memory, in minutes.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>resetOnAccess</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Determines whether to reset the cache timer on a cached asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>encoding</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>utf-8</code>
+    </td>
+    <td>
+      When you pass a file path to cache.set(), the encoding setting determines what encoding should be used when reading the file.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>synchronous</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      When you pass a file path to cache.set(), this setting determines whether the file should be read synchronously or asynchronously. By default, file reads are asynchronous.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      cache.static
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enabled</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to <code>true</code>, which caches file buffers in memory.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>lifespan</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>15</code>
+    </td>
+    <td>
+      The length of time a cached static asset remains in memory, in minutes.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>resetOnAccess</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Determines whether to reset the cache timer on a cached static asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      logs
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>access</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables HTTP access log files. Disabled by default because access logs can explode quickly and ideally it should be handled by a web server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>debug</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables debug log files. Useful for debugging production issues, but extremely verbose (the same logs you would see in the console in development mode).
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>maxFileSize</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>10000</code>
+    </td>
+    <td>
+      Determines the maximum file size of log files, in kilobytes. When the limit is reached, the log file is renamed with a time stamp and a new log file is created.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      logs.error
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>client</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Enables logging of 400-level client errors.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>server</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables logging of 500-level server/application errors.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>status</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Controls whether status messages should be logged to the console when in production mode. (Development mode always logs to the console.)
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      logs.watcher
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>interval</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>60000</code>
+    </td>
+    <td>
+      For operating systems that don't support file events, this timer determines how often log files will be polled for changes prior to archiving, in milliseconds.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      development
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      development.debug
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>scope</code>
+    </td>
+    <td>
+      Object
+    </td>
+    </td>
+    <td>
+    <td>
+      This setting determines which scopes are logged in the debug output in development mode. By default, all scopes are enabled.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>depth</code>
+    </td>
+    <td>
+      Positive integer
+    </td>
+    <td>
+      <code>3</code>
+    </td>
+    <td>
+      When citizen dumps an object in the debug content, it inspects it using Node's util.inspect. This setting determines the depth of the inspection, meaning the number of nodes that will be inspected and displayed. Larger numbers mean deeper inspection and slower performance.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>view</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Set this to true to dump debug info directly into the HTML view.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>enableCache</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Development mode disables the cache. Change this setting to <code>true</code> to enable the cache in development mode.
+    </td>
+  </tr>
+  <tr>
+    <td colspan="4">
+      development.watcher
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>custom</code>
+    </td>
+    <td>
+      Array
+    </td>
+    </td>
+    <td>
+    <td>
+      You can tell citizen's hot module replacement to watch your own custom modules. This array can contain objects with <code>watch</code> (relative directory path to your modules within the app directory) and <code>assign</code> (the variable to which you assign these modules) properties. Example:
+      <br><br>
+      <code>[ { "watch": "/util", "assign": "app.util" } ]</code>
+    </td>
+  </tr>
+</table>
+
 citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher, so `watcher` option for both logs and development mode also accepts any option allowed by chokidar.
 
 
@@ -368,7 +1118,7 @@ This documentation assumes your global app variable name is `app`. Adjust accord
       <code>app.cache.clear()</code>
     </td>
     <td>
-      <a href="#object-caching">Application cache</a> used internally by citizen, also available for your app.
+      <a href="#object-caching">Application cache</a> and key/value store used internally by citizen, also available for your app.
     </td>
   </tr>
   <tr>
@@ -533,7 +1283,7 @@ In addition to having access to these objects within your controller, they are a
 For example, based on the previous article URL...
 
 ```
-http://www.cleverna.me/article/My-Clever-Article-Title/page/2
+http://www.cleverna.me/article/My-Clever-Article-Title/id/237/page/2
 ```
 
 ...you'll have the following `params.url` object passed to your controller:
@@ -541,6 +1291,7 @@ http://www.cleverna.me/article/My-Clever-Article-Title/page/2
 ```js
 {
   article: 'My-Clever-Article-Title',
+  id: '237',
   page: '2'
 }
 ```
@@ -579,7 +1330,7 @@ export const handler = async (params) => {
 Alternate actions can be requested using the `action` URL parameter. For example, maybe we want a different action and view to edit an article:
 
 ```js
-// http://www.cleverna.me/article/My-Clever-Article-Title/page/2/action/edit
+// http://www.cleverna.me/article/My-Clever-Article-Title/id/237/page/2/action/edit
 
 // article controller
 
@@ -809,24 +1560,26 @@ export const handler = async (params) => {
     }
   // If the article doesn't exist, throw a 404
   } else {
-    let err = new Error('Not found.')
+    // Error messages default to the standard HTTP Status Code response, but you can customize them.
+    let err = new Error('The requested article does not exist.')
+
     // The HTTP status code defaults to 500, but you can specify your own
     err.statusCode = 404
-    err.message = 'The requested article does not exist.'
+
     throw err
   }
 }
 ```
 
-Note that `params.route.controller` is updated from the requested controller to `error` if you reference it within your app.
+Note that `params.route.controller` is updated from the requested controller to `error`, so any references in your app to the requested controller should take this into account.
 
-Errors are returned in the format requested by the route. If you request [JSON](#json-and-json-p) and the route throws an error, the error will be in JSON format.
+Errors are returned in the format requested by the route. If you request [JSON](#json-and-json-p) and the route throws an error, citizen will return the error in JSON format.
 
 The app skeleton created by the [scaffold utility](#scaffold) includes optional error view templates for common client and server errors, but you can create templates for any HTTP error code.
 
 ### Capture vs. Exit
 
-citizen's default error config is `capture`, which attempts graceful recovery. If you'd prefer the process exit after an error, change `config.citizen.errors` to `exit`.
+citizen's default error handling method is `capture`, which attempts graceful recovery. If you'd prefer to exit the process after an error, change `config.citizen.errors` to `exit`.
 
 ```js
 // config file: exit the process after an error
@@ -887,7 +1640,7 @@ export const edit = async (params) => {
 You set cookies by returning a `cookie` object within the controller action.
 
 ```js
-export ccnst handler = async (params) => {
+export const handler = async (params) => {
   return {
     cookie: {
       // Cookie shorthand sets a cookie called username using the default cookie properties
@@ -1023,7 +1776,7 @@ return {
 
 Unlike the Location header, if you use the `refresh` option, citizen will send a rendered view to the client because the redirect occurs client-side.
 
-Using the Location header breaks (in my opinion) the Referer header because the Referer header ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctzn_referer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctzn_referer` so you can send them there instead of the previous page.
+Using the Location header breaks (in my opinion) the Referer header because the Referer ends up being not the resource that initiated the redirect, but the resource prior to the page that initiated it. To get around this problem, citizen stores a session variable called `ctzn_referer` that contains the URL of the resource that initiated the redirect, which you can use to redirect users properly. For example, if an unauthenticated user attempts to access a secure page and you redirect them to a login form, the address of the secure page will be stored in `ctzn_referer` so you can send them there instead of the previous page.
 
 If you haven't enabled sessions, citizen falls back to creating a cookie named `ctzn_referer` instead.
 
