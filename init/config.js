@@ -133,6 +133,7 @@ const appPath       = new URL('../../../app', import.meta.url).pathname,
 
 function getConfig() {
   let configDirectory = appPath + '/config',
+      configRegex = new RegExp(/^[A-Za-z0-9_-]*\.json$/),
       files           = [],
       appConfig       = {}
 
@@ -141,35 +142,38 @@ function getConfig() {
   // If there isn't a config directory, return an empty config. citizen will start under its default configuration.
   try {
     files = fs.readdirSync(configDirectory)
+    files = files.filter( (file) => configRegex.test(file) )
   } catch {
-    console.log('  No configuration files found. Loading default config.\n\n')
+    console.log('  No configuration files found. Loading default config.\n')
     return defaultConfig
   }
 
-  for ( const file of files ) {
-    let parsedConfig,
-        configRegex = new RegExp(/^[A-Za-z0-9_-]*\.json$/)
-
-    if ( configRegex.test(file) ) {
+  if ( files.length ) {
+    for ( const file of files ) {
+      let parsedConfig
+  
       parsedConfig = JSON.parse(fs.readFileSync(configDirectory + '/' + file))
       if ( parsedConfig.host === os.hostname() ) {
         appConfig = parsedConfig
         console.log('  [host: ' + parsedConfig.host + '] ' + configDirectory + '/' + file + '\n\n')
       }
     }
-  }
-
-  if ( !appConfig.host ) {
-    try {
-      appConfig = JSON.parse(fs.readFileSync(configDirectory + '/citizen.json'))
-      console.log('  ' + configDirectory + '/citizen.json\n')
-    } catch ( err ) {
-      console.log('  There was a problem parsing your config file.\n\n')
-      console.log(err)
+  
+    if ( !appConfig.host && files.indexOf('citizen.json') >= 0 ) {
+      try {
+        appConfig = JSON.parse(fs.readFileSync(configDirectory + '/citizen.json'))
+        console.log('  ' + configDirectory + '/citizen.json\n')
+      } catch ( err ) {
+        console.log('  There was a problem parsing your config file.\n\n')
+        console.log(err)
+      }
     }
-  }
 
-  return helpers.extend(defaultConfig, appConfig)
+    return helpers.extend(defaultConfig, appConfig)
+  } else {
+    console.log('  No configuration files found. Loading default config.\n')
+    return defaultConfig
+  }
 }
 
 export default config
