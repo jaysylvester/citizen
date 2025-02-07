@@ -1,3 +1,7 @@
+# 1.0.2
+* Rewrote config init to accommodate an empty config directory error
+* README updates and fixes
+
 # 1.0.1
 * Fixed an unhandled promise rejection caused by trying to set session variables when no session is present
 * Minor README and development log tweaks
@@ -59,6 +63,7 @@
 * The `sessions` configuration setting is now an object that takes two arguments:
   * `enabled` (boolean)
   * `lifespan` (integer) - Reflects session timeout in minutes and replaces the old `sessionTimeout` property, which has been removed
+* `session.end()` now requires an object containing `key` and `value` properties to end a session
 * The `form` configuration setting has been renamed to `forms`
   * The dependency on formidable has been removed and replaced with basic native form parsing, see the docs for settings/options
   * Third-party form processors can still be used within hooks and controllers by accessing Node's native request object, which is passed to each hook and controller as an argument
