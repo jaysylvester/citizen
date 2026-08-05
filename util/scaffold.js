@@ -3,6 +3,8 @@
 import { program } from 'commander'
 import fs      from 'node:fs'
 import path    from 'node:path'
+// citizen
+import { buildEnv, getDefaults } from '../init/config.js'
 
 const scaffoldPath = new URL('../util/', import.meta.url).pathname,
       appPath      = path.resolve(scaffoldPath, '../../../app')
@@ -57,23 +59,6 @@ const buildView = (options) => {
 }
 
 
-const buildConfig = (options) => {
-  var template = fs.readFileSync(scaffoldPath + '/templates/config.json'),
-      mode     = options.mode || 'development',
-      port     = options.port || 3000,
-      name     = options.name || 'citizen'
-
-  template = template.toString()
-  template = template.replace(/\[mode\]/g, mode)
-  template = template.replace(/\[port\]/g, port)
-
-  return {
-    name     : name + '.json',
-    contents : template
-  }
-}
-
-
 program
   .version('1.0.0')
   .on('--help', function () {
@@ -90,19 +75,30 @@ program
   .option('-n, --network-port [port number]', 'Default HTTP port is 3000, but if that\'s taken, use this option to set your config')
   .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
-    var webPath = path.resolve(appPath, '../web'),
+    var gitignore,
+        mode        = options.mode || 'development',
+        port        = options.networkPort || 3000,
+        projectPath = path.resolve(appPath, '..'),
+        gitignorePath = projectPath + '/.gitignore',
         templates = {
           application : fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
+          error       : fs.readdirSync(scaffoldPath +  '/templates/error'),
+          gitignore   : fs.readFileSync(scaffoldPath + '/templates/gitignore'),
           package     : fs.readFileSync(scaffoldPath + '/templates/package.json'),
           request     : fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
           response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
           session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
-          start       : fs.readFileSync(scaffoldPath + '/templates/start.js'),
-          error       : fs.readdirSync(scaffoldPath +  '/templates/error')
+          start       : fs.readFileSync(scaffoldPath + '/templates/start.js')
         },
+        webPath = path.resolve(appPath, '../web'),
+        application = templates.application.toString(),
         controller = buildController({
           pattern: 'index',
           appName: 'app'
+        }),
+        env = buildEnv(getDefaults({ appPath: appPath, nodeEnv: mode }), {
+          CITIZEN_HTTP__PORT: port,
+          CITIZEN_MODE: mode
         }),
         model = buildModel({
           pattern: 'index',
@@ -112,25 +108,26 @@ program
             text:   'How easy was that?'
           }
         }),
-        view = buildView({
-          pattern: 'index'
-        }),
-        config = buildConfig({
-          mode: options.mode,
-          port: options.networkPort
-        }),
-        application = templates.application.toString(),
         packageJSON = templates.package.toString(),
         request     = templates.request.toString(),
         response    = templates.response.toString(),
         session     = templates.session.toString(),
-        start       = templates.start.toString()
+        start       = templates.start.toString(),
+        view = buildView({
+          pattern: 'index'
+        })
 
     fs.mkdirSync(appPath)
+    fs.writeFileSync(appPath + '/.env', env)
+    fs.writeFileSync(appPath + '/.env.example', env)
+    if ( fs.existsSync(gitignorePath) ) {
+      gitignore = fs.readFileSync(gitignorePath, 'utf8')
+      if ( !gitignore.split(/\r?\n/).includes('app/.env') ) fs.appendFileSync(gitignorePath, `${gitignore.endsWith('\n') ? '' : '\n'}app/.env\n`)
+    } else {
+      fs.writeFileSync(gitignorePath, templates.gitignore)
+    }
     fs.writeFileSync(appPath + '/package.json', packageJSON)
     fs.writeFileSync(appPath + '/start.js', start)
-    fs.mkdirSync(appPath +     '/config')
-    fs.writeFileSync(appPath + '/config/' + config.name, config.contents)
     fs.mkdirSync(appPath +     '/controllers')
     fs.mkdirSync(appPath +     '/controllers/hooks')
     fs.writeFileSync(appPath + '/controllers/hooks/application.js', application)
@@ -176,9 +173,10 @@ program
     console.log('')
     console.log('    Creates the following files:')
     console.log('')
+    console.log('    .gitignore')
     console.log('    app/')
-    console.log('      config/')
-    console.log('        citizen.json')
+    console.log('      .env')
+    console.log('      .env.example')
     console.log('      controllers/')
     console.log('        hooks/')
     console.log('          application.js')
@@ -202,7 +200,7 @@ program
     console.log('')
     console.log('  After creating the skeleton:')
     console.log('')
-    console.log('    $ node start.js')
+    console.log('    $ node app/start.js')
     console.log('')
   })
 

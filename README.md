@@ -4,7 +4,7 @@ citizen is an MVC-based web application framework designed for people interested
 
 Use citizen as the foundation for a traditional server-side web application, a modular single-page application (SPA), or a RESTful API.
 
-**There were numerous breaking changes in the transition from 0.9.x to 1.0.x.** Please consult the changelog for an itemized list and review this updated documentation thoroughly.
+Applications upgrading from 1.x should follow the [1.x -> 2.x migration guide](MIGRATION.md), consult the changelog, and review this updated documentation thoroughly. citizen 2.x requires Node.js 22 or newer.
 
 
 ## Benefits
@@ -42,7 +42,7 @@ $ node app/start.js
 
 If everything went well, you'll see confirmation in the console that the web server is running. Go to http://127.0.0.1:3000 in your browser and you'll see a bare index template.
 
-citizen uses [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) in its default template engine. You can install [consolidate](https://github.com/ladjs/consolidate), update the [template config](#config-settings), and modify the default view templates accordingly.
+citizen uses [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) in its default template engine. You can install [consolidate](https://github.com/ladjs/consolidate), set [`CITIZEN_TEMPLATE_ENGINE`](#config-settings), and modify the default view templates accordingly.
 
 For configuration options, see [Configuration](#configuration). For more utilities to help you get started, see [Utilities](#utilities).
 
@@ -56,11 +56,8 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
 
 ```
 app/
-  config/             // These files are all optional
-    citizen.json      // Default config file
-    local.json        // Examples of environment configs
-    qa.json
-    prod.json
+  .env                // Local application environment (uncommitted)
+  .env.example        // Committed environment reference
   controllers/
     hooks/            // Application event hooks (optional)
       application.js
@@ -103,64 +100,114 @@ app.start()
 Run from the terminal:
 
 ```bash
-$ node start.js
+$ node app/start.js
 ```
 
 
 
 ### Configuration
 
-You can configure your citizen app with a config file, startup options, and/or custom controller configurations.
+`app/.env` is the application's conventional configuration file. citizen loads
+that exact file automatically when it exists; it does not search parent
+directories or require a startup flag. Keep `app/.env` out of version control
+and commit `app/.env.example` as the reference for development and deployment.
 
-The config directory is optional and contains configuration files in JSON format that drive both citizen and your app. You can have multiple citizen configuration files within this directory, allowing different configurations based on environment. citizen builds its configuration based on the following hierarchy:
+Framework settings use the `CITIZEN_*` namespace. Application-owned variables
+can use whatever names suit the app:
 
-1. If citizen finds a config directory, it parses each JSON file looking for a `host` key that matches the machine's hostname, and if it finds one, extends the default configuration with the file config.
-2. If citizen can't find a matching `host` key, it looks for a file named citizen.json and loads that configuration.
-3. citizen then extends the config with your [optional startup config](#startup-configuration).
-4. Individual route controllers and and actions can have [their own custom config](#controller-configuration) that further extends the app config.
+```bash
+# app/.env
+CITIZEN_MODE=development
+CITIZEN_HTTP__PORT=8080
+CITIZEN_SESSIONS__ENABLED=true
+CITIZEN_CONTENT_TYPES=text/html,text/plain,application/json
 
-Let's say you want to run citizen on port 8080 in your local dev environment and you have a local database your app will connect to. You could create a config file called local.json (or dev.json, whatever you want) with the following:
+# Or, equivalently, use JSON array syntax for array settings:
+# CITIZEN_CONTENT_TYPES='["text/html","text/plain","application/json"]'
 
-```js
-{
-  "host":       "My-MacBook-Pro.local",
-  "citizen": {
-    "mode":     "development",
-    "http": {
-      "port":   8080
-    }
-  },
-  "db": {
-    "server":   "localhost",  // app.config.db.server
-    "username": "dbuser",     // app.config.db.username
-    "password": "dbpassword"  // app.config.db.password
-  }
-}
+DB_SERVER=localhost
+DB_PASSWORD=secret
 ```
 
-This config would extend the default configuration only when running on your local machine. Using this method, you can commit multiple config files from different environments to the same repository.
+Values already present in `process.env` override matching values in
+`app/.env`. This lets Docker, systemd, a hosting provider, or an ordinary shell
+provide deployment-specific values without changing the file.
 
-The database settings would be accessible anywhere within your app via `app.config.db`. The `citizen` and `host` nodes are reserved for the framework; create your own node(s) to store your custom settings.
+`CITIZEN_DIRECTORIES__APP` is the one process-only framework setting. Because
+it selects the application directory where citizen looks for `.env`, set it in
+the process environment before startup; `app/.env` cannot relocate itself.
 
+The env name describes the runtime path directly. Remove the `CITIZEN_` prefix,
+use double underscores as property boundaries, and read single underscores
+within a property as camel-case word boundaries:
 
-#### Startup configuration
+```text
+CITIZEN_FORMS__MAX_PAYLOAD_SIZE
+app.config.forms.maxPayloadSize
+```
 
-You can set your app's configuration at startup through `app.start()`. If there is a config file, the startup config will extend the config file. If there's no config file, the startup configuration extends the default citizen config.
+Booleans accept `true`, `false`, `1`, or `0`; numbers are validated; arrays
+accept either a comma-delimited list (with surrounding whitespace removed from
+each value) or JSON array syntax; and regular expressions use their pattern
+text. Invalid values stop startup and identify the offending key.
+
+JSON values configure free-form and whole-object settings; HTTPS credentials
+remain ordinary path strings:
+
+```bash
+CITIZEN_CACHE__CONTROL='{"/":"max-age=86400"}'
+CITIZEN_HTTP='{"keepAliveTimeout":5000}'
+CITIZEN_HTTPS__PFX=/absolute/path/to/site.pfx
+```
+
+Unknown variables beneath `CITIZEN_HTTP__*` and `CITIZEN_HTTPS__*` pass through
+to Node's `createServer()` options. Their names are converted back to camel case,
+so `CITIZEN_HTTP__KEEP_ALIVE_TIMEOUT=5000` is available as
+`app.config.http.keepAliveTimeout`. Use the whole-node JSON form when an
+option cannot be represented by that conversion.
+
+Application code reads its variables directly from `process.env`:
 
 ```js
-// Start an HTTPS server with a PFX file
-app.start({
-  citizen: {
-    http: {
-      enabled: false
-    },
-    https: {
-      enabled: true,
-      pfx:    '/absolute/path/to/site.pfx'
-    }
-  }
+const connection = connect({
+  server: process.env.DB_SERVER,
+  password: process.env.DB_PASSWORD
 })
 ```
+
+citizen reads, validates, and copies only `CITIZEN_*` values into `app.config`.
+Application-owned variables remain in `process.env`; their values and secrets
+are not included when citizen dumps its resolved framework configuration. Do
+not log `process.env`, since that can expose secrets.
+
+Configuration is resolved in the following order. Each source overrides
+matching values from the sources above it:
+
+1. citizen's defaults
+2. `app/.env`
+3. Values already present in `process.env`
+4. Route controller and action configuration
+
+Use either `app/.env` or your deployment environment as the primary convention
+for a given deployment. If both define the same setting, the deployment/process
+value takes precedence.
+
+
+#### Application configuration
+
+Use `app/.env` and `process.env` for application-owned settings. `app.start()`
+starts the application and does not accept configuration:
+
+```js
+import citizen from 'citizen'
+
+global.app = citizen
+
+app.start()
+```
+
+To start only an HTTPS server, set `CITIZEN_HTTP__ENABLED=false`,
+`CITIZEN_HTTPS__ENABLED=true`, and `CITIZEN_HTTPS__PFX` in the environment.
 
 
 #### Controller configuration
@@ -172,135 +219,12 @@ export const config = {
   // The "controller" property sets a configuration for all actions in this controller
   controller: {
     contentTypes: [ 'application/json' ]
-  }
+  },
 
   // The "submit" property is only for the submit() controller action
   submit: {
-    form: {
-      maxPayloadSize: 1000000
-    }
-  }
-}
-```
-
-
-#### Default configuration
-
-The following represents citizen's default configuration, which is extended by your configuration:
-
-```js
-{
-  host                 : '',
-  citizen: {
-    mode               : process.env.NODE_ENV || 'production',
-    global             : 'app',
-    http: {
-      enabled          : true,
-      hostname         : '127.0.0.1',
-      port             : 80
-    },
-    https: {
-      enabled          : false,
-      hostname         : '127.0.0.1',
-      port             : 443,
-      secureCookies    : true
-    },
-    connectionQueue    : null,
-    templateEngine     : 'templateLiterals',
-    compression: {
-      enabled          : false,
-      force            : false,
-      mimeTypes        : [
-                          'application/javascript',
-                          'application/x-javascript',
-                          'application/xml',
-                          'application/xml+rss',
-                          'image/svg+xml',
-                          'text/css',
-                          'text/html',
-                          'text/javascript',
-                          'text/plain',
-                          'text/xml'
-                          ]
-    },
-    sessions: {
-      enabled          : false,
-      lifespan         : 20 // minutes
-    },
-    layout: {
-      controller       : '',
-      view             : ''
-    },
-    contentTypes       : [
-                          'text/html',
-                          'text/plain',
-                          'application/json',
-                          'application/javascript'
-                          ],
     forms: {
-      enabled          : true,
-      maxPayloadSize   : 524288 // 0.5MB
-    },
-    cache: {
-      application: {
-        enabled        : true,
-        lifespan       : 15, // minutes
-        resetOnAccess  : true,
-        encoding       : 'utf-8',
-        synchronous    : false
-      },
-      static: {
-        enabled        : false,
-        lifespan       : 15, // minutes
-        resetOnAccess  : true
-      },
-      invalidUrlParams : 'warn',
-      control          : {}
-    },
-    errors             : 'capture',
-    logs: {
-      access           : false, // performance-intensive, opt-in only
-      error: {
-        client         : true, // 400 errors
-        server         : true // 500 errors
-      },
-      debug            : false,
-      maxFileSize      : 10000,
-      watcher: {
-        interval       : 60000
-      }
-    },
-    development: {
-      debug: {
-        scope: {
-          config       : true,
-          context      : true,
-          cookie       : true,
-          form         : true,
-          payload      : true,
-          route        : true,
-          session      : true,
-          url          : true,
-        },
-        depth          : 4,
-        showHidden     : false,
-        view           : false
-      },
-      watcher: {
-        custom         : [],
-        killSession    : false,
-        ignored        : /(^|[/\\])\../ // Ignore dotfiles
-      }
-    },
-    urlPath            : '/',
-    directories: {
-      app              : <appDirectory>,
-      controllers      : <appDirectory> + '/controllers',
-      helpers          : <appDirectory> + '/helpers',
-      models           : <appDirectory> + '/models',
-      views            : <appDirectory> + '/views',
-      logs             : new URL('../../../logs', import.meta.url).pathname
-      web              : new URL('../../../web', import.meta.url).pathname
+      maxPayloadSize: 1000000
     }
   }
 }
@@ -309,21 +233,27 @@ The following represents citizen's default configuration, which is extended by y
 
 #### Config settings
 
-Here's a complete rundown of citizen's settings and what they do.
+Resolved framework settings are available to the application through
+`app.config.*`. For example, `CITIZEN_HTTP__PORT` is available as
+`app.config.http.port`. The table below is the canonical reference for
+environment variable names, types, and defaults.
 
-When starting a server, in addition to citizen's `http` and `https` config options, you can provide the same options as Node's [http.createServer()](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener) and [https.createServer()](https://nodejs.org/api/https.html#httpscreateserveroptions-requestlistener).
-
-The only difference is how you pass key files. As you can see in the examples above, you pass citizen the file paths for your key files. citizen reads the files for you.
+In addition to the variables listed below, `CITIZEN_HTTP__*` and
+`CITIZEN_HTTPS__*` accept the same options as Node's
+[http.createServer()](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener)
+and
+[https.createServer()](https://nodejs.org/api/https.html#httpscreateserveroptions-requestlistener).
 
 <table>
-  <caption>citizen config options</caption>
+  <caption>citizen environment variables</caption>
   <thead>
     <tr>
       <th>
-        Setting
+        Environment Variable
       </th>
       <th>
         Type
+      </th>
       <th>
         Default Value
       </th>
@@ -334,54 +264,203 @@ The only difference is how you pass key files. As you can see in the examples ab
   </thead>
   <tr>
     <td>
-      <code>host</code>
+      <code>CITIZEN_CACHE__APPLICATION__ENABLED</code>
     </td>
     <td>
-        String
+      Boolean
     </td>
     <td>
-      <code>''</code>
+      <code>true</code>
     </td>
     <td>
-      To load different config files in different environments, citizen relies upon the server's hostname as a key. At startup, if citizen finds a config file with a <code>host</code> key that matches the server's hostname, it chooses that config file. This is not to be confused with the HTTP server <code>hostname</code> (see below).
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      citizen
+      Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods.
     </td>
   </tr>
   <tr>
     <td>
-      <code>mode</code>
+      <code>CITIZEN_CACHE__APPLICATION__ENCODING</code>
     </td>
     <td>
       String
     </td>
     <td>
-      Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
+      <code>utf-8</code>
     </td>
     <td>
-      The application mode determines certain runtime behaviors. Possible values are <code>production</code> and <code>development</code> Production mode silences console logs. Development mode enables verbose console logs, URL debug options, and hot module replacement.
+      When you pass a file path to cache.set(), the encoding setting determines what encoding should be used when reading the file.
     </td>
   </tr>
   <tr>
     <td>
-      <code>global</code>
+      <code>CITIZEN_CACHE__APPLICATION__LIFESPAN</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>15</code>
+    </td>
+    <td>
+      The length of time a cached application asset remains in memory, in minutes.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CACHE__APPLICATION__RESET_ON_ACCESS</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Determines whether to reset the cache timer on a cached asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CACHE__APPLICATION__SYNCHRONOUS</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      When you pass a file path to cache.set(), this setting determines whether the file should be read synchronously or asynchronously. By default, file reads are asynchronous.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CACHE__CONTROL</code>
+    </td>
+    <td>
+      Object containing key/value pairs
+    </td>
+    <td>
+      <code>{}</code>
+    </td>
+    <td>
+      Use this setting to set Cache-Control headers for route controllers and static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CACHE__INVALID_URL_PARAMS</code>
     </td>
     <td>
       String
     </td>
     <td>
-      <code>app</code>
+      <code>warn</code>
     </td>
     <td>
-      The convention for initializing citizen in the start file assigns the framework to a global variable. The default, which you'll see referenced throughout the documentation, is <code>app</code>. You can change this setting if you want to use another name.
+      The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and <code>invalidUrlParams</code> determines whether to log a warning when encountering bad URLs or throw a client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
     </td>
   </tr>
   <tr>
     <td>
-      <code>contentTypes</code>
+      <code>CITIZEN_CACHE__STATIC__ENABLED</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to <code>true</code>, which caches file buffers in memory.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CACHE__STATIC__LIFESPAN</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>15</code>
+    </td>
+    <td>
+      The length of time a cached static asset remains in memory, in minutes.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CACHE__STATIC__RESET_ON_ACCESS</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Determines whether to reset the cache timer on a cached static asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_COMPRESSION__ENABLED</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables gzip and deflate compression for rendered views and static assets.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_COMPRESSION__FORCE</code>
+    </td>
+    <td>
+      Boolean or String
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Forces gzip or deflate encoding for all clients, even if they don't report accepting compressed formats. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since all modern clients support gzip, it's usually safe to force it by setting this to <code>gzip</code>, but you can also force <code>deflate</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_COMPRESSION__MIME_TYPES</code>
+    </td>
+    <td>
+      Array
+    </td>
+    <td>
+      <code>['application/javascript', 'application/x-javascript', 'application/xml', 'application/xml+rss', 'image/svg+xml', 'text/css', 'text/html', 'text/javascript', 'text/plain', 'text/xml']</code>
+    </td>
+    <td>
+      An array of MIME types that will be compressed if compression is enabled. If you want to add or remove items, you must replace the array in its entirety.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CONNECTION_QUEUE</code>
+    </td>
+    <td>
+        Integer
+    </td>
+    <td>
+      <code>null</code>
+    </td>
+    <td>
+      The maximum number of incoming requests to queue. If left unspecified, the operating system determines the queue limit.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CONTENT_TYPES</code>
     </td>
     <td>
       Array
@@ -402,614 +481,13 @@ The only difference is how you pass key files. As you can see in the examples ab
   </tr>
   <tr>
     <td>
-      <code>errors</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>capture</code>
-    </td>
-    <td>
-      When your application throws an error, the default behavior is for citizen to try to recover from the error and keep the application running. Setting this option to <code>exit</code> tells citizen to log the error and exit the process instead.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>templateEngine</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>templateLiterals</code>
-    </td>
-    <td>
-      citizen uses [template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) syntax for view rendering by default. Optionally, you can install <a href="https://github.com/tj/consolidate.js">consolidate</a> and use any engine it supports (for example, install Handlebars and set <code>templateEngine</code> to <code>handlebars</code>).
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>urlPath</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>/</code>
-    </td>
-    <td>
-      Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      http
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-        Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      Enables the HTTP server.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>hostname</code>
-    </td>
-    <td>
-        String
-    </td>
-    <td>
-      <code>127.0.0.1</code>
-    </td>
-    <td>
-      The hostname at which your app can be accessed via HTTP. You can specify an empty string to accept requests at any hostname.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>port</code>
-    </td>
-    <td>
-        Number
-    </td>
-    <td>
-      <code>3000</code>
-    </td>
-    <td>
-      The port number on which citizen's HTTP server listens for requests.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      https
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-        Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Enables the HTTPS server.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>hostname</code>
-    </td>
-    <td>
-        String
-    </td>
-    <td>
-      <code>127.0.0.1</code>
-    </td>
-    <td>
-      The hostname at which your app can be accessed via HTTPS. The default is localhost, but you can specify an empty string to accept requests at any hostname.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>port</code>
-    </td>
-    <td>
-        Number
-    </td>
-    <td>
-      <code>443</code>
-    </td>
-    <td>
-      The port number on which citizen's HTTPS server listens for requests.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>secureCookies</code>
-    </td>
-    <td>
-        Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      By default, all cookies set within an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>connectionQueue</code>
-    </td>
-    <td>
-        Integer
-    </td>
-    <td>
-      <code>null</code>
-    </td>
-    <td>
-      The maximum number of incoming requests to queue. If left unspecified, the operating system determines the queue limit.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      sessions
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID within the application server.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>lifespan</code>
-    </td>
-    <td>
-      Positive Integer
-    </td>
-    <td>
-      <code>20</code>
-    </td>
-    <td>
-      If sessions are enabled, this number represents the length of a user's session, in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      layout
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>controller</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>''</code>
-    </td>
-    <td>
-      If you use a global layout controller, you can specify the name of that controller here instead of using the <code>next</code> directive in all your controllers.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>view</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>''</code>
-    </td>
-    <td>
-      By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      forms
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      citizen provides basic payload processing for simple forms. If you prefer to use a separate form package, set this to <code>false</code>.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>maxPayloadSize</code>
-    </td>
-    <td>
-      Positive Integer
-    </td>
-    <td>
-      <code>524288</code>
-    </td>
-    <td>
-      Maximum form payload size, in bytes. Set a max payload size to prevent your server from being overloaded by form input data.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      compression
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Enables gzip and deflate compression for rendered views and static assets.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>force</code>
-    </td>
-    <td>
-      Boolean or String
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Forces gzip or deflate encoding for all clients, even if they don't report accepting compressed formats. Many proxies and firewalls break the Accept-Encoding header that determines gzip support, and since all modern clients support gzip, it's usually safe to force it by setting this to <code>gzip</code>, but you can also force <code>deflate</code>.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>mimeTypes</code>
-    </td>
-    <td>
-      Array
-    </td>
-    <td>
-      <p>See default config above.</p>
-    </td>
-    <td>
-      An array of MIME types that will be compressed if compression is enabled. See the sample config above for the default list. If you want to add or remove items, you must replace the array in its entirety.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      cache
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>control</code>
-    </td>
-    <td>
-      Object containing key/value pairs
-    </td>
-    <td>
-      <code>{}</code>
-    </td>
-    <td>
-      Use this setting to set Cache-Control headers for route controllers and static assets. The key is the pathname of the asset, and the value is the Cache-Control header. See <a href="#client-side-caching">Client-Side Caching</a> for details.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>invalidUrlParams</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>warn</code>
-    </td>
-    <td>
-      The route cache option can specify valid URL parameters to prevent bad URLs from being cached, and <code>invalidUrlParams</code> determines whether to log a warning when encountering bad URLs or throw a client-side error. See <a href="#caching-requests-and-controller-actions">Caching Requests and Controller Actions</a> for details.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      cache.application
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      Enables the in-memory cache, accessed via the <code>cache.set()</code> and <code>cache.get()</code> methods.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>lifespan</code>
-    </td>
-    <td>
-      Number
-    </td>
-    <td>
-      <code>15</code>
-    </td>
-    <td>
-      The length of time a cached application asset remains in memory, in minutes.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>resetOnAccess</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      Determines whether to reset the cache timer on a cached asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>encoding</code>
-    </td>
-    <td>
-      String
-    </td>
-    <td>
-      <code>utf-8</code>
-    </td>
-    <td>
-      When you pass a file path to cache.set(), the encoding setting determines what encoding should be used when reading the file.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>synchronous</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      When you pass a file path to cache.set(), this setting determines whether the file should be read synchronously or asynchronously. By default, file reads are asynchronous.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      cache.static
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>enabled</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      When serving static files, citizen normally reads the file from disk for each request. You can speed up static file serving considerably by setting this to <code>true</code>, which caches file buffers in memory.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>lifespan</code>
-    </td>
-    <td>
-      Number
-    </td>
-    <td>
-      <code>15</code>
-    </td>
-    <td>
-      The length of time a cached static asset remains in memory, in minutes.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>resetOnAccess</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      Determines whether to reset the cache timer on a cached static asset whenever the cache is accessed. When set to <code>false</code>, cached items expire when the <code>lifespan</code> is reached.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      logs
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>access</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Enables HTTP access log files. Disabled by default because access logs can explode quickly and ideally it should be handled by a web server.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>debug</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Enables debug log files. Useful for debugging production issues, but extremely verbose (the same logs you would see in the console in development mode).
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>maxFileSize</code>
-    </td>
-    <td>
-      Number
-    </td>
-    <td>
-      <code>10000</code>
-    </td>
-    <td>
-      Determines the maximum file size of log files, in kilobytes. When the limit is reached, the log file is renamed with a time stamp and a new log file is created.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      logs.error
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>client</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>true</code>
-    </td>
-    <td>
-      Enables logging of 400-level client errors.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>server</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Enables logging of 500-level server/application errors.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>status</code>
-    </td>
-    <td>
-      Boolean
-    </td>
-    <td>
-      <code>false</code>
-    </td>
-    <td>
-      Controls whether status messages should be logged to the console when in production mode. (Development mode always logs to the console.)
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      logs.watcher
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>interval</code>
-    </td>
-    <td>
-      Number
-    </td>
-    <td>
-      <code>60000</code>
-    </td>
-    <td>
-      For operating systems that don't support file events, this timer determines how often log files will be polled for changes prior to archiving, in milliseconds.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      development
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      development.debug
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>scope</code>
-    </td>
-    <td>
-      Object
-    </td>
-    </td>
-    <td>
-    <td>
-      This setting determines which scopes are logged in the debug output in development mode. By default, all scopes are enabled.
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <code>depth</code>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__DEPTH</code>
     </td>
     <td>
       Positive integer
     </td>
     <td>
-      <code>3</code>
+      <code>4</code>
     </td>
     <td>
       When citizen dumps an object in the debug content, it inspects it using Node's util.inspect. This setting determines the depth of the inspection, meaning the number of nodes that will be inspected and displayed. Larger numbers mean deeper inspection and slower performance.
@@ -1017,7 +495,133 @@ The only difference is how you pass key files. As you can see in the examples ab
   </tr>
   <tr>
     <td>
-      <code>view</code>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__CONFIG</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>config</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__CONTEXT</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>context</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__COOKIE</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>cookie</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__FORM</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>form</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__PAYLOAD</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>payload</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__ROUTE</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>route</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__SESSION</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>session</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SCOPE__URL</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Includes the <code>url</code> scope in development debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__SHOW_HIDDEN</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Determines whether non-enumerable properties are included in debug output.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__DEBUG__VIEW</code>
     </td>
     <td>
       Boolean
@@ -1031,7 +635,37 @@ The only difference is how you pass key files. As you can see in the examples ab
   </tr>
   <tr>
     <td>
-      <code>enableCache</code>
+      <code>CITIZEN_DEVELOPMENT__WATCHER__CUSTOM</code>
+    </td>
+    <td>
+      Array
+    </td>
+    <td>
+      <code>[]</code>
+    </td>
+    <td>
+      You can tell citizen's hot module replacement to watch your own custom modules. This array can contain objects with <code>watch</code> (relative directory path to your modules within the app directory) and <code>assign</code> (the variable to which you assign these modules) properties. Example:
+      <br><br>
+      <code>[ { "watch": "/util", "assign": "app.util" } ]</code>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__WATCHER__IGNORED</code>
+    </td>
+    <td>
+      Regular expression
+    </td>
+    <td>
+      <code>/(^|[/\\])\../</code>
+    </td>
+    <td>
+      Files ignored by the development watcher. Dotfiles are ignored by default.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__WATCHER__KILL_SESSION</code>
     </td>
     <td>
       Boolean
@@ -1040,35 +674,489 @@ The only difference is how you pass key files. As you can see in the examples ab
       <code>false</code>
     </td>
     <td>
-      Development mode disables the cache. Change this setting to <code>true</code> to enable the cache in development mode.
-    </td>
-  </tr>
-  <tr>
-    <td colspan="4">
-      development.watcher
+      Ends all active sessions when hot module replacement reloads the application.
     </td>
   </tr>
   <tr>
     <td>
-      <code>custom</code>
+      <code>CITIZEN_DIRECTORIES__APP</code>
     </td>
     <td>
-      Array
-    </td>
+      String
     </td>
     <td>
+      Application directory
+    </td>
     <td>
-      You can tell citizen's hot module replacement to watch your own custom modules. This array can contain objects with <code>watch</code> (relative directory path to your modules within the app directory) and <code>assign</code> (the variable to which you assign these modules) properties. Example:
-      <br><br>
-      <code>[ { "watch": "/util", "assign": "app.util" } ]</code>
+      Absolute path to the citizen application directory. This must be set in the process environment before startup, not in <code>app/.env</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DIRECTORIES__CONTROLLERS</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>&lt;app&gt;/controllers</code>
+    </td>
+    <td>
+      Absolute path to route controllers and application hooks.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DIRECTORIES__HELPERS</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>&lt;app&gt;/helpers</code>
+    </td>
+    <td>
+      Absolute path to application helpers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DIRECTORIES__LOGS</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>&lt;project&gt;/logs</code>
+    </td>
+    <td>
+      Absolute path to citizen log files.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DIRECTORIES__MODELS</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>&lt;app&gt;/models</code>
+    </td>
+    <td>
+      Absolute path to application models.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DIRECTORIES__VIEWS</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>&lt;app&gt;/views</code>
+    </td>
+    <td>
+      Absolute path to application views.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DIRECTORIES__WEB</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>&lt;project&gt;/web</code>
+    </td>
+    <td>
+      Absolute path to publicly served static files.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_ERRORS</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>capture</code>
+    </td>
+    <td>
+      When your application throws an error, the default behavior is for citizen to try to recover from the error and keep the application running. Setting this option to <code>exit</code> tells citizen to log the error and exit the process instead.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_FORMS__ENABLED</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      citizen provides basic payload processing for simple forms. If you prefer to use a separate form package, set this to <code>false</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_FORMS__MAX_PAYLOAD_SIZE</code>
+    </td>
+    <td>
+      Positive Integer
+    </td>
+    <td>
+      <code>524288</code>
+    </td>
+    <td>
+      Maximum form payload size, in bytes. Set a max payload size to prevent your server from being overloaded by form input data.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_GLOBAL</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>app</code>
+    </td>
+    <td>
+      The convention for initializing citizen in the start file assigns the framework to a global variable. The default, which you'll see referenced throughout the documentation, is <code>app</code>. You can change this setting if you want to use another name.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTP__ENABLED</code>
+    </td>
+    <td>
+        Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Enables the HTTP server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTP__HOSTNAME</code>
+    </td>
+    <td>
+        String
+    </td>
+    <td>
+      <code>127.0.0.1</code>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTP. You can specify an empty string to accept requests at any hostname.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTP__PORT</code>
+    </td>
+    <td>
+        Number
+    </td>
+    <td>
+      <code>80</code>
+    </td>
+    <td>
+      The port number on which citizen's HTTP server listens for requests.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__CERT</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      Absolute path to the HTTPS certificate file. Use with <code>key</code> as an alternative to <code>pfx</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__ENABLED</code>
+    </td>
+    <td>
+        Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables the HTTPS server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__HOSTNAME</code>
+    </td>
+    <td>
+        String
+    </td>
+    <td>
+      <code>127.0.0.1</code>
+    </td>
+    <td>
+      The hostname at which your app can be accessed via HTTPS. The default is localhost, but you can specify an empty string to accept requests at any hostname.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__KEY</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      Absolute path to the HTTPS private key file. Use with <code>cert</code> as an alternative to <code>pfx</code>.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__PFX</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      Absolute path to an HTTPS PFX file. Use as an alternative to the <code>key</code>/<code>cert</code> pair.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__PORT</code>
+    </td>
+    <td>
+        Number
+    </td>
+    <td>
+      <code>443</code>
+    </td>
+    <td>
+      The port number on which citizen's HTTPS server listens for requests.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_HTTPS__SECURE_COOKIES</code>
+    </td>
+    <td>
+        Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      By default, all cookies set within an HTTPS request are secure. Set this option to <code>false</code> to override that behavior, making all cookies insecure and requiring you to manually set the <code>secure</code> option in the cookie directive.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LAYOUT__CONTROLLER</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      If you use a global layout controller, you can specify the name of that controller here instead of using the <code>next</code> directive in all your controllers.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LAYOUT__VIEW</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>''</code>
+    </td>
+    <td>
+      By default, the layout controller will use the default layout view, but you can specify a different view here. Use the file name without the file extension.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LOGS__ACCESS</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables HTTP access log files. Disabled by default because access logs can explode quickly and ideally it should be handled by a web server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LOGS__DEBUG</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables debug log files. Useful for debugging production issues, but extremely verbose (the same logs you would see in the console in development mode).
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LOGS__ERROR__CLIENT</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Enables logging of 400-level client errors.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LOGS__ERROR__SERVER</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>true</code>
+    </td>
+    <td>
+      Enables logging of 500-level server/application errors.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LOGS__MAX_FILE_SIZE</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>10000</code>
+    </td>
+    <td>
+      Determines the maximum file size of log files, in kilobytes. When the limit is reached, the log file is renamed with a time stamp and a new log file is created.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_LOGS__WATCHER__INTERVAL</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>60000</code>
+    </td>
+    <td>
+      For operating systems that don't support file events, this timer determines how often log files will be polled for changes prior to archiving, in milliseconds.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_MODE</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      Checks <code>NODE_ENV</code> first, otherwise <code>production</code>
+    </td>
+    <td>
+      The application mode determines certain runtime behaviors. Possible values are <code>production</code> and <code>development</code> Production mode silences console logs. Development mode enables verbose console logs, URL debug options, and hot module replacement.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_SESSIONS__ENABLED</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      <code>false</code>
+    </td>
+    <td>
+      Enables the user session scope, which assigns each visitor a unique ID and allows you to store data associated with that ID within the application server.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_SESSIONS__LIFESPAN</code>
+    </td>
+    <td>
+      Positive Integer
+    </td>
+    <td>
+      <code>20</code>
+    </td>
+    <td>
+      If sessions are enabled, this number represents the length of a user's session, in minutes. Sessions automatically expire if a user has been inactive for this amount of time.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_TEMPLATE_ENGINE</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>templateLiterals</code>
+    </td>
+    <td>
+      citizen uses [template literal](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) syntax for view rendering by default. Optionally, you can install <a href="https://github.com/tj/consolidate.js">consolidate</a> and use any engine it supports (for example, install Handlebars and set <code>CITIZEN_TEMPLATE_ENGINE=handlebars</code>).
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_URL_PATH</code>
+    </td>
+    <td>
+      String
+    </td>
+    <td>
+      <code>/</code>
+    </td>
+    <td>
+      Denotes the URL path leading to your app. If you want your app to be accessible via http://yoursite.com/my/app and you're not using another server as a front end to proxy the request, this setting should be <code>/my/app</code> (don't forget the leading slash). This setting is required for the router to work.
     </td>
   </tr>
 </table>
 
-citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher, so `watcher` option for both logs and development mode also accepts any option allowed by chokidar.
+citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher. Log and development watcher settings use the `CITIZEN_LOGS__WATCHER__*` and `CITIZEN_DEVELOPMENT__WATCHER__*` prefixes, respectively.
 
-
-These settings are exposed publicly via `app.config.host` and `app.config.citizen`.
 
 This documentation assumes your global app variable name is `app`. Adjust accordingly.
 
@@ -1089,7 +1177,7 @@ This documentation assumes your global app variable name is `app`. Adjust accord
       <code>app.config</code>
     </td>
     <td>
-      The configuration settings you supplied at startup. citizen's settings are within <code>app.config.citizen</code>.
+      The application's resolved framework configuration.
     </td>
   </tr>
   <tr>
@@ -1394,7 +1482,7 @@ export const get = async (id) => {
 
 ### Views
 
-citizen uses [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) for view rendering by default. You can install [consolidate.js](https://github.com/tj/consolidate.js) and use any supported template engine. Just update the `templateEngine` config setting accordingly.
+citizen uses [template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals) for view rendering by default. You can install [consolidate.js](https://github.com/tj/consolidate.js) and use any supported template engine. Set `CITIZEN_TEMPLATE_ENGINE` to the engine's name and update the view templates accordingly.
 
 In `article.html`, you can reference variables you placed within the `local` object passed into the route controller's return statement. citizen also injects properties from the `params` object into your view context automatically, so you have access to those objects as local variables (such as the `url` scope):
 
@@ -1579,15 +1667,10 @@ The app skeleton created by the [scaffold utility](#scaffold) includes optional 
 
 ### Capture vs. Exit
 
-citizen's default error handling method is `capture`, which attempts graceful recovery. If you'd prefer to exit the process after an error, change `config.citizen.errors` to `exit`.
+citizen's default error handling method is `capture`, which attempts graceful recovery. If you'd prefer to exit the process after an error, set:
 
-```js
-// config file: exit the process after an error
-{
-  "citizen": {
-    "errors": "exit"
-  }
-}
+```bash
+CITIZEN_ERRORS=exit
 ```
 
 After the application error handler fires, citizen will exit the process.
@@ -1676,8 +1759,8 @@ myCookie = {
   httpOnly: true,
 
   // Cookies are insecure when set over HTTP and secure when set over HTTPS.
-  // You can override that behavior globally with the https.secureCookies setting
-  // in your config or on a case-by-case basis with this setting.
+  // You can override that behavior globally with
+  // CITIZEN_HTTPS__SECURE_COOKIES or on a case-by-case basis with this setting.
   secure: false
 }
 ```
@@ -1735,7 +1818,7 @@ return {
 
 Like cookies, session variables you've just assigned aren't available during the same request within the `params.session` scope, so use a local instance if you need to access this data right away.
 
-Sessions expire based on the `sessions.lifespan` config property, which represents the length of a session in minutes. The default is 20 minutes. The `timer` is reset with each request from the user. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client.
+Sessions expire based on `CITIZEN_SESSIONS__LIFESPAN`, which represents the length of a session in minutes. The default is 20 minutes. The `timer` is reset with each request from the user. When the `timer` runs out, the session is deleted. Any client requests after that time will generate a new session ID and send a new session ID cookie to the client.
 
 To forcibly clear and expire the current user's session:
 
@@ -2137,17 +2220,11 @@ The requested route controller's `next` directive will be ignored and its view w
 
 ### Default Layout
 
-As mentioned in the config section at the beginning of this document, you can specify a default layout controller in your config so you don't have to insert it at the end of every controller chain:
+You can specify a default layout controller with environment variables so you don't have to insert it at the end of every controller chain:
 
-```json
-{
-  "citizen": {
-    "layout": {
-      "controller": "_layout",
-      "view":       "_layout"
-    }
-  }
-}
+```bash
+CITIZEN_LAYOUT__CONTROLLER=_layout
+CITIZEN_LAYOUT__VIEW=_layout
 ```
 
 If you use this method, there's no need to use `next` for the layout. The last controller in the chain will always hand the request to the layout controller for final rendering.
@@ -2353,18 +2430,10 @@ citizen's cache is a RAM cache stored in the V8 heap, so be careful with your ca
 
 ### Caching Static Assets
 
-By caching static assets in memory, you speed up file serving considerably. To enable static asset caching for your app's public (web) directory, set `cache.static.enabled` to `true` in your config:
+By caching static assets in memory, you speed up file serving considerably. To enable static asset caching for your app's public (web) directory, set:
 
-```json
-{
-  "citizen": {
-    "cache": {
-      "static": {
-        "enabled": true
-      }
-    }
-  }
-}
+```bash
+CITIZEN_CACHE__STATIC__ENABLED=true
 ```
 
 citizen handles response headers automatically (ETags, 304 status codes, etc.) using each file's last modified date. Note that if a file changes after it's been cached, you'll need to clear the file cache using [cache.clear()](#clear-options) or restart the app.
@@ -2382,42 +2451,18 @@ With static caching enabled, all static files citizen serves will be cached in t
 
 citizen automatically sets ETag headers for cached requests and static assets. You don't need to do anything to make them work. The Cache-Control header is entirely manual, however.
 
-To set the Cache-Control header for static assets, use the `cache.control` setting in your config:
+To set Cache-Control headers for static assets, provide a JSON object in `CITIZEN_CACHE__CONTROL`:
 
-```json
-{
-  "citizen": {
-    "cache": {
-      "static":             true,
-      "control": {
-        "/css/global.css":  "max-age=86400",
-        "/css/index.css":   "max-age=86400",
-        "/js/global.js":    "max-age=86400",
-        "/js/index.js":     "max-age=86400",
-        "/images/logo.png": "max-age=31536000"
-      }
-    }
-  }
-}
+```bash
+CITIZEN_CACHE__CONTROL='{ "/css/global.css": "max-age=86400", "/css/index.css": "max-age=86400", "/js/global.js": "max-age=86400", "/js/index.js": "max-age=86400", "/images/logo.png": "max-age=31536000" }'
 ```
 
 The key name is the pathname that points to the static asset in your web directory. If your app's URL path is `/my/app`, then this value should be something like `/my/app/styles.css`. The value is the Cache-Control header value you want to assign to that asset.
 
 You can use strings that match the exact pathname like above, or you can also use wildcards. Mixing the two is fine:
 
-```json
-{
-  "citizen": {
-    "cache": {
-      "static":             true,
-      "control": {
-        "/css/*":           "max-age=86400",
-        "/js/*":            "max-age=86400",
-        "/images/logo.png": "max-age=31536000"
-      }
-    }
-  }
-}
+```bash
+CITIZEN_CACHE__CONTROL='{ "/css/*": "max-age=86400", "/js/*": "max-age=86400", "/images/logo.png": "max-age=31536000" }'
 ```
 
 Here's [a great tutorial on client-side caching](https://developers.google.com/web/fundamentals/performance/optimizing-content-efficiency/http-caching) to help explain ETag and Cache-Control headers.
@@ -2427,27 +2472,15 @@ Here's [a great tutorial on client-side caching](https://developers.google.com/w
 
 Both dynamic routes and static assets can be compressed before sending them to the browser. To enable compression for clients that support it:
 
-```json
-{
-  "citizen": {
-    "compression": {
-      "enabled": true
-    }
-  }
-}
+```bash
+CITIZEN_COMPRESSION__ENABLED=true
 ```
 
 Proxies, firewalls, and other network circumstances can strip the request header that tells the server to provide compressed assets. You can force gzip or deflate for all clients like this:
 
-```json
-{
-  "citizen": {
-    "compression": {
-      "enabled": true,
-      "force":  "gzip"
-    }
-  }
-}
+```bash
+CITIZEN_COMPRESSION__ENABLED=true
+CITIZEN_COMPRESSION__FORCE=gzip
 ```
 
 If you have [request caching](#caching-requests-and-controller-actions) enabled, both the original (identity) and compressed (gzip and deflate) versions of the request will be cached, so your cache's memory utilization will increase.
@@ -2455,7 +2488,7 @@ If you have [request caching](#caching-requests-and-controller-actions) enabled,
 
 ## Forms
 
-citizen includes basic request payload parsing. When a user submits a form, the parsed form data is available in your controller via `params.form`. If you want to use a third-party package to parse the form data yourself, you can disable form parsing in the config and access the raw payload via `request.payload`.
+citizen includes basic request payload parsing. When a user submits a form, the parsed form data is available in your controller via `params.form`. If you want to use a third-party package to parse the form data yourself, set `CITIZEN_FORMS__ENABLED=false` and access the raw payload via `request.payload`.
 
 ```js
 // login controller
@@ -2510,18 +2543,12 @@ If it's a multipart form containing a file, the form object passed to your contr
 
 File contents are presented in binary format, so you'll need to use `Buffer.from(fileField1.binary, 'binary')` to create the actual file for storage.
 
-You can pass global form settings via `citizen.form` in the config or at the controller action level via controller config (see below).
+Set global form settings with `CITIZEN_FORMS__*` environment variables or override them at the controller action level via controller config (see below).
 
-Use the `maxPayloadSize` config to limit form uploads. The following config sets the `maxFieldsSize` to 512k:
+Use `CITIZEN_FORMS__MAX_PAYLOAD_SIZE` to limit form uploads. The following sets the maximum payload size to approximately 0.5 MB:
 
-```js
-{
-  "citizen": {
-    "forms": {
-      "maxPayloadSize": 500000  // 0.5MB
-    }
-  }
-}
+```bash
+CITIZEN_FORMS__MAX_PAYLOAD_SIZE=500000
 ```
 
 The `maxPayloadSize` option includes text inputs and files in a multipart form in its calculations. citizen throws an error if form data exceeds this amount.
@@ -2597,7 +2624,7 @@ export const config = {
 }
 ```
 
-Why not just use the [HTTP Headers](#http-headers) directive or set them manually with `response.setHeader()`? When citizen receives a request from an origin other than the host, it checks for the `cors` export in your controller to provide a preflight response without you having to write your own logic within the controller action. You can of course check `request.method` and write logic to handle this manually if you prefer.
+Why not just use the [HTTP Headers](#http-headers) directive or set them manually with `response.setHeader()`? When citizen receives a request from an origin other than the host, it checks the controller action's `cors` configuration to provide a preflight response without you having to write your own logic within the controller action. You can of course check `request.method` and write logic to handle this manually if you prefer.
 
 For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) and [the Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
 
@@ -2626,7 +2653,7 @@ citizen has a built-in application cache where you can store basically anything:
 
 You can store any object in citizen's cache. The benefits of using `cache` over storing content in your own global app variables are built-in cache expiration and extension, as well as wrappers for reading, parsing, and storing file content.
 
-citizen's default cache time is 15 minutes, which you can change in the config (see [Configuration](#configuration)). Cached item lifespans are extended whenever they're accessed unless you pass `resetOnAccess: false` or change that setting in the config.
+citizen's default cache time is 15 minutes, which you can change with `CITIZEN_CACHE__APPLICATION__LIFESPAN`. Cached item lifespans are extended whenever they're accessed unless you pass `resetOnAccess: false` or set `CITIZEN_CACHE__APPLICATION__RESET_ON_ACCESS=false`.
 
 ```js
 // Cache a string in the default app scope for 15 minutes (default). Keys
@@ -2805,7 +2832,7 @@ citizen's `log()` function is exposed for use in your app via `app.log()`.
 
 Makes it easy to log comments to either the console or a file (or both) in a way that's dependent on the mode of the framework.
 
-When citizen is in production mode, `log()` does nothing by default. In development mode, `log()` will log whatever you pass to it. This means you can place it throughout your application's code and it will only write to the log in development mode. You can override this behavior globally with the log settings in your config file or inline with the `console` or `file` options when calling `log()`.
+When citizen is in production mode, `log()` does nothing by default. In development mode, `log()` will log whatever you pass to it. This means you can place it throughout your application's code and it will only write to the log in development mode. You can override this behavior globally with the `CITIZEN_LOGS__*` environment settings or inline with the `console` or `file` options when calling `log()`.
 
 ```js
 app.log({
@@ -2833,28 +2860,23 @@ app.log({
 })
 ```
 
-Log files appear in the directory you specify in `config.citizen.directories.logs`.
+Configure the log directory with `CITIZEN_DIRECTORIES__LOGS`. The resolved path is available as `app.config.directories.logs`.
 
 
 ## Debugging
 
 **Warning: `development` mode is inherently insecure. Don't use it in a production environment.**
 
-If you set `"mode": "development"` in your config file, citizen dumps all major operations to the console.
+If you set `CITIZEN_MODE=development`, citizen dumps all major operations to the console.
 
-You can also dump the request context to the view by setting `development.debug.view` in your config file to `true`, or use the `ctzn_debug` URL parameter on a per-request basis:
+You can also dump the request context to the view by setting
+`CITIZEN_DEVELOPMENT__DEBUG__VIEW=true`, or use the `ctzn_debug` URL parameter on
+a per-request basis. Resolved framework settings from `app.config` may appear in
+this output. Application secrets remain in `process.env` unless your application
+copies them elsewhere.
 
-```js
-// config file: always dumps debug output in the view
-{
-  "citizen": {
-    "development": {
-      "debug": {
-        "view": true
-      }
-    }
-  }
-}
+```bash
+CITIZEN_DEVELOPMENT__DEBUG__VIEW=true
 ```
 
 By default, citizen dumps the pattern's complete context. You can specify the exact object to debug with the `ctzn_inspect` URL parameter:
@@ -2867,20 +2889,13 @@ http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params
 http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params.session
 ```
 
-The debug output traverses objects 4 levels deep by default. To display deeper output, use the `development.debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
+The debug output traverses objects 4 levels deep by default. To display deeper output, set `CITIZEN_DEVELOPMENT__DEBUG__DEPTH` or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
 
-```js
-// config file: debug 4 levels deep
-{
-  "citizen": {
-    "development": {
-      "debug": {
-        "depth": 6
-      }
-    }
-  }
-}
+```bash
+CITIZEN_DEVELOPMENT__DEBUG__DEPTH=6
+```
 
+```
 // URL
 // http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_debugDepth/4
 ```
@@ -2905,9 +2920,10 @@ $ node node_modules/citizen/util/scaffold skeleton
 Resulting file structure:
 
 ```
+.gitignore
 app/
-  config/
-    citizen.json
+  .env
+  .env.example
   controllers/
     hooks/
       application.js

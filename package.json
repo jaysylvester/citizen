@@ -37,7 +37,8 @@
     "lib/",
     "util/",
     "index.js",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "MIGRATION.md"
   ],
   "dependencies": {
     "chokidar": "^3.6.x",
@@ -49,7 +50,10 @@
     "globals": "^15.0.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "test": "node --test"
   },
   "license": "MIT"
 }

@@ -2,7 +2,7 @@
 
 Target release: **2.0** (see `docs/todo.md` #3)
 Status: **Additive.** The JSON config convention stays as a deprecated fallback,
-so 2.0 requires no migration. Removal targeted at 3.0.
+so 2.0 requires no migration. Removal is deferred to a future version.
 
 ## Current state
 
@@ -27,9 +27,8 @@ Today's hierarchy:
 3. `app.start({…})` options ([server.js:47](../../lib/server.js#L47))
 4. route controller `config` exports
 
-Config surface: **60 scalar/array leaves** under `citizen.*`, plus four
-free-form nodes with no defaults (`citizen.cors`, `citizen.cache.control`,
-`citizen.https.pfx|key|cert` + passthrough `createServer()` options), plus
+Config surface: scalar/array leaves under `citizen.*`, the free-form
+`citizen.cache.control` map, passthrough `createServer()` options, and
 **arbitrary app-owned nodes** (`db`, etc.) exposed at `app.config.db.*`.
 
 ## Goals
@@ -68,21 +67,25 @@ for unrelated code to read.
 ### 2. Key naming
 
 Env keys are derived mechanically from the default config: strip the `citizen`
-node, split camelCase, upper-snake, join with `_`, prefix `CITIZEN_`.
+node, convert camelCase words to upper snake case, join config path segments with
+`__`, and prefix the result with `CITIZEN_`.
 
 ```js
 const snake = s => s.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase()
-// citizen.cache.application.resetOnAccess -> CITIZEN_CACHE_APPLICATION_RESET_ON_ACCESS
-// citizen.forms.maxPayloadSize            -> CITIZEN_FORMS_MAX_PAYLOAD_SIZE
+// citizen.cache.application.resetOnAccess -> CITIZEN_CACHE__APPLICATION__RESET_ON_ACCESS
+// citizen.forms.maxPayloadSize            -> CITIZEN_FORMS__MAX_PAYLOAD_SIZE
 ```
 
 Because the map is *generated from the defaults object* rather than hand-written,
-it can't drift, and the reverse lookup is unambiguous. **Verified: all 60 leaves
-generate distinct keys — zero collisions.** Add a startup assertion in
-development mode so a future config addition that does collide fails loudly.
+it can't drift. Double underscores preserve object boundaries, while single
+underscores preserve camel-case word boundaries, so the convention is reversible
+without knowing the defaults. **Verified: all 63 leaves generate distinct keys —
+zero collisions.** Add a startup assertion so a future config addition that does
+collide fails loudly.
 
 Unknown `CITIZEN_*` variables are ignored, but should be logged as a warning in
-development mode — a typo in `CITIZEN_HTTP_PROT` would otherwise fail silently.
+development mode — a typo in `CITIZEN_FORMS__MAX_PAYLOD_SIZE` would otherwise
+fail silently.
 
 ### 3. Type coercion
 
@@ -100,32 +103,33 @@ in the `.env`:
 | `null`       | `100`                          | number if numeric, else string    |
 
 Coercion failures should throw at startup with the offending key name, not
-silently produce `NaN` or the string `"false"`. A bad `CITIZEN_HTTP_PORT` must
+silently produce `NaN` or the string `"false"`. A bad `CITIZEN_HTTP__PORT` must
 not reach `httpServer.listen()`.
 
 ### 4. Free-form nodes
 
-The four nodes with no defaults to type against take **JSON string values**:
+Free-form object nodes take **JSON string values**:
 
 ```bash
-CITIZEN_CORS='{"Access-Control-Allow-Origin":"https://example.com"}'
-CITIZEN_CACHE_CONTROL='{"/":"max-age=86400","/images":"max-age=31536000"}'
-CITIZEN_HTTPS_PFX=/absolute/path/to/site.pfx
+CITIZEN_CACHE__CONTROL='{"/":"max-age=86400","/images":"max-age=31536000"}'
+CITIZEN_HTTPS__PFX=/absolute/path/to/site.pfx
 ```
 
-`pfx`/`key`/`cert` are plain path strings; `cors` and `cache.control` are maps
-with arbitrary keys, so JSON is the only sane flat encoding. General rule to
-document: any value beginning with `{` or `[` is parsed as JSON.
+`pfx`/`key`/`cert` are plain path strings generated from their defaults.
+`cache.control` is a map with arbitrary keys, so JSON is the only sane flat
+encoding. General rule to document: any value beginning with `{` or `[` is
+parsed as JSON. CORS is deliberately excluded because it is route-controller
+configuration, not global framework configuration.
 
 **Unknown keys under `citizen.http` / `citizen.https` pass through** to Node's
 `createServer()` rather than being rejected as typos. Since `start()` no longer
 supplies these (§7), env is now their only route, and there are no defaults to
-type against. Reverse the naming transform (lowercase, capitalize after `_`) and
-coerce heuristically:
+type against. Remove the `CITIZEN_HTTP__` or `CITIZEN_HTTPS__` prefix, reverse
+the single-underscore camel-case transform, and coerce heuristically:
 
 ```bash
-CITIZEN_HTTP_KEEP_ALIVE_TIMEOUT=5000   # -> citizen.http.keepAliveTimeout = 5000
-CITIZEN_HTTPS_MAX_HEADER_SIZE=16384    # -> citizen.https.maxHeaderSize   = 16384
+CITIZEN_HTTP__KEEP_ALIVE_TIMEOUT=5000   # -> citizen.http.keepAliveTimeout = 5000
+CITIZEN_HTTPS__MAX_HEADER_SIZE=16384    # -> citizen.https.maxHeaderSize   = 16384
 ```
 
 The reverse transform is only lossless because Node's options are camelCase with
@@ -209,13 +213,13 @@ or defend. It also matches how the two are actually used — framework settings
 vary per deployment, app structure doesn't.
 
 Consequence: `app.start({ citizen: { https: { pfx: '…' } } })`, which the README
-currently documents, becomes `CITIZEN_HTTPS_PFX=…`. Since that's a documented
+currently documents, becomes `CITIZEN_HTTPS__PFX=…`. Since that's a documented
 1.x API, deprecate rather than break — consistent with the JSON decision:
 
 - **2.x** — `start({ citizen: … })` still applies, at lowest precedence (below
   both the deprecated JSON file and env), and logs a deprecation warning naming
   the env variables that replace the keys it saw
-- **3.0** — the `citizen` node in `start()` options is ignored
+- **Future version** — the `citizen` node in `start()` options is removed
 
 Final chain, lowest to highest:
 
@@ -231,7 +235,7 @@ Final chain, lowest to highest:
 The root-level `host` key has no function left under env config — it existed
 solely to select among JSON files. It stays readable at `app.config.host` for the
 deprecated path and for `start()`, documented as deprecated, and disappears with
-the JSON loader in 3.0.
+the JSON loader in a future version.
 
 ### 8. Startup logging
 
@@ -261,14 +265,14 @@ What it costs:
 | Retain `getConfig()` + `host` matching                       | ~0 — existing code, untouched |
 | Deprecation warnings, JSON + `start({ citizen })`            | ~15 lines |
 | Two extra `extend()` calls in the chain                      | 2 lines |
-| README documents two conventions until 3.0                   | moderate, the real cost |
+| README documents two conventions until deprecated support is removed | moderate, the real cost |
 | Test matrix roughly doubles (json-only, env-only, both, +`start()`) | ~8 extra cases |
 
 What makes it *not* free:
 
 - **The precedence rule must be stated and defended.** Env wins over JSON. An
   app with both, where the JSON is the "real" config and a stray exported
-  `CITIZEN_HTTP_PORT` overrides it, is a confusing afternoon. The dev-mode
+  `CITIZEN_HTTP__PORT` overrides it, is a confusing afternoon. The dev-mode
   startup log listing applied env keys is the mitigation, not an optional nicety.
 - **There are now two deprecated paths, not one** — the JSON file and
   `start({ citizen: … })` (§7). They share the removal date and the chain has
@@ -288,7 +292,7 @@ What makes it *not* free:
 The alternative — removing JSON in 2.0 — saves perhaps 40 lines and a README
 section, and costs every existing app a migration in a release that is already
 carrying a breaking view-syntax change. Not worth it. Deprecate in 2.0, warn
-throughout 2.x, remove in 3.0.
+for at least one release cycle, then remove in a future version.
 
 ## Work breakdown
 
@@ -300,7 +304,7 @@ throughout 2.x, remove in 3.0.
 | 4 | Startup log: resolved `.env` path, env key count, unknown-key warnings | `init/config.js` | ~15 lines |
 | 5 | Scaffold emits `.env.example` + `.gitignore` (with `.env`) instead of `config/citizen.json`; generate `.env` from it | `util/scaffold.js`, `util/templates/` | moderate |
 | 6 | `engines` bump to `>=22` (Node 20 is EOL; `util.parseEnv` needs ≥20.12) | `package.json`, `util/templates/package.json` | trivial |
-| 7 | README: Configuration section (L111-310), config table (L310-1075) gains an env-var column, Quick Start + Utilities file trees, `start()` HTTPS example rewritten to env | `README.md` | **largest single item** |
+| 7 | README: Configuration convention and examples, tabular defaults reference, Quick Start + Utilities file trees, `start()` HTTPS example rewritten to env | `README.md` | **largest single item** |
 | 8 | CHANGELOG 2.0 entry | `CHANGELOG.md` | small |
 | 9 | Tests (see below) | new | ~150 lines |
 
@@ -344,7 +348,7 @@ the env implementation walks the same merge code.
    turns `development.watcher.ignored` into `{}` — so the default dotfile-ignore
    for the dev watcher is not actually in effect for those apps. Fix `copy()` to
    pass RegExp (and `Date`, already handled) through by reference or clone.
-   `CITIZEN_DEVELOPMENT_WATCHER_IGNORED` hits the identical path.
+   `CITIZEN_DEVELOPMENT__WATCHER__IGNORED` hits the identical path.
 2. **Config values are logged into views.** Not a bug in itself, but §5's
    guidance should be paired with a README note under
    `development.debug.scope.config` that anything in `app.config` may be rendered
@@ -364,9 +368,315 @@ the env implementation walks the same merge code.
 ## Remaining decision
 
 **How hard to deprecate `start({ citizen: … })`.** The plan proposes warn-and-honor
-through 2.x, removal in 3.0, matching the JSON file's treatment. The alternative
+through 2.x, then removal in a future version, matching the JSON file's treatment. The alternative
 is ignoring it outright in 2.0: cleaner, enforces the split immediately, and
 breaks the HTTPS setup of anyone following the current README example. Since 2.0
 is already carrying a breaking view-syntax change, adding a second breaking
 change has real cost — but if the split is meant to be a hard rule rather than a
 convention, one deprecation cycle is the price.
+
+
+---
+
+
+# Supplemental plan: one conventional app environment
+
+Status: **Proposed replacement for the compatibility portions of the plan
+above.** Keep the generated env mapping, coercion, server-option passthrough,
+scaffold reference, and tests; replace legacy compatibility and custom env-file
+discovery with the design below.
+
+## Why revise the plan
+
+The original plan assumes that 2.0 must preserve both legacy configuration
+inputs:
+
+- host-selected `app/config/*.json` files
+- the `citizen` node passed to `app.start()`
+
+That assumption accounts for most of the resolution hierarchy, filesystem
+logic, deprecation warnings, tests, and explanatory documentation. If 2.0 may
+make a clean break, preserving those paths makes the new convention harder to
+understand and leaves substantially more code than the feature requires.
+
+The separation of framework and application config also no longer pays for
+itself. A committed start file is a poor place to encourage database passwords,
+API keys, and other deployment-specific values. Moving framework settings to
+`.env` while leaving application settings in `app.start()` gives users two
+configuration conventions and keeps application secrets susceptible to an
+accidental commit or development debug output.
+
+citizen currently supports one application per process: it has one global
+`CTZN`, one controller tree, one helper/model/view tree, and one resolved config.
+There is no current multi-application requirement that justifies separate app
+config namespaces. Supporting multiple apps later would require an
+instance-based framework redesign and should not shape this configuration API.
+
+## Revised decisions
+
+### 1. Automatically load exactly `app/.env`
+
+`app/.env` is the single conventional file. There is no CLI flag, upward
+directory search, host selection, or citizen-specific file selector:
+
+```text
+app/
+  .env          # local, gitignored
+  .env.example  # committed reference
+  start.js
+```
+
+Startup remains zero-configuration:
+
+```bash
+node app/start.js
+```
+
+Before resolving defaults, citizen calls Node's native
+[`process.loadEnvFile()`](https://nodejs.org/api/process.html#processloadenvfilepath)
+for `<app>/.env`. A missing file is not an error; parsing errors are. Values
+already present in `process.env` remain authoritative over file values.
+
+If `CITIZEN_DIRECTORIES__APP` remains supported, a value already present in the
+process environment may select the app directory before `.env` is loaded. The
+file cannot relocate itself: an app path needed to find `.env` must necessarily
+come from outside that file.
+
+Remove:
+
+- `CITIZEN_ENV_FILE`
+- upward `.env` discovery
+- citizen's private `util.parseEnv()` parsing and file/process merge
+- instructions to start citizen with Node's `--env-file` flag
+
+### 2. Treat `.env` as the application's environment
+
+The file may contain framework and application variables together:
+
+```bash
+CITIZEN_HTTP__PORT=8080
+DB_SERVER=localhost
+DB_PASSWORD=secret
+```
+
+citizen reads, validates, and coerces only `CITIZEN_*`. Other values remain in
+`process.env` for application code:
+
+```js
+const connection = connect({
+  server: process.env.DB_SERVER,
+  password: process.env.DB_PASSWORD
+})
+```
+
+citizen should not infer types or object paths for application-owned variables.
+An application that wants typed or grouped settings can define an ordinary
+module that reads `process.env`; that concern does not belong in `app.start()`.
+
+### 3. Make `app.start()` start the app
+
+`app.start()` accepts no configuration:
+
+```js
+import citizen from 'citizen'
+
+global.app = citizen
+
+app.start()
+```
+
+Passing an argument should throw an actionable error instead of being silently
+ignored. Remove `startConfig()`, its source replay, all `app.start({ citizen })`
+handling, and arbitrary application-node merging.
+
+### 4. Remove the redundant `citizen` runtime namespace
+
+The `citizen` node exists so framework settings can coexist with the legacy
+root-level `host` selector and arbitrary application config. Once both are gone,
+the extra level has no purpose.
+
+Expose the resolved framework config directly:
+
+```text
+CITIZEN_FORMS__MAX_PAYLOAD_SIZE
+  ↕
+app.config.forms.maxPayloadSize
+```
+
+Controller config uses the identical shape:
+
+```js
+export const config = {
+  submit: {
+    forms: {
+      maxPayloadSize: 1000000
+    }
+  }
+}
+```
+
+Internally, replace `CTZN.config.citizen.*` and `params.config.citizen.*` with
+`CTZN.config.*` and `params.config.*`. This is a broad but mechanical consumer
+change. It makes the public env-to-runtime relationship direct and removes a
+wrapper from every framework config read.
+
+Application secrets are never copied into `app.config`, so citizen's debug
+output cannot expose them by dumping the resolved framework config. The README
+should still warn users that explicitly logging `process.env` exposes secrets.
+
+### 5. Remove legacy JSON config rather than deprecating it
+
+Delete the JSON loader, hostname matching, `host` default, precedence branch,
+warnings, tests, documentation, and future-removal plan.
+
+For migration safety, retain only a small guard: if `app/config` contains JSON
+files, fail startup with an error directing the user to `app/.env`. Do not parse,
+merge, or otherwise support those files. This prevents an upgraded application
+from silently booting with production defaults after its real configuration was
+ignored. The guard is migration detection, not a compatibility path.
+
+## Final precedence
+
+Lowest to highest:
+
+1. citizen defaults
+2. `app/.env`
+3. Values already present in `process.env`
+4. Route controller and action config
+
+Node performs step 2 before citizen maps framework variables. Since the file is
+loaded into `process.env`, application-owned values follow the same file/process
+precedence without a second resolver.
+
+## Simplified module shape
+
+Keep configuration resolution testable as a pure operation, but make production
+startup a thin wrapper:
+
+```js
+function resolve(env, options = {}) {
+  const defaults = getDefaults(options),
+        result = getEnvConfig(env, defaults)
+
+  return {
+    config: helpers.extend(defaults, result.config),
+    applied: result.applied,
+    passthrough: result.passthrough,
+    unknown: result.unknown
+  }
+}
+
+loadAppEnv()
+
+const result = resolve(process.env)
+
+logEnv(result)
+
+export default result.config
+```
+
+The exact organization should follow existing project style, but the important
+boundary is one pure resolver plus one import-time load. Do not retain a generic
+multi-source resolution API after its sources have been removed.
+
+This also fixes a regression in the current working implementation:
+`init/config.js` default-exports the loader function while `index.js` expects the
+resolved config object. Add an `index.js` import smoke test so this cannot recur.
+
+## Code removed from the current implementation
+
+- `os` and `util` imports from `init/config.js` (`path` remains for defaults)
+- `sources`
+- `findEnv()` and `parseEnv()`
+- `getJsonConfig()` and `warnJson()`
+- `getEnvKeys()`
+- JSON and startup-config branches in `resolve()`
+- `startConfig()` and its server import/call
+- the root `host` default
+- compatibility and deprecation logging
+- `CITIZEN_ENV_FILE` handling
+- the separate deprecation-removal plan and todo
+
+Keep:
+
+- generated reversible env keys (`__` for paths, `_` for camel-case words)
+- default-type coercion and validation
+- `CITIZEN_HTTP` / `CITIZEN_HTTPS` whole-object JSON
+- `CITIZEN_HTTP__*` / `CITIZEN_HTTPS__*` Node option passthrough
+- generated `.env.example`
+- the RegExp-safe `helpers.copy()` fix
+- HTTPS credential-path loading and server guards
+
+## Scaffold and documentation
+
+The scaffold should:
+
+- create `app/.env` and `app/.env.example`
+- ensure `.env` is ignored by Git
+- keep `node app/start.js` as the documented startup command
+- stop creating `app/config` or accepting config-file names
+- generate the framework portion of `.env.example` from defaults
+- leave a clearly marked section for application-owned variables
+
+The README should:
+
+- describe `app/.env` as the sole conventional file
+- explain that deployment environment values override it
+- show framework and application variables in the same example
+- direct application code to `process.env`
+- describe `app.config.*` as resolved framework settings only
+- remove legacy JSON, `CITIZEN_ENV_FILE`, `--env-file`, and startup-config text
+- retain controller config as per-request runtime overrides
+
+## Tests
+
+Retain the pure mapping/coercion tests and replace compatibility tests with:
+
+- no `app/.env` → defaults, no error
+- `app/.env` is loaded automatically; parent/root `.env` files are ignored
+- pre-existing process values override `app/.env`
+- non-`CITIZEN_*` values from `app/.env` are available in `process.env` but not
+  copied into `app.config`
+- malformed `.env` fails startup
+- legacy `app/config/*.json` triggers the migration error and is never parsed
+- `app.start()` succeeds with no argument and rejects any supplied config
+- controller/action config merges directly into `params.config`
+- env mapping/coercion, JSON free-form values, and HTTP/HTTPS passthrough
+- scaffold output and Git ignore behavior
+- importing `index.js` returns a usable object with `config`, controllers,
+  helpers, models, and views
+
+Tests that mutate `process.env` or load `.env` should run in an isolated child
+process or restore every touched key after completion.
+
+## Work order
+
+1. Reduce `init/config.js` to defaults, env mapping/coercion, native app-env
+   loading, the pure resolver, and a resolved default export.
+2. Remove `startConfig()` from `lib/server.js`; make `start()` reject arguments.
+3. Flatten the runtime config from `.citizen.*` to direct properties throughout
+   `index.js`, `lib/`, and controller-config merging.
+4. Add the migration-only JSON directory guard, then delete the legacy loader.
+5. Move scaffold env files into `app/` and keep the no-flag start command.
+6. Rewrite tests around the final three-layer global precedence plus controller
+   overrides; add the `index.js` smoke test first.
+7. Update README, CHANGELOG, todo, and remove the obsolete removal plan.
+8. Run the full test suite, syntax checks, scaffold in a temporary project, and
+   boot the scaffolded application once.
+
+## Branch strategy
+
+Implement this supplemental plan on a clean branch from the pre-env baseline,
+while preserving the current work on a reference branch or commit.
+
+Do not discard the current work: selectively port the proven pieces—the
+reversible key convention, coercion, HTTP/HTTPS passthrough, env-example
+generator, RegExp fix, HTTPS handling, and focused tests. Avoid cherry-picking
+whole files whose current shape is dominated by compatibility logic.
+
+A clean branch is preferable because the current working diff is already large,
+the config module was expanded around sources this plan deletes, the docs explain
+several conventions that will disappear, and the default-export regression shows
+that subtractive cleanup would be harder to audit. Reimplementation from the
+baseline should produce a smaller, more reviewable diff and make every retained
+line serve the final design.

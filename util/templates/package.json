@@ -4,6 +4,6 @@
   "description": "Skeleton of a citizen app",
   "type": "module",
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=22.0.0"
   }
 }
