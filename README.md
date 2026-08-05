@@ -122,6 +122,7 @@ CITIZEN_MODE=development
 CITIZEN_HTTP__PORT=8080
 CITIZEN_SESSIONS__ENABLED=true
 CITIZEN_CONTENT_TYPES=text/html,text/plain,application/json
+CITIZEN_CORS='{"Access-Control-Allow-Origin":"https://example.com","Access-Control-Allow-Methods":"GET, OPTIONS"}'
 
 # Or, equivalently, use JSON array syntax for array settings:
 # CITIZEN_CONTENT_TYPES='["text/html","text/plain","application/json"]'
@@ -157,6 +158,7 @@ remain ordinary path strings:
 
 ```bash
 CITIZEN_CACHE__CONTROL='{"/":"max-age=86400"}'
+CITIZEN_CORS='{"Access-Control-Allow-Origin":"https://example.com"}'
 CITIZEN_HTTP='{"keepAliveTimeout":5000}'
 CITIZEN_HTTPS__PFX=/absolute/path/to/site.pfx
 ```
@@ -478,6 +480,20 @@ and
     </td>
     <td>
       An allowlist of response formats for each request, based on the client's <code>Accept</code> request header. When configuring available formats for individual route controllers or actions, the entire array of available formats must be provided.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_CORS</code>
+    </td>
+    <td>
+      JSON object
+    </td>
+    <td>
+      Disabled
+    </td>
+    <td>
+      Sets default CORS headers for all route controllers. Controller and action configuration can extend, override, or disable the global policy. See <a href="#cross-origin-resource-sharing-cors">Cross-Origin Resource Sharing</a> for details.
     </td>
   </tr>
   <tr>
@@ -2639,26 +2655,45 @@ export const end = (expiredSession) => {
 
 By default, all controllers respond to requests from the host only. citizen supports cross-domain HTTP requests via access control headers.
 
-To enable cross-domain access for individual controller actions, add a `cors` object with the necessary headers to your controller's exports:
+To use the same policy for every route controller, set `CITIZEN_CORS` to a JSON
+object:
+
+```bash
+CITIZEN_CORS='{"Access-Control-Allow-Origin":"https://example.com","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Access-Control-Allow-Headers":"Content-Type"}'
+```
+
+This is an optional global baseline; citizen does not enable CORS by default.
+Controller and action configuration is merged over the baseline, so a route can
+refine individual headers without repeating the entire policy:
+
 
 ```js
 export const config = {
-  // Each controller action can have its own CORS headers
+  controller: {
+    cors: {
+      'Access-Control-Allow-Methods': 'GET, OPTIONS'
+    }
+  },
   handler: {
     cors: {
-      'Access-Control-Allow-Origin': 'http://www.foreignhost.com',
       'Access-Control-Expose-Headers': 'X-My-Custom-Header, X-Another-Custom-Header',
-      'Access-Control-Max-Age': 600,
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'OPTIONS, PUT',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Vary': 'Origin'
+      'Access-Control-Max-Age': 600
     }
   }
 }
 ```
 
-Why not just use the [HTTP Headers](#http-headers) directive or set them manually with `response.setHeader()`? When citizen receives a request from an origin other than the host, it checks the controller action's `cors` configuration to provide a preflight response without you having to write your own logic within the controller action. You can of course check `request.method` and write logic to handle this manually if you prefer.
+Set `cors: false` at either level to disable the global policy:
+
+```js
+export const config = {
+  controller: {
+    cors: false
+  }
+}
+```
+
+Why not just use the [HTTP Headers](#http-headers) directive or set them manually with `response.setHeader()`? When citizen receives a request from an origin other than the host, it checks the resolved global, controller, and action CORS configuration to provide a preflight response without you having to write your own logic within the controller action. You can of course check `request.method` and write logic to handle this manually if you prefer.
 
 For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) and [the Mozilla Developer Network](https://developer.mozilla.org/en-US/docs/HTTP/Access_control_CORS).
 

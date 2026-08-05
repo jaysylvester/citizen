@@ -13,6 +13,7 @@ import helpers           from '../lib/helpers.js'
 
 const appPath = fileURLToPath(new URL('../../../app', import.meta.url)),
       jsonEnv = new Map([
+        ['CITIZEN_CORS',  ['cors']],
         ['CITIZEN_HTTP',  ['http']],
         ['CITIZEN_HTTPS', ['https']]
       ]),
@@ -199,7 +200,7 @@ function getEnvConfig(env, defaults) {
       passthrough = [],
       unknown = []
 
-  // Whole-node JSON is applied first so specific variables remain authoritative.
+  // Whole-object JSON is applied first so specific variables remain authoritative.
   entries.filter( item => jsonEnv.has(item[0]) ).forEach( item => {
     let parsed = parse(item[0], String(item[1]))
 
@@ -494,7 +495,8 @@ function buildEnv(defaults, overrides = {}) {
 
   lines.push(
     '',
-    '# Whole-node JSON:',
+    '# Optional whole-object configuration:',
+    '# CITIZEN_CORS={"Access-Control-Allow-Origin":"https://example.com","Access-Control-Allow-Methods":"GET, OPTIONS"}',
     '# CITIZEN_HTTP={"keepAliveTimeout":5000}',
     '# CITIZEN_HTTPS={"maxHeaderSize":16384}',
     '',

@@ -118,8 +118,8 @@ CITIZEN_HTTPS__PFX=/absolute/path/to/site.pfx
 `pfx`/`key`/`cert` are plain path strings generated from their defaults.
 `cache.control` is a map with arbitrary keys, so JSON is the only sane flat
 encoding. General rule to document: any value beginning with `{` or `[` is
-parsed as JSON. CORS is deliberately excluded because it is route-controller
-configuration, not global framework configuration.
+parsed as JSON. This original design excluded global CORS; the supplemental
+design below adds it as an optional baseline while retaining route overrides.
 
 **Unknown keys under `citizen.http` / `citizen.https` pass through** to Node's
 `createServer()` rather than being rejected as typos. Since `start()` no longer
@@ -545,6 +545,19 @@ merge, or otherwise support those files. This prevents an upgraded application
 from silently booting with production defaults after its real configuration was
 ignored. The guard is migration detection, not a compatibility path.
 
+### 6. Allow an optional global CORS baseline
+
+Map `CITIZEN_CORS` from a JSON object to `app.config.cors`. Keep it absent from
+the defaults so same-origin behavior does not change unless the application
+sets it explicitly.
+
+The normal request configuration merge provides the desired precedence without
+a separate CORS path: global headers establish a baseline, controller and
+action `cors` objects extend or override individual headers, and `cors: false`
+disables the global policy for a route. This preserves controller-level control
+without requiring an application-wide policy to be copied into every
+controller.
+
 ## Final precedence
 
 Lowest to highest:
@@ -611,6 +624,7 @@ Keep:
 
 - generated reversible env keys (`__` for paths, `_` for camel-case words)
 - default-type coercion and validation
+- optional `CITIZEN_CORS` whole-object JSON with controller/action overrides
 - `CITIZEN_HTTP` / `CITIZEN_HTTPS` whole-object JSON
 - `CITIZEN_HTTP__*` / `CITIZEN_HTTPS__*` Node option passthrough
 - generated `.env.example`

@@ -75,6 +75,10 @@ Given this 1.x config:
       "text/html",
       "application/json"
     ],
+    "cors": {
+      "Access-Control-Allow-Origin": "https://example.com",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS"
+    },
     "cache": {
       "control": {
         "/assets/*": "max-age=86400"
@@ -95,6 +99,7 @@ CITIZEN_HTTP__PORT=8080
 CITIZEN_FORMS__MAX_PAYLOAD_SIZE=1048576
 CITIZEN_CONTENT_TYPES=text/html,application/json
 CITIZEN_CACHE__CONTROL='{ "/assets/*": "max-age=86400" }'
+CITIZEN_CORS='{ "Access-Control-Allow-Origin": "https://example.com", "Access-Control-Allow-Methods": "GET, POST, OPTIONS" }'
 
 DB_SERVER=localhost
 ```
@@ -219,7 +224,9 @@ validates and groups environment values.
 
 ## 6. Review controller configuration and CORS
 
-The controller configuration shape remains direct and does not use env names:
+Use `CITIZEN_CORS` as the application-wide baseline when a 1.x configuration
+contains `citizen.cors`. Controller configuration can extend or override the
+global headers without repeating them:
 
 ```js
 export const config = {
@@ -231,16 +238,15 @@ export const config = {
       maxPayloadSize: 1000000
     },
     cors: {
-      'Access-Control-Allow-Origin': 'https://example.com',
       'Access-Control-Allow-Methods': 'OPTIONS, POST'
     }
   }
 }
 ```
 
-CORS remains controller/action configuration. There is no global
-`CITIZEN_CORS`. If an old JSON file contains `citizen.cors`, decide which
-controllers and actions should receive those headers.
+Set `cors: false` in controller or action configuration for routes that must not
+inherit the global policy. Applications without a global policy can continue to
+configure CORS exclusively at the controller or action level.
 
 ## 7. Remove the legacy files safely
 
@@ -292,7 +298,7 @@ These should not be rewritten without understanding the application:
 - arbitrary application config names and types;
 - secrets committed in old config or startup files;
 - computed values or function calls inside `app.start()`;
-- global CORS settings that need action-level destinations;
+- route-specific CORS policies that cannot inherit the global baseline;
 - config passed through aliases, destructuring, computed properties, or helper
   functions;
 - deployment scripts that copy or select JSON config files.

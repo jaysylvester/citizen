@@ -22,7 +22,7 @@ The framework portion is deterministic, but a 1.x config may also contain:
 - arbitrary application nodes with no prescribed env names;
 - secrets that must not be copied into committed output;
 - executable startup expressions rather than serializable values;
-- global CORS headers with no obvious controller/action destination;
+- route-specific CORS policies that differ from a global baseline;
 - aliases and dynamic property access that a text replacement cannot classify.
 
 A script can identify these cases but cannot choose the correct deployment or
@@ -55,7 +55,7 @@ Only ask the user for information that cannot be discovered, principally:
 
 - which host config represents each deployment;
 - preferred names for application-owned env variables;
-- where each global CORS policy belongs;
+- which routes need to override or disable a global CORS policy;
 - whether legacy files may be archived after verification.
 
 ## Analysis output
@@ -96,7 +96,7 @@ must not contain secret values.
 | Name application-owned env variables | No | Propose names and ask |
 | Add application type coercion/validation | No | Application-specific behavior |
 | Convert computed startup expressions | No | Preserve for manual refactoring |
-| Place global CORS config | No | Requires controller/action selection |
+| Convert global `citizen.cors` to `CITIZEN_CORS` | Yes | Preserve route-specific overrides |
 | Resolve multiple host JSON files | No | Requires deployment knowledge |
 | Remove or archive legacy JSON | Approval required | Archive recoverably; never silently delete |
 
@@ -115,7 +115,7 @@ must not contain secret values.
 1. Parse every legacy JSON config without merging it.
 2. Separate `host`, `citizen`, and application-owned roots.
 3. Map known framework leaves using citizen's env-key generator.
-4. Flag unknown framework paths, global `cors`, and conflicting values.
+4. Map global `cors`; flag route-specific policies and conflicting values.
 5. Parse start files and classify literal, environment-derived, computed, and
    secret-like values.
 6. Scan code semantically for old config member expressions; retain a text scan
@@ -131,7 +131,8 @@ must not contain secret values.
 4. Apply AST-based framework member rewrites.
 5. Simplify `app.start()` only after all arguments are accounted for.
 6. Apply approved application env names and explicit coercion modules.
-7. Move approved CORS settings into controller/action config.
+7. Convert global CORS settings to `CITIZEN_CORS` and retain approved
+   controller/action overrides.
 8. Format changed files using the application's existing tooling.
 
 ### Phase 4: validation
@@ -181,7 +182,8 @@ Do not add a `--force` option that suppresses classification or verification.
 2. Implement the read-only analyzer and snapshot its reports in tests.
 3. Implement package/Git edits and exact member-expression codemods.
 4. Implement framework JSON-to-env conversion using citizen's actual mapping.
-5. Add interactive decisions for application variables, hosts, and CORS.
+5. Add interactive decisions for application variables, hosts, and
+   route-specific CORS overrides.
 6. Add verification orchestration and secret scanning.
 7. Run the agent workflow on real migrations before deciding which parts are
    stable enough for a published CLI.

@@ -53,6 +53,7 @@ test('builds a flat default configuration', () => {
   assert.equal(config.mode, 'production')
   assert.equal(config.http.port, 80)
   assert.equal(config.https.pfx, '')
+  assert.equal(Object.hasOwn(config, 'cors'), false)
   assert.equal(config.citizen, undefined)
   assert.deepEqual(config.development.watcher.ignored, /(^|[/\\])\../)
   assert.equal(config.development.watcher.interval, 100)
@@ -119,6 +120,10 @@ test('rejects invalid typed values and identifies their env keys', () => {
     /CITIZEN_CACHE__CONTROL/
   )
   assert.throws(
+    () => getEnvConfig({ CITIZEN_CORS: '[]' }, defaults()),
+    /CITIZEN_CORS must be a JSON object/
+  )
+  assert.throws(
     () => getEnvConfig({ CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING: 'sometimes' }, defaults()),
     /CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING/
   )
@@ -139,6 +144,7 @@ test('maps free-form values and Node server options', () => {
   }, defaults())
 
   assert.equal(result.config.cache.control['/'], 'max-age=86400')
+  assert.equal(result.config.cors['Access-Control-Allow-Origin'], 'https://example.com')
   assert.equal(result.config.http.headersTimeout, 1000)
   assert.equal(result.config.http.keepAliveTimeout, 5000)
   assert.equal(result.config.http.prot, 3001)
@@ -149,7 +155,7 @@ test('maps free-form values and Node server options', () => {
     'CITIZEN_HTTP__KEEP_ALIVE_TIMEOUT',
     'CITIZEN_HTTP__PROT'
   ])
-  assert.deepEqual(result.unknown, ['CITIZEN_CORS', 'CITIZEN_HTTP__NESTED__OPTION', 'CITIZEN_NOT_A_SETTING'])
+  assert.deepEqual(result.unknown, ['CITIZEN_HTTP__NESTED__OPTION', 'CITIZEN_NOT_A_SETTING'])
 })
 
 
@@ -258,8 +264,8 @@ test('renders a complete scaffold env reference with selected active values', ()
   assert.match(example, /^CITIZEN_HTTP__PORT=3000$/m)
   assert.match(example, /^# CITIZEN_FORMS__MAX_PAYLOAD_SIZE=524288$/m)
   assert.match(example, /^# CITIZEN_HTTPS__PFX=""$/m)
+  assert.match(example, /^# CITIZEN_CORS=/m)
   assert.match(example, /^# Application configuration:$/m)
-  assert.doesNotMatch(example, /CITIZEN_CORS=/)
   assert.doesNotMatch(example, /CITIZEN_DIRECTORIES__APP=/)
 })
 
@@ -314,23 +320,49 @@ test('merges controller and action config directly into params.config', () => {
   global.CTZN = {
     controllers: {
       routes: {
+        private: {
+          config: {
+            controller: { cors: false }
+          }
+        },
         submit: {
           config: {
-            controller: { forms: { enabled: false } },
-            save: { forms: { maxPayloadSize: 1000000 } }
+            controller: {
+              cors: { 'Access-Control-Allow-Methods': 'OPTIONS, POST' },
+              forms: { enabled: false }
+            },
+            save: {
+              cors: { 'Access-Control-Allow-Headers': 'Content-Type' },
+              forms: { maxPayloadSize: 1000000 }
+            }
           }
         }
       }
     }
   }
 
-  const params = { config: getConfig({ appPath: appPath }) }
+  const config = getConfig({
+          appPath: appPath,
+          env: {
+            CITIZEN_CORS: JSON.stringify({
+              'Access-Control-Allow-Methods': 'OPTIONS, GET',
+              'Access-Control-Allow-Origin': 'https://example.com'
+            })
+          }
+        }),
+        params = { config: config },
+        privateParams = { config: config }
 
   extendConfig(params, 'submit', 'save')
+  extendConfig(privateParams, 'private', 'handler')
 
+  assert.equal(params.config.cors['Access-Control-Allow-Headers'], 'Content-Type')
+  assert.equal(params.config.cors['Access-Control-Allow-Methods'], 'OPTIONS, POST')
+  assert.equal(params.config.cors['Access-Control-Allow-Origin'], 'https://example.com')
   assert.equal(params.config.forms.enabled, false)
   assert.equal(params.config.forms.maxPayloadSize, 1000000)
   assert.equal(params.config.citizen, undefined)
+  assert.equal(privateParams.config.cors, false)
 })
 
 
