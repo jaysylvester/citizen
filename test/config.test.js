@@ -159,20 +159,20 @@ test('uses NODE_ENV as the mode default and lets CITIZEN_MODE override it', () =
 })
 
 
-test('loads only app/.env and exposes application variables through process.env', (t) => {
+test('loads only the project-root .env and exposes application variables through process.env', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-app-env-')),
         app = path.join(root, 'app')
 
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   fs.mkdirSync(app)
-  fs.writeFileSync(path.join(root, '.env'), 'CITIZEN_HTTP__PORT=2000\n')
+  fs.writeFileSync(path.join(app, '.env'), 'CITIZEN_HTTP__PORT=2000\n')
 
   let result = runConfig(app)
 
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.value.config.http.port, 80)
 
-  fs.writeFileSync(path.join(app, '.env'), 'CITIZEN_HTTP__PORT=3000\nAPP_VALUE=from-file\n')
+  fs.writeFileSync(path.join(root, '.env'), 'CITIZEN_HTTP__PORT=3000\nAPP_VALUE=from-file\n')
   result = runConfig(app)
 
   assert.equal(result.status, 0, result.stderr)
@@ -182,13 +182,13 @@ test('loads only app/.env and exposes application variables through process.env'
 })
 
 
-test('keeps process values above app/.env values', (t) => {
+test('keeps process values above project-root .env values', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-process-env-')),
         app = path.join(root, 'app')
 
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   fs.mkdirSync(app)
-  fs.writeFileSync(path.join(app, '.env'), 'CITIZEN_HTTP__PORT=3000\nAPP_VALUE=from-file\n')
+  fs.writeFileSync(path.join(root, '.env'), 'CITIZEN_HTTP__PORT=3000\nAPP_VALUE=from-file\n')
 
   const result = runConfig(app, {
     APP_VALUE: 'from-process',
@@ -201,13 +201,13 @@ test('keeps process values above app/.env values', (t) => {
 })
 
 
-test('does not let app/.env relocate its own app directory', (t) => {
+test('does not let .env relocate its own app directory', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-app-path-')),
         app = path.join(root, 'app')
 
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   fs.mkdirSync(app)
-  fs.writeFileSync(path.join(app, '.env'), 'CITIZEN_DIRECTORIES__APP=/another/app\n')
+  fs.writeFileSync(path.join(root, '.env'), 'CITIZEN_DIRECTORIES__APP=/another/app\n')
 
   const result = runConfig(app)
 
@@ -216,13 +216,13 @@ test('does not let app/.env relocate its own app directory', (t) => {
 })
 
 
-test('fails on malformed app/.env content', (t) => {
+test('fails on malformed project-root .env content', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-malformed-env-')),
         app = path.join(root, 'app')
 
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   fs.mkdirSync(app)
-  fs.writeFileSync(path.join(app, '.env'), 'CITIZEN_HTTP__PORT=3000\nTHIS IS NOT AN ASSIGNMENT\n')
+  fs.writeFileSync(path.join(root, '.env'), 'CITIZEN_HTTP__PORT=3000\nTHIS IS NOT AN ASSIGNMENT\n')
 
   const result = runConfig(app)
 
@@ -264,7 +264,7 @@ test('renders a complete scaffold env reference with selected active values', ()
 })
 
 
-test('scaffolds app-local env files and ignores the private file', (t) => {
+test('scaffolds project-root env files and ignores the private file', (t) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-scaffold-')),
         modules = path.join(root, 'node_modules'),
         citizen = path.resolve('.'),
@@ -273,6 +273,12 @@ test('scaffolds app-local env files and ignores the private file', (t) => {
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   fs.mkdirSync(modules)
   fs.symlinkSync(citizen, path.join(modules, 'citizen'), 'dir')
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({
+    dependencies: {
+      citizen: '^2.0.0'
+    },
+    name: 'citizen-scaffold-test'
+  }, null, 2) + '\n')
 
   const result = spawnSync(process.execPath, [
           '--preserve-symlinks',
@@ -289,10 +295,18 @@ test('scaffolds app-local env files and ignores the private file', (t) => {
         })
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(fs.readFileSync(path.join(root, '.gitignore'), 'utf8'), 'app/.env\n')
-  assert.match(fs.readFileSync(path.join(root, 'app/.env'), 'utf8'), /^CITIZEN_HTTP__PORT=3100$/m)
-  assert.match(fs.readFileSync(path.join(root, 'app/.env.example'), 'utf8'), /^# CITIZEN_FORMS__MAX_PAYLOAD_SIZE=524288$/m)
+  assert.equal(fs.readFileSync(path.join(root, '.gitignore'), 'utf8'), '.env\n')
+  assert.match(fs.readFileSync(path.join(root, '.env'), 'utf8'), /^CITIZEN_HTTP__PORT=3100$/m)
+  assert.match(fs.readFileSync(path.join(root, '.env.example'), 'utf8'), /^# CITIZEN_FORMS__MAX_PAYLOAD_SIZE=524288$/m)
   assert.equal(fs.existsSync(path.join(root, 'app/config')), false)
+  assert.equal(fs.existsSync(path.join(root, 'app/package.json')), false)
+
+  const packageJSON = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'))
+
+  assert.equal(packageJSON.dependencies.citizen, '^2.0.0')
+  assert.equal(packageJSON.engines.node, '>=22.0.0')
+  assert.equal(packageJSON.name, 'citizen-scaffold-test')
+  assert.equal(packageJSON.type, 'module')
 })
 
 
@@ -341,8 +355,8 @@ test('imports the public module with usable flat config and app collections', (t
 
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   directories.forEach( directory => fs.mkdirSync(path.join(app, directory), { recursive: true }) )
-  fs.writeFileSync(path.join(app, 'package.json'), '{"type":"module"}\n')
-  fs.writeFileSync(path.join(app, '.env'), [
+  fs.writeFileSync(path.join(root, 'package.json'), '{"type":"module"}\n')
+  fs.writeFileSync(path.join(root, '.env'), [
     'CITIZEN_HTTP__ENABLED=false',
     'CITIZEN_HTTP__PORT=3456',
     'CITIZEN_LOGS__MAX_FILE_SIZE=0'

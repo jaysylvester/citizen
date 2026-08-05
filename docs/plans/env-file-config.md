@@ -1,8 +1,8 @@
 # Plan: .env file configuration
 
 Target release: **2.0** (see `docs/todo.md` #3)
-Status: **Additive.** The JSON config convention stays as a deprecated fallback,
-so 2.0 requires no migration. Removal is deferred to a future version.
+Status: **Superseded.** This original compatibility design is retained as
+history; the implemented design is described in the supplemental plan below.
 
 ## Current state
 
@@ -303,7 +303,7 @@ for at least one release cycle, then remove in a future version.
 | 3 | Deprecation warnings: JSON path, `start({ citizen })` | `init/config.js`, `lib/server.js` | ~15 lines |
 | 4 | Startup log: resolved `.env` path, env key count, unknown-key warnings | `init/config.js` | ~15 lines |
 | 5 | Scaffold emits `.env.example` + `.gitignore` (with `.env`) instead of `config/citizen.json`; generate `.env` from it | `util/scaffold.js`, `util/templates/` | moderate |
-| 6 | `engines` bump to `>=22` (Node 20 is EOL; `util.parseEnv` needs ≥20.12) | `package.json`, `util/templates/package.json` | trivial |
+| 6 | `engines` bump to `>=22` (Node 20 is EOL; `util.parseEnv` needs ≥20.12) | `package.json` | trivial |
 | 7 | README: Configuration convention and examples, tabular defaults reference, Quick Start + Utilities file trees, `start()` HTTPS example rewritten to env | `README.md` | **largest single item** |
 | 8 | CHANGELOG 2.0 entry | `CHANGELOG.md` | small |
 | 9 | Tests (see below) | new | ~150 lines |
@@ -381,10 +381,10 @@ convention, one deprecation cycle is the price.
 
 # Supplemental plan: one conventional app environment
 
-Status: **Proposed replacement for the compatibility portions of the plan
-above.** Keep the generated env mapping, coercion, server-option passthrough,
-scaffold reference, and tests; replace legacy compatibility and custom env-file
-discovery with the design below.
+Status: **Implemented replacement for the plan above.** Keep the generated env
+mapping, coercion, server-option passthrough, scaffold reference, and tests;
+replace legacy compatibility and custom env-file discovery with the design
+below.
 
 ## Why revise the plan
 
@@ -414,17 +414,25 @@ instance-based framework redesign and should not shape this configuration API.
 
 ## Revised decisions
 
-### 1. Automatically load exactly `app/.env`
+### 1. Automatically load exactly the project-root `.env`
 
-`app/.env` is the single conventional file. There is no CLI flag, upward
-directory search, host selection, or citizen-specific file selector:
+The `.env` beside the project's `app/` directory is the single conventional
+file. There is no CLI flag, upward directory search, host selection, or
+citizen-specific file selector:
 
 ```text
+.env          # local, gitignored
+.env.example  # committed reference
 app/
-  .env          # local, gitignored
-  .env.example  # committed reference
   start.js
 ```
+
+This follows the normal Node application convention: one environment per
+project and process, shared by the installed packages running in that process.
+The `app/` directory is citizen's application-code layout, not a separate
+deployment whose dependencies should own another environment file. Monorepos
+with independently executable projects can retain one `.env` at each project
+root.
 
 Startup remains zero-configuration:
 
@@ -434,8 +442,10 @@ node app/start.js
 
 Before resolving defaults, citizen calls Node's native
 [`process.loadEnvFile()`](https://nodejs.org/api/process.html#processloadenvfilepath)
-for `<app>/.env`. A missing file is not an error; parsing errors are. Values
-already present in `process.env` remain authoritative over file values.
+for `<app>/../.env`. The app directory provides a deterministic anchor, so
+loading does not depend on the current working directory and does not require
+filesystem traversal. A missing file is not an error; parsing errors are.
+Values already present in `process.env` remain authoritative over file values.
 
 If `CITIZEN_DIRECTORIES__APP` remains supported, a value already present in the
 process environment may select the app directory before `.env` is loaded. The
@@ -530,7 +540,7 @@ Delete the JSON loader, hostname matching, `host` default, precedence branch,
 warnings, tests, documentation, and future-removal plan.
 
 For migration safety, retain only a small guard: if `app/config` contains JSON
-files, fail startup with an error directing the user to `app/.env`. Do not parse,
+files, fail startup with an error directing the user to `.env`. Do not parse,
 merge, or otherwise support those files. This prevents an upgraded application
 from silently booting with production defaults after its real configuration was
 ignored. The guard is migration detection, not a compatibility path.
@@ -540,7 +550,7 @@ ignored. The guard is migration detection, not a compatibility path.
 Lowest to highest:
 
 1. citizen defaults
-2. `app/.env`
+2. Project-root `.env`
 3. Values already present in `process.env`
 4. Route controller and action config
 
@@ -611,8 +621,10 @@ Keep:
 
 The scaffold should:
 
-- create `app/.env` and `app/.env.example`
+- create `.env` and `.env.example` in the project root
 - ensure `.env` is ignored by Git
+- update the existing project `package.json` with the required module type and
+  Node engine without creating a second package inside `app/`
 - keep `node app/start.js` as the documented startup command
 - stop creating `app/config` or accepting config-file names
 - generate the framework portion of `.env.example` from defaults
@@ -620,7 +632,7 @@ The scaffold should:
 
 The README should:
 
-- describe `app/.env` as the sole conventional file
+- describe the project-root `.env` as the sole conventional file
 - explain that deployment environment values override it
 - show framework and application variables in the same example
 - direct application code to `process.env`
@@ -632,10 +644,10 @@ The README should:
 
 Retain the pure mapping/coercion tests and replace compatibility tests with:
 
-- no `app/.env` → defaults, no error
-- `app/.env` is loaded automatically; parent/root `.env` files are ignored
-- pre-existing process values override `app/.env`
-- non-`CITIZEN_*` values from `app/.env` are available in `process.env` but not
+- no project-root `.env` → defaults, no error
+- the project-root `.env` is loaded automatically; `app/.env` is ignored
+- pre-existing process values override `.env`
+- non-`CITIZEN_*` values from `.env` are available in `process.env` but not
   copied into `app.config`
 - malformed `.env` fails startup
 - legacy `app/config/*.json` triggers the migration error and is never parsed
@@ -657,7 +669,8 @@ process or restore every touched key after completion.
 3. Flatten the runtime config from `.citizen.*` to direct properties throughout
    `index.js`, `lib/`, and controller-config merging.
 4. Add the migration-only JSON directory guard, then delete the legacy loader.
-5. Move scaffold env files into `app/` and keep the no-flag start command.
+5. Move scaffold env files into the project root and keep the no-flag start
+   command.
 6. Rewrite tests around the final three-layer global precedence plus controller
    overrides; add the `index.js` smoke test first.
 7. Update README, CHANGELOG, todo, and remove the obsolete removal plan.

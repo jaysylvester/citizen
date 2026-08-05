@@ -347,13 +347,13 @@ function checkLegacy(app) {
   }
 
   if ( files.length ) {
-    throw new Error('JSON configuration files are no longer supported. Move settings from ' + configDirectory + ' to ' + path.join(app, '.env') + '.')
+    throw new Error('JSON configuration files are no longer supported. Move settings from ' + configDirectory + ' to ' + path.resolve(app, '../.env') + '.')
   }
 }
 
 
 function loadEnv(app) {
-  let file = path.join(app, '.env')
+  let file = path.resolve(app, '../.env')
 
   checkLegacy(app)
   if ( !fs.existsSync(file) ) return null
@@ -437,7 +437,7 @@ function config(options = {}) {
   envFile = loadEnv(app)
   if ( !appVariable && envFile && Object.hasOwn(process.env, 'CITIZEN_DIRECTORIES__APP') ) {
     delete process.env.CITIZEN_DIRECTORIES__APP
-    console.warn('  Ignored CITIZEN_DIRECTORIES__APP from app/.env; set it in the process environment to select another app directory.')
+    console.warn('  Ignored CITIZEN_DIRECTORIES__APP from .env; set it in the process environment to select another app directory.')
   }
   result = resolve(process.env, { appPath: app })
 
@@ -448,9 +448,9 @@ function config(options = {}) {
 
 function logEnv(config, envFile) {
   if ( envFile ) {
-    console.log('  Loaded app environment: ' + envFile)
+    console.log('  Loaded project environment: ' + envFile)
   } else {
-    console.log('  No app/.env found.')
+    console.log('  No .env found.')
   }
 
   console.log('  Applied ' + config.applied.length + ' CITIZEN_* environment variable' + ( config.applied.length === 1 ? '' : 's' ) + '.')

@@ -52,12 +52,13 @@ For configuration options, see [Configuration](#configuration). For more utiliti
 Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basic responsive web site built with citizen that demonstrates some of the framework's functionality. -->
 
 
-### App Directory Structure
+### Project Directory Structure
 
 ```
+.env                  // Local application environment (uncommitted)
+.env.example          // Committed environment reference
+package.json
 app/
-  .env                // Local application environment (uncommitted)
-  .env.example        // Committed environment reference
   controllers/
     hooks/            // Application event hooks (optional)
       application.js
@@ -107,16 +108,16 @@ $ node app/start.js
 
 ### Configuration
 
-`app/.env` is the application's conventional configuration file. citizen loads
-that exact file automatically when it exists; it does not search parent
-directories or require a startup flag. Keep `app/.env` out of version control
-and commit `app/.env.example` as the reference for development and deployment.
+The project-root `.env` is the application's conventional configuration file.
+citizen loads that exact file automatically when it exists; it does not search
+other directories or require a startup flag. Keep `.env` out of version control
+and commit `.env.example` as the reference for development and deployment.
 
 Framework settings use the `CITIZEN_*` namespace. Application-owned variables
 can use whatever names suit the app:
 
 ```bash
-# app/.env
+# .env
 CITIZEN_MODE=development
 CITIZEN_HTTP__PORT=8080
 CITIZEN_SESSIONS__ENABLED=true
@@ -129,13 +130,13 @@ DB_SERVER=localhost
 DB_PASSWORD=secret
 ```
 
-Values already present in `process.env` override matching values in
-`app/.env`. This lets Docker, systemd, a hosting provider, or an ordinary shell
+Values already present in `process.env` override matching values in `.env`.
+This lets Docker, systemd, a hosting provider, or an ordinary shell
 provide deployment-specific values without changing the file.
 
 `CITIZEN_DIRECTORIES__APP` is the one process-only framework setting. Because
-it selects the application directory where citizen looks for `.env`, set it in
-the process environment before startup; `app/.env` cannot relocate itself.
+citizen uses the application directory to locate the project-root `.env`, set
+it in the process environment before startup; `.env` cannot relocate itself.
 
 The env name describes the runtime path directly. Remove the `CITIZEN_` prefix,
 use double underscores as property boundaries, and read single underscores
@@ -184,18 +185,18 @@ Configuration is resolved in the following order. Each source overrides
 matching values from the sources above it:
 
 1. citizen's defaults
-2. `app/.env`
+2. Project-root `.env`
 3. Values already present in `process.env`
 4. Route controller and action configuration
 
-Use either `app/.env` or your deployment environment as the primary convention
+Use either `.env` or your deployment environment as the primary convention
 for a given deployment. If both define the same setting, the deployment/process
 value takes precedence.
 
 
 #### Application configuration
 
-Use `app/.env` and `process.env` for application-owned settings. `app.start()`
+Use `.env` and `process.env` for application-owned settings. `app.start()`
 starts the application and does not accept configuration:
 
 ```js
@@ -716,7 +717,7 @@ and
       Application directory
     </td>
     <td>
-      Absolute path to the citizen application directory. This must be set in the process environment before startup, not in <code>app/.env</code>.
+      Absolute path to the citizen application directory. This must be set in the process environment before startup, not in <code>.env</code>.
     </td>
   </tr>
   <tr>
@@ -2953,10 +2954,11 @@ $ node node_modules/citizen/util/scaffold skeleton
 Resulting file structure:
 
 ```
+.env
+.env.example
 .gitignore
+package.json
 app/
-  .env
-  .env.example
   controllers/
     hooks/
       application.js

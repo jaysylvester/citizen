@@ -1,14 +1,14 @@
 # 2.0.0 (unreleased)
 
-* Replaced file-based JSON and `app.start()` configuration with the conventional `app/.env`
+* Replaced file-based JSON and `app.start()` configuration with the conventional project-root `.env`
   * Framework variables use the `CITIZEN_*` namespace, double underscores for object boundaries, and single underscores for camel-case word boundaries
-  * `app/.env` loads automatically; values already present in `process.env` take precedence
+  * The project-root `.env` loads automatically; values already present in `process.env` take precedence
   * Application-owned variables remain in `process.env` and are not copied into citizen's resolved config
   * Node HTTP/HTTPS server options can be supplied through `CITIZEN_HTTP__*`, `CITIZEN_HTTPS__*`, or whole-node JSON
   * Development watcher polling can be configured for Docker and other nonstandard filesystems
 * Flattened resolved framework settings from `app.config.citizen.*` to `app.config.*`
 * Removed the legacy JSON config loader and startup config; `app.start()` now rejects arguments
-* Updated the scaffold to create `app/.env`, `app/.env.example`, and `.gitignore` instead of `app/config/citizen.json`
+* Updated the scaffold to create `.env`, `.env.example`, and `.gitignore` at the project root, update the existing project package, and stop creating `app/config/citizen.json` or a duplicate `app/package.json`
 * Fixed config merging so regular expressions remain regular expressions
 * citizen now requires Node.js 22 or newer
 * Added a native Node test suite for configuration resolution

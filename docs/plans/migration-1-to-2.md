@@ -85,8 +85,8 @@ must not contain secret values.
 | Change | Automatic | Notes |
 | --- | --- | --- |
 | Require Node.js 22 | Yes | Preserve unrelated package metadata |
-| Add `app/.env` to `.gitignore` | Yes | Do not duplicate an equivalent rule |
-| Create `app/.env.example` | Yes, after classification | Use placeholders for secrets |
+| Add `.env` to `.gitignore` | Yes | Do not duplicate an equivalent rule |
+| Create `.env.example` | Yes, after classification | Use placeholders for secrets |
 | Convert known `citizen.*` JSON leaves to `CITIZEN_*` | Yes | Use the framework's generated mapping and coercion rules |
 | Drop JSON `host` | Yes, after deployment selection | Record the selected source |
 | Rewrite `app.config.citizen.*` to `app.config.*` | Yes | AST member-expression rewrite |
@@ -126,7 +126,8 @@ must not contain secret values.
 
 1. Update Node engine metadata.
 2. Add the Git ignore rule.
-3. Generate `app/.env.example` and, only when requested, a local `app/.env`.
+3. Generate `.env.example` and, only when requested, a local `.env` in the
+   project root.
 4. Apply AST-based framework member rewrites.
 5. Simplify `app.start()` only after all arguments are accounted for.
 6. Apply approved application env names and explicit coercion modules.
@@ -136,10 +137,10 @@ must not contain secret values.
 ### Phase 4: validation
 
 1. Validate all generated `CITIZEN_*` names and values with the 2.x resolver.
-2. Confirm `app/.env` is ignored and no secret value appears in tracked output.
+2. Confirm `.env` is ignored and no secret value appears in tracked output.
 3. Search again for JSON loaders, start arguments, and `.citizen` runtime paths.
 4. Run syntax checks, lint, tests, and build commands.
-5. Boot once without `app/.env`, once with development values, and once with a
+5. Boot once without `.env`, once with development values, and once with a
    process override; use disabled servers or an ephemeral port where possible.
 6. Smoke-test representative routes, controller overrides, CORS, and HTTPS when
    the application uses them.
@@ -166,7 +167,7 @@ Useful options may include:
 ```text
 --config <file>       Select one legacy config explicitly
 --report <path>       Set the report location
---no-app-env          Do not create a local app/.env
+--no-env              Do not create a local project-root .env
 --archive <path>      Archive legacy config after successful verification
 --non-interactive     Apply safe transformations only and leave decisions open
 ```

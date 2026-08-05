@@ -76,15 +76,15 @@ program
   .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
     var gitignore,
-        mode        = options.mode || 'development',
-        port        = options.networkPort || 3000,
-        projectPath = path.resolve(appPath, '..'),
+        mode          = options.mode || 'development',
+        port          = options.networkPort || 3000,
+        projectPath   = path.resolve(appPath, '..'),
         gitignorePath = projectPath + '/.gitignore',
+        packagePath   = projectPath + '/package.json',
         templates = {
           application : fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
           error       : fs.readdirSync(scaffoldPath +  '/templates/error'),
           gitignore   : fs.readFileSync(scaffoldPath + '/templates/gitignore'),
-          package     : fs.readFileSync(scaffoldPath + '/templates/package.json'),
           request     : fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
           response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
           session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
@@ -108,7 +108,7 @@ program
             text:   'How easy was that?'
           }
         }),
-        packageJSON = templates.package.toString(),
+        packageJSON = JSON.parse(fs.readFileSync(packagePath, 'utf8')),
         request     = templates.request.toString(),
         response    = templates.response.toString(),
         session     = templates.session.toString(),
@@ -117,16 +117,20 @@ program
           pattern: 'index'
         })
 
+    packageJSON.engines = packageJSON.engines || {}
+    packageJSON.engines.node = '>=22.0.0'
+    packageJSON.type = 'module'
+
     fs.mkdirSync(appPath)
-    fs.writeFileSync(appPath + '/.env', env)
-    fs.writeFileSync(appPath + '/.env.example', env)
+    fs.writeFileSync(projectPath + '/.env', env)
+    fs.writeFileSync(projectPath + '/.env.example', env)
     if ( fs.existsSync(gitignorePath) ) {
       gitignore = fs.readFileSync(gitignorePath, 'utf8')
-      if ( !gitignore.split(/\r?\n/).includes('app/.env') ) fs.appendFileSync(gitignorePath, `${gitignore.endsWith('\n') ? '' : '\n'}app/.env\n`)
+      if ( !gitignore.split(/\r?\n/).includes('.env') ) fs.appendFileSync(gitignorePath, `${gitignore.endsWith('\n') ? '' : '\n'}.env\n`)
     } else {
       fs.writeFileSync(gitignorePath, templates.gitignore)
     }
-    fs.writeFileSync(appPath + '/package.json', packageJSON)
+    fs.writeFileSync(packagePath, JSON.stringify(packageJSON, null, 2) + '\n')
     fs.writeFileSync(appPath + '/start.js', start)
     fs.mkdirSync(appPath +     '/controllers')
     fs.mkdirSync(appPath +     '/controllers/hooks')
@@ -171,12 +175,13 @@ program
     console.log('')
     console.log('    $ node scaffold skeleton')
     console.log('')
-    console.log('    Creates the following files:')
+    console.log('    Creates or updates the following files:')
     console.log('')
+    console.log('    .env')
+    console.log('    .env.example')
     console.log('    .gitignore')
+    console.log('    package.json')
     console.log('    app/')
-    console.log('      .env')
-    console.log('      .env.example')
     console.log('      controllers/')
     console.log('        hooks/')
     console.log('          application.js')

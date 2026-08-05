@@ -13,9 +13,9 @@ application environment. Framework configuration is exposed directly beneath
 | 1.x | 2.x |
 | --- | --- |
 | Node.js 16 or newer | Node.js 22 or newer |
-| `app/config/*.json` | `app/.env` or deployment environment variables |
+| `app/config/*.json` | Project-root `.env` or deployment environment variables |
 | Framework settings beneath `citizen` | `CITIZEN_*` environment variables |
-| Application settings in JSON or `app.start()` | Application variables in `app/.env` or the deployment environment |
+| Application settings in JSON or `app.start()` | Application variables in `.env` or the deployment environment |
 | `app.config.citizen.forms` | `app.config.forms` |
 | `params.config.citizen.forms` | `params.config.forms` |
 | `app.start(options)` | `app.start()` |
@@ -87,7 +87,7 @@ Given this 1.x config:
 }
 ```
 
-Create `app/.env`:
+Create `.env` in the project root:
 
 ```bash
 CITIZEN_MODE=development
@@ -135,13 +135,13 @@ CITIZEN_HTTP__KEEP_ALIVE_TIMEOUT=5000
 ```
 
 `CITIZEN_DIRECTORIES__APP` is process-only because citizen needs it before it
-can locate `app/.env`. Set it in the shell or deployment environment, not inside
-the file.
+can locate the project-root `.env`. Set it in the shell or deployment
+environment, not inside the file.
 
 Configuration precedence, from lowest to highest, is:
 
 1. citizen defaults
-2. `app/.env`
+2. Project-root `.env`
 3. Values already present in `process.env`
 4. Route controller and action configuration
 
@@ -168,7 +168,7 @@ citizen validates and coerces its own `CITIZEN_*` values only. Application code
 is responsible for validating required values and coercing strings into
 numbers, booleans, arrays, or objects.
 
-Do not commit secrets to `app/.env` or `app/.env.example`. Put placeholders in
+Do not commit secrets to `.env` or `.env.example`. Put placeholders in
 the example and supply real secrets locally or through the deployment platform.
 Do not log `process.env`.
 
@@ -247,10 +247,10 @@ controllers and actions should receive those headers.
 Add the private env file to the project `.gitignore`:
 
 ```gitignore
-app/.env
+.env
 ```
 
-Commit `app/.env.example`, then archive or remove `app/config/*.json`. citizen
+Commit `.env.example`, then archive or remove `app/config/*.json`. citizen
 2.x deliberately refuses to start while those files remain, preventing an
 application from silently booting with defaults after an incomplete migration.
 
@@ -273,10 +273,10 @@ find app/config -type f -name '*.json' -print
 
 Then verify:
 
-1. `app/.env` is ignored and `app/.env.example` is committed.
+1. `.env` is ignored and `.env.example` is committed.
 2. The application starts with no local env file using safe defaults.
 3. The application starts with its development env.
-4. Deployment values override matching values from `app/.env`.
+4. Deployment values override matching values from `.env`.
 5. Each route still receives its controller/action config.
 6. CORS preflight requests work for every intended action.
 7. HTTPS reads the configured PFX or key/cert files.
