@@ -55,15 +55,18 @@ test('builds a flat default configuration', () => {
   assert.equal(config.https.pfx, '')
   assert.equal(config.citizen, undefined)
   assert.deepEqual(config.development.watcher.ignored, /(^|[/\\])\../)
+  assert.equal(config.development.watcher.interval, 100)
+  assert.equal(Object.hasOwn(config.development.watcher, 'usePolling'), false)
 })
 
 
-test('generates reversible env keys from every default leaf', () => {
+test('generates reversible env keys for default and optional settings', () => {
   const map = getEnvMap(defaults())
 
   assert.equal(map.get('CITIZEN_CACHE__APPLICATION__RESET_ON_ACCESS').path.join('.'), 'cache.application.resetOnAccess')
   assert.equal(map.get('CITIZEN_CACHE__CONTROL').path.join('.'), 'cache.control')
   assert.equal(map.get('CITIZEN_FORMS__MAX_PAYLOAD_SIZE').value, 524288)
+  assert.equal(map.get('CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING').path.join('.'), 'development.watcher.usePolling')
   assert.equal(map.has('CITIZEN_FORMS_MAX_PAYLOAD_SIZE'), false)
   assert.equal(new Set(map.keys()).size, map.size)
 })
@@ -76,6 +79,8 @@ test('coerces every supported default type', () => {
     CITIZEN_CONNECTION_QUEUE: '100',
     CITIZEN_CONTENT_TYPES: 'text/html, application/json',
     CITIZEN_DEVELOPMENT__WATCHER__IGNORED: '(^|/)\\.',
+    CITIZEN_DEVELOPMENT__WATCHER__INTERVAL: '500',
+    CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING: 'true',
     CITIZEN_HTTP__ENABLED: '0',
     CITIZEN_HTTP__PORT: '3000',
     CITIZEN_MODE: 'development'
@@ -86,6 +91,8 @@ test('coerces every supported default type', () => {
   assert.equal(result.config.connectionQueue, 100)
   assert.deepEqual(result.config.contentTypes, ['text/html', 'application/json'])
   assert.deepEqual(result.config.development.watcher.ignored, /(^|\/)\./)
+  assert.equal(result.config.development.watcher.interval, 500)
+  assert.equal(result.config.development.watcher.usePolling, true)
   assert.equal(result.config.http.enabled, false)
   assert.equal(result.config.http.port, 3000)
   assert.equal(result.config.mode, 'development')
@@ -110,6 +117,10 @@ test('rejects invalid typed values and identifies their env keys', () => {
   assert.throws(
     () => getEnvConfig({ CITIZEN_CACHE__CONTROL: 'not-json' }, defaults()),
     /CITIZEN_CACHE__CONTROL/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING: 'sometimes' }, defaults()),
+    /CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING/
   )
 })
 

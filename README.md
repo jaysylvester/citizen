@@ -665,6 +665,20 @@ and
   </tr>
   <tr>
     <td>
+      <code>CITIZEN_DEVELOPMENT__WATCHER__INTERVAL</code>
+    </td>
+    <td>
+      Number
+    </td>
+    <td>
+      <code>100</code>
+    </td>
+    <td>
+      Sets the development watcher's polling interval in milliseconds when polling is enabled.
+    </td>
+  </tr>
+  <tr>
+    <td>
       <code>CITIZEN_DEVELOPMENT__WATCHER__KILL_SESSION</code>
     </td>
     <td>
@@ -675,6 +689,20 @@ and
     </td>
     <td>
       Ends all active sessions when hot module replacement reloads the application.
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING</code>
+    </td>
+    <td>
+      Boolean
+    </td>
+    <td>
+      Chokidar platform default
+    </td>
+    <td>
+      Enables filesystem polling for development hot module replacement. This can be necessary for bind mounts under Docker Desktop. When unset, Chokidar selects the appropriate platform behavior.
     </td>
   </tr>
   <tr>
@@ -1155,7 +1183,12 @@ and
   </tr>
 </table>
 
-citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher. Log and development watcher settings use the `CITIZEN_LOGS__WATCHER__*` and `CITIZEN_DEVELOPMENT__WATCHER__*` prefixes, respectively.
+citizen uses [chokidar](https://www.npmjs.com/package/chokidar) as its file watcher. Log and development watcher settings use the `CITIZEN_LOGS__WATCHER__*` and `CITIZEN_DEVELOPMENT__WATCHER__*` prefixes, respectively. For example, development polling for a Docker bind mount can be enabled with:
+
+```bash
+CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING=true
+CITIZEN_DEVELOPMENT__WATCHER__INTERVAL=500
+```
 
 
 This documentation assumes your global app variable name is `app`. Adjust accordingly.

@@ -15,6 +15,14 @@ const appPath = fileURLToPath(new URL('../../../app', import.meta.url)),
       jsonEnv = new Map([
         ['CITIZEN_HTTP',  ['http']],
         ['CITIZEN_HTTPS', ['https']]
+      ]),
+      // Optional settings need a type for env coercion but must remain absent
+      // from runtime defaults so the dependency can select platform behavior.
+      optionalEnv = new Map([
+        ['CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING', {
+          path: ['development', 'watcher', 'usePolling'],
+          value: false
+        }]
       ])
 
 
@@ -125,8 +133,9 @@ function getDefaults(options = {}) {
       },
       watcher: {
         custom: [],
-        killSession: false,
-        ignored: /(^|[/\\])\../
+        ignored: /(^|[/\\])\../,
+        interval: 100,
+        killSession: false
       }
     },
     urlPath: '/',
@@ -155,6 +164,11 @@ function getEnvMap(defaults) {
       throw new Error('Configuration paths ' + map.get(key).path.join('.') + ' and ' + item.path.join('.') + ' both map to ' + key)
     }
     map.set(key, item)
+  })
+
+  optionalEnv.forEach( (setting, key) => {
+    if ( map.has(key) ) throw new Error('Optional environment variable ' + key + ' duplicates a default configuration path')
+    map.set(key, setting)
   })
 
   return map

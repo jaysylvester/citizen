@@ -5,6 +5,7 @@
   * `app/.env` loads automatically; values already present in `process.env` take precedence
   * Application-owned variables remain in `process.env` and are not copied into citizen's resolved config
   * Node HTTP/HTTPS server options can be supplied through `CITIZEN_HTTP__*`, `CITIZEN_HTTPS__*`, or whole-node JSON
+  * Development watcher polling can be configured for Docker and other nonstandard filesystems
 * Flattened resolved framework settings from `app.config.citizen.*` to `app.config.*`
 * Removed the legacy JSON config loader and startup config; `app.start()` now rejects arguments
 * Updated the scaffold to create `app/.env`, `app/.env.example`, and `.gitignore` instead of `app/config/citizen.json`

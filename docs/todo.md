@@ -24,3 +24,5 @@ Consider (weigh pros/cons):
    - Component directory containing controller and deps, frontend JS/CSS, bundled into site files for deployment
 
 2. Get rid of controllers directory and move routes and hooks up to the app directory
+
+3. Replace chokidar with native Node file watcher (requires some workarounds/fallbacks that chokidar currently handles)
