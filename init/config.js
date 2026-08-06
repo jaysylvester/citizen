@@ -454,9 +454,9 @@ function logEnv(config, envFile) {
   }
 
   console.log('')
-  console.log('  Applied ' + config.applied.length + ' CITIZEN_* environment variable' + ( config.applied.length === 1 ? '' : 's' ) + '.')
+  console.log('  Applied env keys:')
+  config.applied.forEach( key => console.log('  ' + key) )
   if ( config.config.mode === 'development' ) {
-    if ( config.applied.length ) console.log('  Applied env keys: ' + config.applied.join(', '))
     config.passthrough.forEach( key => console.warn('  Non-default Node server option passed through: ' + key) )
     config.unknown.forEach( key => console.warn('  Unknown citizen environment variable ignored: ' + key) )
   }
