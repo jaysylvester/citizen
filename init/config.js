@@ -6,25 +6,24 @@
 import fs                from 'node:fs'
 import path              from 'node:path'
 import { loadEnvFile }   from 'node:process'
-import { fileURLToPath } from 'node:url'
 // citizen
 import helpers           from '../lib/helpers.js'
 
 
-const appPath = fileURLToPath(new URL('../../../app', import.meta.url)),
-      jsonEnv = new Map([
-        ['CITIZEN_CORS',  ['cors']],
-        ['CITIZEN_HTTP',  ['http']],
-        ['CITIZEN_HTTPS', ['https']]
-      ]),
-      // Optional settings need a type for env coercion but must remain absent
-      // from runtime defaults so the dependency can select platform behavior.
-      optionalEnv = new Map([
-        ['CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING', {
-          path: ['development', 'watcher', 'usePolling'],
-          value: false
-        }]
-      ])
+const
+  jsonEnv = new Map([
+    ['CITIZEN_CORS',  ['cors']],
+    ['CITIZEN_HTTP',  ['http']],
+    ['CITIZEN_HTTPS', ['https']]
+  ]),
+  // Optional settings need a type for env coercion but must remain absent
+  // from runtime defaults so the dependency can select platform behavior.
+  optionalEnv = new Map([
+    ['CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING', {
+      path: ['development', 'watcher', 'usePolling'],
+      value: false
+    }]
+  ])
 
 
 // Defaults
@@ -428,7 +427,7 @@ function getConfig(options = {}) {
 
 function config(options = {}) {
   let appVariable = Object.hasOwn(process.env, 'CITIZEN_DIRECTORIES__APP'),
-      app = path.resolve(options.appPath || process.env.CITIZEN_DIRECTORIES__APP || appPath),
+      app = path.resolve(options.appPath || process.env.CITIZEN_DIRECTORIES__APP || 'app'),
       envFile,
       result
 

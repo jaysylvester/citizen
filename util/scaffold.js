@@ -1,13 +1,15 @@
 // Generates files and directories needed for citizen apps
 
 import { program } from 'commander'
-import fs      from 'node:fs'
-import path    from 'node:path'
+import fs                from 'node:fs'
+import path              from 'node:path'
+import { fileURLToPath } from 'node:url'
 // citizen
 import { buildEnv, getDefaults } from '../init/config.js'
 
-const scaffoldPath = new URL('../util/', import.meta.url).pathname,
-      appPath      = path.resolve(scaffoldPath, '../../../app')
+const scaffoldPath = fileURLToPath(new URL('./', import.meta.url)),
+      projectPath  = process.cwd(),
+      appPath      = path.join(projectPath, 'app')
 
       
 const buildController = (options) => {
@@ -78,7 +80,6 @@ program
     var gitignore,
         mode          = options.mode || 'development',
         port          = options.networkPort || 3000,
-        projectPath   = path.resolve(appPath, '..'),
         gitignorePath = projectPath + '/.gitignore',
         packagePath   = projectPath + '/package.json',
         templates = {

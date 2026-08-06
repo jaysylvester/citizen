@@ -10,6 +10,7 @@
 * Flattened resolved framework settings from `app.config.citizen.*` to `app.config.*`
 * Removed the legacy JSON config loader and startup config; `app.start()` now rejects arguments
 * Updated the scaffold to create `.env`, `.env.example`, and `.gitignore` at the project root, update the existing project package, and stop creating `app/config/citizen.json` or a duplicate `app/package.json`
+* Fixed scaffold and default app-directory discovery for local and symlinked citizen installations
 * Fixed config merging so regular expressions remain regular expressions
 * citizen now requires Node.js 22 or newer
 * Added a native Node test suite for configuration resolution

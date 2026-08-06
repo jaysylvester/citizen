@@ -104,6 +104,11 @@ Run from the terminal:
 $ node app/start.js
 ```
 
+Run this command from the project root. citizen uses the current working
+directory to locate the conventional `app/` directory. To start the application
+from another directory, set `CITIZEN_DIRECTORIES__APP` to the absolute app path
+in the process environment.
+
 
 
 ### Configuration
@@ -2981,6 +2986,7 @@ The util directory within the citizen package has some helpful utilities.
 #### skeleton
 
 Creates a complete skeleton of a citizen app with a functional index pattern and error templates.
+Run it from the directory that should become the project root:
 
 ```bash
 $ node node_modules/citizen/util/scaffold skeleton

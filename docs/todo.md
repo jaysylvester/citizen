@@ -9,11 +9,20 @@ todo (2.0):
 
 4. Cluster support that maintains citizen cache, session scope, etc.
 
-5. Test harness
+5. Fix `app.cache.exists()` throwing when the requested built-in cache scope
+   (`app` or `files`) has not been created or was removed after its last item
+   was cleared; missing entries should return `false`
 
-6. Parse URL query params and add to params.url (API redirects coming from outside sources use traditional URLs, requiring parsing workarounds in citizen apps today)
+6. Add public API contract tests that call exported functions and load
+   representative helper/model/view modules; the current JSON-based smoke test
+   drops functions and cannot verify `app.log()`, `app.cache.*`,
+   `app.session.end()`, or `app.start()`
 
-7. Validate and implement 1.x -> 2.x migration automation
+7. Test harness
+
+8. Parse URL query params and add to params.url (API redirects coming from outside sources use traditional URLs, requiring parsing workarounds in citizen apps today)
+
+9. Validate and implement 1.x -> 2.x migration automation
    — guide: ../MIGRATION.md
    — plan: plans/migration-1-to-2.md
 

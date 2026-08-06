@@ -286,9 +286,7 @@ test('scaffolds project-root env files and ignores the private file', (t) => {
     name: 'citizen-scaffold-test'
   }, null, 2) + '\n')
 
-  const result = spawnSync(process.execPath, [
-          '--preserve-symlinks',
-          '--preserve-symlinks-main',
+  let result = spawnSync(process.execPath, [
           scaffold,
           'skeleton',
           '--mode',
@@ -313,6 +311,19 @@ test('scaffolds project-root env files and ignores the private file', (t) => {
   assert.equal(packageJSON.engines.node, '>=22.0.0')
   assert.equal(packageJSON.name, 'citizen-scaffold-test')
   assert.equal(packageJSON.type, 'module')
+
+  let childEnv = Object.fromEntries(Object.entries(process.env).filter( item => !item[0].startsWith('CITIZEN_') ))
+
+  childEnv.CITIZEN_HTTP__ENABLED = 'false'
+  childEnv.CITIZEN_LOGS__MAX_FILE_SIZE = '0'
+  result = spawnSync(process.execPath, [path.join(root, 'app/start.js')], {
+    cwd: root,
+    encoding: 'utf8',
+    env: childEnv
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.ok(result.stdout.includes('Loaded project environment: ' + path.join(fs.realpathSync(root), '.env')), result.stdout)
 })
 
 
