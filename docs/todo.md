@@ -26,6 +26,8 @@ todo (2.0):
    — guide: ../MIGRATION.md
    — plan: plans/migration-1-to-2.md
 
+10. Safe shutdown
+
 
 Consider (weigh pros/cons):
 

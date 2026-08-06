@@ -450,9 +450,10 @@ function logEnv(config, envFile) {
   if ( envFile ) {
     console.log('  Loaded project environment: ' + envFile)
   } else {
-    console.log('  No .env found.')
+    console.log('  No project .env loaded (optional); using process environment and defaults.')
   }
 
+  console.log('')
   console.log('  Applied ' + config.applied.length + ' CITIZEN_* environment variable' + ( config.applied.length === 1 ? '' : 's' ) + '.')
   if ( config.config.mode === 'development' ) {
     if ( config.applied.length ) console.log('  Applied env keys: ' + config.applied.join(', '))
