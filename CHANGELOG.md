@@ -3,9 +3,12 @@
 * Replaced file-based JSON and `app.start()` configuration with the conventional project-root `.env`
   * Framework variables use the `CITIZEN_*` namespace, double underscores for object boundaries, and single underscores for camel-case word boundaries
   * The project-root `.env` loads automatically; values already present in `process.env` take precedence
+  * Node owns dotenv syntax parsing; citizen only maps and validates framework values after loading
   * Application-owned variables remain in `process.env` and are not copied into citizen's resolved config
   * Node HTTP/HTTPS server options can be supplied through `CITIZEN_HTTP__*`, `CITIZEN_HTTPS__*`, or whole-node JSON
   * `CITIZEN_CORS` supplies an optional global policy that controller and action configuration can override or disable
+  * Blank numeric, array, and directory values fail validation instead of producing unsafe coerced values
+  * Relative directory overrides resolve against the project root, and startup fails clearly when the selected app directory is missing
   * Development watcher polling can be configured for Docker and other nonstandard filesystems
 * Flattened resolved framework settings from `app.config.citizen.*` to `app.config.*`
 * Removed the legacy JSON config loader and startup config; `app.start()` now rejects arguments

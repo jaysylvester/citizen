@@ -24,11 +24,13 @@ const appPath   = '/project/app',
 const defaults = () => getDefaults({ appPath: appPath, nodeEnv: 'production' })
 
 
+const childEnv = (env = {}) => ({
+  ...Object.fromEntries(Object.entries(process.env).filter( item => !item[0].startsWith('CITIZEN_') )),
+  ...env
+})
+
+
 const runConfig = (app, env = {}) => {
-  let childEnv = Object.fromEntries(Object.entries(process.env).filter( item => !item[0].startsWith('CITIZEN_') ))
-
-  childEnv = { ...childEnv, ...env }
-
   const script = `
     import configure from ${JSON.stringify(configUrl)}
     const config = configure({ appPath: ${JSON.stringify(app)} })
@@ -36,7 +38,27 @@ const runConfig = (app, env = {}) => {
   `,
         result = spawnSync(process.execPath, ['--input-type=module', '--eval', script], {
           encoding: 'utf8',
-          env: childEnv
+          env: childEnv(env)
+        }),
+        output = result.stdout.match(/^CITIZEN_RESULT=(.*)$/m)
+
+  return {
+    ...result,
+    value: output ? JSON.parse(output[1]) : null
+  }
+}
+
+
+const runProject = (root, env = {}) => {
+  const script = `
+    import configure from ${JSON.stringify(configUrl)}
+    const config = configure()
+    console.log('CITIZEN_RESULT=' + JSON.stringify({ config }))
+  `,
+        result = spawnSync(process.execPath, ['--input-type=module', '--eval', script], {
+          cwd: root,
+          encoding: 'utf8',
+          env: childEnv(env)
         }),
         output = result.stdout.match(/^CITIZEN_RESULT=(.*)$/m)
 
@@ -79,24 +101,28 @@ test('coerces every supported default type', () => {
     CITIZEN_COMPRESSION__MIME_TYPES: '["text/plain"]',
     CITIZEN_CONNECTION_QUEUE: '100',
     CITIZEN_CONTENT_TYPES: 'text/html, application/json',
-    CITIZEN_DEVELOPMENT__WATCHER__IGNORED: '(^|/)\\.',
+    CITIZEN_DEVELOPMENT__WATCHER__IGNORED: '[.]',
     CITIZEN_DEVELOPMENT__WATCHER__INTERVAL: '500',
     CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING: 'true',
+    CITIZEN_DIRECTORIES__WEB: '{"assets":true}',
     CITIZEN_HTTP__ENABLED: '0',
     CITIZEN_HTTP__PORT: '3000',
-    CITIZEN_MODE: 'development'
+    CITIZEN_LAYOUT__CONTROLLER: '{}',
+    CITIZEN_MODE: '[1,2]'
   }, defaults())
 
   assert.equal(result.config.compression.force, 'gzip')
   assert.deepEqual(result.config.compression.mimeTypes, ['text/plain'])
   assert.equal(result.config.connectionQueue, 100)
   assert.deepEqual(result.config.contentTypes, ['text/html', 'application/json'])
-  assert.deepEqual(result.config.development.watcher.ignored, /(^|\/)\./)
+  assert.deepEqual(result.config.development.watcher.ignored, /[.]/)
   assert.equal(result.config.development.watcher.interval, 500)
   assert.equal(result.config.development.watcher.usePolling, true)
+  assert.equal(result.config.directories.web, '{"assets":true}')
   assert.equal(result.config.http.enabled, false)
   assert.equal(result.config.http.port, 3000)
-  assert.equal(result.config.mode, 'development')
+  assert.equal(result.config.layout.controller, '{}')
+  assert.equal(result.config.mode, '[1,2]')
 
   assert.equal(getEnvConfig({ CITIZEN_CONNECTION_QUEUE: 'null' }, defaults()).config.connectionQueue, null)
 })
@@ -126,6 +152,34 @@ test('rejects invalid typed values and identifies their env keys', () => {
   assert.throws(
     () => getEnvConfig({ CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING: 'sometimes' }, defaults()),
     /CITIZEN_DEVELOPMENT__WATCHER__USE_POLLING/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_HTTP__PORT: '' }, defaults()),
+    /CITIZEN_HTTP__PORT must be a number/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_SESSIONS__LIFESPAN: '  ' }, defaults()),
+    /CITIZEN_SESSIONS__LIFESPAN must be a number/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_CONTENT_TYPES: '' }, defaults()),
+    /CITIZEN_CONTENT_TYPES must be a JSON array or a comma-separated list/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_DIRECTORIES__LOGS: '' }, defaults()),
+    /CITIZEN_DIRECTORIES__LOGS must be a path/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_HTTP__ENABLED: '[]' }, defaults()),
+    /CITIZEN_HTTP__ENABLED must be true, false, 1, or 0/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_HTTP__PORT: '{}' }, defaults()),
+    /CITIZEN_HTTP__PORT must be a number/
+  )
+  assert.throws(
+    () => getEnvConfig({ CITIZEN_CONNECTION_QUEUE: '[]' }, defaults()),
+    /CITIZEN_CONNECTION_QUEUE must be a number or null/
   )
 })
 
@@ -162,6 +216,24 @@ test('maps free-form values and Node server options', () => {
 test('uses NODE_ENV as the mode default and lets CITIZEN_MODE override it', () => {
   assert.equal(getConfig({ appPath: appPath, env: { NODE_ENV: 'development' } }).mode, 'development')
   assert.equal(getConfig({ appPath: appPath, env: { CITIZEN_MODE: 'test', NODE_ENV: 'production' } }).mode, 'test')
+})
+
+
+test('resolves directory overrides against the selected project root', () => {
+  const config = getConfig({
+    appPath: appPath,
+    env: {
+      CITIZEN_DIRECTORIES__APP: './wrong-app',
+      CITIZEN_DIRECTORIES__CONTROLLERS: 'app/custom-controllers',
+      CITIZEN_DIRECTORIES__LOGS: 'var/log',
+      CITIZEN_DIRECTORIES__WEB: '{"assets":true}'
+    }
+  })
+
+  assert.equal(config.directories.app, appPath)
+  assert.equal(config.directories.controllers, '/project/app/custom-controllers')
+  assert.equal(config.directories.logs, '/project/var/log')
+  assert.equal(config.directories.web, '/project/{"assets":true}')
 })
 
 
@@ -222,18 +294,56 @@ test('does not let .env relocate its own app directory', (t) => {
 })
 
 
-test('fails on malformed project-root .env content', (t) => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-malformed-env-')),
+test('normalizes a relative process app path', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-relative-app-')),
         app = path.join(root, 'app')
 
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   fs.mkdirSync(app)
-  fs.writeFileSync(path.join(root, '.env'), 'CITIZEN_HTTP__PORT=3000\nTHIS IS NOT AN ASSIGNMENT\n')
+
+  const result = runProject(root, { CITIZEN_DIRECTORIES__APP: './app' }),
+        realApp = fs.realpathSync(app),
+        realRoot = fs.realpathSync(root)
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.value.config.directories.app, realApp)
+  assert.equal(result.value.config.directories.controllers, path.join(realApp, 'controllers'))
+  assert.equal(result.value.config.directories.logs, path.join(realRoot, 'logs'))
+})
+
+
+test('fails when the selected app directory does not exist', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-missing-app-'))
+
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+
+  const result = runProject(root)
+
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /Application directory not found:/)
+  assert.match(result.stderr, /Run citizen from the project root/)
+})
+
+
+test('loads project env with Node dotenv syntax', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-env-syntax-')),
+        app = path.join(root, 'app')
+
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  fs.mkdirSync(app)
+  fs.writeFileSync(path.join(root, '.env'), [
+    'export CITIZEN_HTTP__PORT = 3000 # development port',
+    'CITIZEN_CORS=\'{"Access-Control-Allow-Origin":"https://example.com"}\'',
+    'CITIZEN_HTTPS__CERT="line 1',
+    'line 2"'
+  ].join('\n'))
 
   const result = runConfig(app)
 
-  assert.notEqual(result.status, 0)
-  assert.match(result.stderr, /not a valid environment variable assignment/)
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.value.config.http.port, 3000)
+  assert.equal(result.value.config.cors['Access-Control-Allow-Origin'], 'https://example.com')
+  assert.equal(result.value.config.https.cert, 'line 1\nline 2')
 })
 
 
@@ -265,8 +375,12 @@ test('renders a complete scaffold env reference with selected active values', ()
   assert.match(example, /^# CITIZEN_FORMS__MAX_PAYLOAD_SIZE=524288$/m)
   assert.match(example, /^# CITIZEN_HTTPS__PFX=""$/m)
   assert.match(example, /^# CITIZEN_CORS=/m)
+  assert.match(example, /^# Valid values: true, false, gzip, deflate$/m)
+  assert.match(example, /^# CITIZEN_DIRECTORIES__CONTROLLERS=app\/controllers$/m)
+  assert.match(example, /^# CITIZEN_DIRECTORIES__LOGS=logs$/m)
   assert.match(example, /^# Application configuration:$/m)
   assert.doesNotMatch(example, /CITIZEN_DIRECTORIES__APP=/)
+  assert.doesNotMatch(example, /\/project\//)
 })
 
 
@@ -324,6 +438,27 @@ test('scaffolds project-root env files and ignores the private file', (t) => {
 
   assert.equal(result.status, 0, result.stderr)
   assert.ok(result.stdout.includes('Loaded project environment: ' + path.join(fs.realpathSync(root), '.env')), result.stdout)
+})
+
+
+test('adds the private env file to an existing scaffold gitignore', (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-scaffold-ignore-')),
+        modules = path.join(root, 'node_modules'),
+        scaffold = path.join(modules, 'citizen/util/scaffold.js')
+
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  fs.mkdirSync(modules)
+  fs.symlinkSync(path.resolve('.'), path.join(modules, 'citizen'), 'dir')
+  fs.writeFileSync(path.join(root, '.gitignore'), 'node_modules/\nlogs/')
+  fs.writeFileSync(path.join(root, 'package.json'), '{"name":"citizen-scaffold-ignore"}\n')
+
+  const result = spawnSync(process.execPath, [scaffold, 'skeleton'], {
+    cwd: root,
+    encoding: 'utf8'
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(fs.readFileSync(path.join(root, '.gitignore'), 'utf8'), 'node_modules/\nlogs/\n.env\n')
 })
 
 

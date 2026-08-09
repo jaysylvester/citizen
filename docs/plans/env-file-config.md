@@ -442,10 +442,16 @@ node app/start.js
 
 Before resolving defaults, citizen calls Node's native
 [`process.loadEnvFile()`](https://nodejs.org/api/process.html#processloadenvfilepath)
-for `<app>/../.env`. The app directory provides a deterministic anchor, so
-loading does not depend on the current working directory and does not require
-filesystem traversal. A missing file is not an error; parsing errors are.
-Values already present in `process.env` remain authoritative over file values.
+for `<app>/../.env`. By convention, the app directory is `<cwd>/app`; starting
+from another directory requires an absolute `CITIZEN_DIRECTORIES__APP` in the
+process environment. This keeps local, linked, and registry-installed copies of
+citizen on the same project-root convention without filesystem traversal.
+Startup fails if the selected app directory does not exist, preventing a wrong
+working directory from silently booting an empty application. A missing `.env`
+is not an error. Node owns dotenv parsing; citizen does not read the file a
+second time or impose a separate dotenv grammar. Values already present in
+`process.env` remain authoritative over file values, and invalid mapped
+`CITIZEN_*` values still fail during type coercion.
 
 If `CITIZEN_DIRECTORIES__APP` remains supported, a value already present in the
 process environment may select the app directory before `.env` is loaded. The
@@ -663,12 +669,17 @@ Retain the pure mapping/coercion tests and replace compatibility tests with:
 - pre-existing process values override `.env`
 - non-`CITIZEN_*` values from `.env` are available in `process.env` but not
   copied into `app.config`
-- malformed `.env` fails startup
+- Node's dotenv syntax loads without citizen maintaining a second parser
 - legacy `app/config/*.json` triggers the migration error and is never parsed
 - `app.start()` succeeds with no argument and rejects any supplied config
 - controller/action config merges directly into `params.config`
 - env mapping/coercion, JSON free-form values, and HTTP/HTTPS passthrough
+- blank numeric, array, and directory values fail validation
+- relative directory overrides resolve against the project root
+- a missing selected app directory fails startup
 - scaffold output and Git ignore behavior
+- scaffold directory examples are portable and an existing `.gitignore` is
+  preserved when `.env` is added
 - importing `index.js` returns a usable object with `config`, controllers,
   helpers, models, and views
 

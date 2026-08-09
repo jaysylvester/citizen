@@ -29,7 +29,7 @@ const
 // Defaults
 
 function getDefaults(options = {}) {
-  let app = options.appPath || path.resolve('app'),
+  let app = path.resolve(options.appPath || 'app'),
       mode = options.nodeEnv || 'production',
       root = path.dirname(app)
 
@@ -253,24 +253,28 @@ function coerce(key, value, defaultValue) {
   let parsed,
       trimmed = value.trim()
 
-  if ( trimmed.startsWith('{') || trimmed.startsWith('[') ) {
-    parsed = parse(key, value)
-    if ( Array.isArray(defaultValue) && !Array.isArray(parsed) ) {
-      throw new TypeError(key + ' must be a JSON array or a comma-separated list')
-    } else if ( defaultValue?.constructor === Object && ( !parsed || Array.isArray(parsed) || typeof parsed !== 'object' ) ) {
-      throw new TypeError(key + ' must be a JSON object')
-    }
-    return parsed
-  } else if ( defaultValue instanceof RegExp ) {
+  if ( key.startsWith('CITIZEN_DIRECTORIES__') && !trimmed ) {
+    throw new TypeError(key + ' must be a path')
+  }
+
+  if ( defaultValue instanceof RegExp ) {
     try {
       return new RegExp(value)
     } catch ( err ) {
       throw new TypeError(key + ' contains an invalid regular expression: ' + err.message)
     }
   } else if ( Array.isArray(defaultValue) ) {
+    if ( !trimmed ) throw new TypeError(key + ' must be a JSON array or a comma-separated list')
+    if ( trimmed.startsWith('{') || trimmed.startsWith('[') ) {
+      parsed = parse(key, value)
+      if ( !Array.isArray(parsed) ) throw new TypeError(key + ' must be a JSON array or a comma-separated list')
+      return parsed
+    }
     return value.split(',').map( item => item.trim() )
   } else if ( defaultValue?.constructor === Object ) {
-    throw new TypeError(key + ' must be a JSON object')
+    parsed = parse(key, value)
+    if ( !parsed || Array.isArray(parsed) || typeof parsed !== 'object' ) throw new TypeError(key + ' must be a JSON object')
+    return parsed
   } else if ( defaultValue === null ) {
     if ( trimmed === 'null' || !trimmed ) return null
 
@@ -290,7 +294,7 @@ function coerce(key, value, defaultValue) {
       throw new TypeError(key + ' must be true, false, 1, or 0')
     case 'number':
       parsed = Number(value)
-      if ( Number.isNaN(parsed) ) throw new TypeError(key + ' must be a number')
+      if ( !trimmed || Number.isNaN(parsed) ) throw new TypeError(key + ' must be a number')
       return parsed
     case 'string':
       return value
@@ -335,6 +339,16 @@ function toEnv(configPath) {
 
 // Loading and resolution
 
+function checkApp(app) {
+  try {
+    if ( fs.statSync(app).isDirectory() ) return
+  } catch ( err ) {
+    if ( err.code !== 'ENOENT' && err.code !== 'ENOTDIR' ) throw err
+  }
+
+  throw new Error('Application directory not found: ' + app + '. Run citizen from the project root or set CITIZEN_DIRECTORIES__APP to an absolute path in the process environment.')
+}
+
 function checkLegacy(app) {
   let configDirectory = path.join(app, 'config'),
       files
@@ -355,64 +369,29 @@ function checkLegacy(app) {
 function loadEnv(app) {
   let file = path.resolve(app, '../.env')
 
-  checkLegacy(app)
   if ( !fs.existsSync(file) ) return null
 
-  validateEnv(file)
   loadEnvFile(file)
   return file
 }
 
 
-function validateEnv(file) {
-  let lines = fs.readFileSync(file, 'utf8').split(/\r?\n/),
-      quote = ''
-
-  lines.forEach( (line, index) => {
-    let value = line.trim()
-
-    if ( quote ) {
-      let end = value.indexOf(quote)
-
-      if ( end < 0 ) return
-      if ( value.slice(end + 1).trim().replace(/^#.*$/, '') ) throw new SyntaxError(file + ':' + ( index + 1 ) + ' contains invalid content after a quoted value')
-      quote = ''
-      return
-    }
-
-    if ( !value || value.startsWith('#') ) return
-    value = value.replace(/^export\s+/, '')
-
-    let match = value.match(/^[A-Za-z_][A-Za-z0-9_]*\s*=(.*)$/)
-
-    if ( !match ) throw new SyntaxError(file + ':' + ( index + 1 ) + ' is not a valid environment variable assignment')
-
-    value = match[1].trimStart()
-    if ( value.startsWith('"') || value.startsWith('\'') || value.startsWith('`') ) {
-      quote = value[0]
-
-      let end = value.indexOf(quote, 1)
-
-      if ( end >= 0 ) {
-        if ( value.slice(end + 1).trim().replace(/^#.*$/, '') ) throw new SyntaxError(file + ':' + ( index + 1 ) + ' contains invalid content after a quoted value')
-        quote = ''
-      }
-    }
-  })
-
-  if ( quote ) throw new SyntaxError(file + ' contains an unterminated quoted value')
-}
-
-
 function resolve(env = {}, options = {}) {
-  let defaults = getDefaults({
-        appPath: options.appPath,
+  let app = path.resolve(options.appPath || env.CITIZEN_DIRECTORIES__APP || 'app'),
+      defaults = getDefaults({
+        appPath: app,
         nodeEnv: env.NODE_ENV
       }),
-      result = getEnvConfig(env, defaults)
+      result = getEnvConfig(env, defaults),
+      config = helpers.extend(defaults, result.config),
+      root = path.dirname(app)
+
+  Object.keys(config.directories).forEach( directory => {
+    config.directories[directory] = directory === 'app' ? app : path.resolve(root, config.directories[directory])
+  })
 
   return {
-    config: helpers.extend(defaults, result.config),
+    config: config,
     applied: result.applied,
     passthrough: result.passthrough,
     unknown: result.unknown
@@ -434,6 +413,8 @@ function config(options = {}) {
   console.log('\n\n\x1b[1m[' + new Date().toISOString() + ']\x1b[0m Starting citizen...')
   console.log('\n\nLoading configuration:\n')
 
+  checkApp(app)
+  checkLegacy(app)
   envFile = loadEnv(app)
   if ( !appVariable && envFile && Object.hasOwn(process.env, 'CITIZEN_DIRECTORIES__APP') ) {
     delete process.env.CITIZEN_DIRECTORIES__APP
@@ -474,7 +455,8 @@ function buildEnv(defaults, overrides = {}) {
         '# Process environment variables take precedence over this file.',
         ''
       ],
-      map = getEnvMap(defaults)
+      map = getEnvMap(defaults),
+      root = path.dirname(defaults.directories.app)
 
   for ( const [key, setting] of [...map].sort((a, b) => a[0].localeCompare(b[0])) ) {
     if ( key === 'CITIZEN_DIRECTORIES__APP' ) continue
@@ -483,6 +465,8 @@ function buildEnv(defaults, overrides = {}) {
 
     if ( Object.hasOwn(overrides, key) ) {
       value = overrides[key]
+    } else if ( setting.path[0] === 'directories' ) {
+      value = path.relative(root, value).split(path.sep).join('/')
     } else if ( value instanceof RegExp ) {
       value = value.source
     } else if ( typeof value === 'string' ) {
@@ -490,6 +474,7 @@ function buildEnv(defaults, overrides = {}) {
     } else {
       value = JSON.stringify(value)
     }
+    if ( key === 'CITIZEN_COMPRESSION__FORCE' ) lines.push('# Valid values: true, false, gzip, deflate')
     lines.push(( active.has(key) ? '' : '# ' ) + key + '=' + value)
   }
 
@@ -511,12 +496,10 @@ function buildEnv(defaults, overrides = {}) {
 
 export {
   buildEnv,
-  checkLegacy,
   getConfig,
   getDefaults,
   getEnvConfig,
   getEnvMap,
-  loadEnv,
   resolve
 }
 

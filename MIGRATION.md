@@ -141,7 +141,12 @@ CITIZEN_HTTP__KEEP_ALIVE_TIMEOUT=5000
 
 `CITIZEN_DIRECTORIES__APP` is process-only because citizen needs it before it
 can locate the project-root `.env`. Set it in the shell or deployment
-environment, not inside the file.
+environment, not inside the file. Other directory settings can use absolute
+paths or paths relative to the project root; citizen exposes them as absolute
+paths in `app.config.directories`.
+
+Numeric and array settings cannot be blank. Use `[]` when an empty array is
+intentional.
 
 Configuration precedence, from lowest to highest, is:
 

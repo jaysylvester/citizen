@@ -246,6 +246,9 @@ Resolved framework settings are available to the application through
 `app.config.http.port`. The table below is the canonical reference for
 environment variable names, types, and defaults.
 
+Numeric and array values cannot be blank. Use `[]` for an intentionally empty
+array.
+
 In addition to the variables listed below, `CITIZEN_HTTP__*` and
 `CITIZEN_HTTPS__*` accept the same options as Node's
 [http.createServer()](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener)
@@ -738,7 +741,7 @@ and
       Application directory
     </td>
     <td>
-      Absolute path to the citizen application directory. This must be set in the process environment before startup, not in <code>.env</code>.
+      Absolute path to the citizen application directory. This must be set in the process environment before startup, not in <code>.env</code>. Startup fails if the selected directory does not exist.
     </td>
   </tr>
   <tr>
@@ -752,7 +755,7 @@ and
       <code>&lt;app&gt;/controllers</code>
     </td>
     <td>
-      Absolute path to route controllers and application hooks.
+      Path to route controllers and application hooks. Relative values resolve from the project root; the resolved value is absolute.
     </td>
   </tr>
   <tr>
@@ -766,7 +769,7 @@ and
       <code>&lt;app&gt;/helpers</code>
     </td>
     <td>
-      Absolute path to application helpers.
+      Path to application helpers. Relative values resolve from the project root; the resolved value is absolute.
     </td>
   </tr>
   <tr>
@@ -780,7 +783,7 @@ and
       <code>&lt;project&gt;/logs</code>
     </td>
     <td>
-      Absolute path to citizen log files.
+      Path to citizen log files. Relative values resolve from the project root; the resolved value is absolute.
     </td>
   </tr>
   <tr>
@@ -794,7 +797,7 @@ and
       <code>&lt;app&gt;/models</code>
     </td>
     <td>
-      Absolute path to application models.
+      Path to application models. Relative values resolve from the project root; the resolved value is absolute.
     </td>
   </tr>
   <tr>
@@ -808,7 +811,7 @@ and
       <code>&lt;app&gt;/views</code>
     </td>
     <td>
-      Absolute path to application views.
+      Path to application views. Relative values resolve from the project root; the resolved value is absolute.
     </td>
   </tr>
   <tr>
@@ -822,7 +825,7 @@ and
       <code>&lt;project&gt;/web</code>
     </td>
     <td>
-      Absolute path to publicly served static files.
+      Path to publicly served static files. Relative values resolve from the project root; the resolved value is absolute.
     </td>
   </tr>
   <tr>
