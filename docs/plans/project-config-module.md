@@ -1,6 +1,6 @@
 # Plan: project-root citizen config module
 
-Status: **Draft replacement for the full `CITIZEN_*` env-mapping design**
+Status: **Implemented replacement for the full `CITIZEN_*` env-mapping design**
 
 Reference implementation: branch `2.0-env-file-config-revised`
 
@@ -142,7 +142,7 @@ through `app.config` is intentional.
 
 Citizen needs the app directory before it can locate `.env` or
 `citizen.config.js`. The default remains `<cwd>/app`. Starting elsewhere may use
-`CITIZEN_DIRECTORIES__APP` as the one process-only Citizen bootstrap variable.
+`CITIZEN_APP_PATH` as the one process-only Citizen bootstrap variable.
 It must be present before import and cannot be set by `.env` or the config module.
 
 Startup fails clearly when the selected app directory does not exist. The

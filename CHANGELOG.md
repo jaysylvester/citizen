@@ -1,3 +1,34 @@
+# 2.0.0
+
+## New configuration model
+
+* Citizen automatically loads an optional project-root `.env` with Node's native dotenv support
+  * Application and deployment values remain in `process.env`; Citizen does not map or coerce them into framework config
+  * Existing process values take precedence over matching file values
+* An optional project-root `citizen.config.js` default-exports typed Citizen settings as a plain object
+  * Arrays, regular expressions, nulls, Node HTTP/HTTPS options, and nested objects retain their native types
+  * Framework config is exposed directly at `app.config.*` and `params.config.*`, without a `citizen` wrapper
+* Application-wide CORS can be configured as a baseline and extended, overridden, or disabled by controller/action config
+* Development watcher polling options pass through to Chokidar for Docker and network-filesystem use
+
+## Breaking changes
+
+* Node.js 22 or newer is required
+* Legacy `app/config/*.json` files and hostname selection are no longer supported; startup fails with a migration message while JSON files remain
+* `app.start()` accepts no configuration argument
+* Application-owned config is no longer copied into `app.config`; read it from `process.env` or an application module
+* Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing Citizen
+
+## Enhancements and fixes
+
+* The scaffold now works from the project root, updates the existing package, and creates `.env`, `.env.example`, `citizen.config.js`, and an idempotent Git ignore rule
+* The scaffold no longer creates a duplicate package or an `app/config` directory
+* HTTP and HTTPS accept typed Node server options directly, and HTTPS credential files are read only when HTTPS is enabled
+* Regular expressions survive config copying and merging
+* Public cache, log, session, and start exports remain callable
+* CORS origin and method checks use exact comparisons instead of request-derived regular expressions
+* Default error templates render their backslash correctly
+
 # 1.0.2
 * Rewrote config init to accommodate an empty config directory error
 * README updates and fixes
@@ -44,7 +75,7 @@
 ## Breaking changes
 * New default directory structure, but you can keep the old structure by editing the directory config
 * The default rendering engine is now based on template literals, and [consolidate](https://github.com/ladjs/consolidate) is no longer included as a dependency by default
-  * To use another template engine, install [consolidate](https://github.com/ladjs/consolidate) and your preferred package (handlebars, pug, etc.), then update `config.citizen.templateEngine` with the package name
+  * To use another template engine, install [consolidate](https://github.com/ladjs/consolidate) and your preferred package (handlebars, pug, etc.), then update the `templateEngine` setting
 * The `handoff` directive has been renamed to `next`
 * The `route` property has been removed from the `include` directive
   * Route controller includes now accept a pathname string as shorthand for an included route

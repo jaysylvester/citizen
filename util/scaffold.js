@@ -1,18 +1,21 @@
 // Generates files and directories needed for citizen apps
 
-import { program } from 'commander'
-import fs      from 'node:fs'
-import path    from 'node:path'
+import { program }       from 'commander'
+import fs                from 'node:fs'
+import path              from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const scaffoldPath = new URL('../util/', import.meta.url).pathname,
-      appPath      = path.resolve(scaffoldPath, '../../../app')
 
-      
+const scaffoldPath = fileURLToPath(new URL('./', import.meta.url)),
+      projectPath  = process.cwd(),
+      appPath      = path.join(projectPath, 'app')
+
+
 const buildController = (options) => {
-  var template  = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
-      pattern   = options.pattern,
-      appName   = options.appName,
-      name      = pattern + '.js'
+  var template = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
+      pattern  = options.pattern,
+      appName  = options.appName,
+      name     = pattern + '.js'
 
   template = template.toString()
   template = template.replace(/\[pattern\]/g, pattern)
@@ -26,10 +29,10 @@ const buildController = (options) => {
 
 
 const buildModel = (options) => {
-  var template  = fs.readFileSync(scaffoldPath + '/templates/model.js'),
-      pattern   = options.pattern,
-      header    = options.main && options.main.header ? options.main.header : pattern + ' pattern template',
-      text      = options.main && options.main.text ? options.main.text : 'This is a template for the ' + pattern + ' pattern.'
+  var template = fs.readFileSync(scaffoldPath + '/templates/model.js'),
+      pattern  = options.pattern,
+      header   = options.main && options.main.header ? options.main.header : pattern + ' pattern template',
+      text     = options.main && options.main.text ? options.main.text : 'This is a template for the ' + pattern + ' pattern.'
 
   template = template.toString()
   template = template.replace(/\[pattern\]/g, pattern)
@@ -57,25 +60,8 @@ const buildView = (options) => {
 }
 
 
-const buildConfig = (options) => {
-  var template = fs.readFileSync(scaffoldPath + '/templates/config.json'),
-      mode     = options.mode || 'development',
-      port     = options.port || 3000,
-      name     = options.name || 'citizen'
-
-  template = template.toString()
-  template = template.replace(/\[mode\]/g, mode)
-  template = template.replace(/\[port\]/g, port)
-
-  return {
-    name     : name + '.json',
-    contents : template
-  }
-}
-
-
 program
-  .version('1.0.0')
+  .version('2.0.0')
   .on('--help', function () {
     console.log('')
     console.log('This utility creates templates for citizen apps and patterns.')
@@ -90,20 +76,29 @@ program
   .option('-n, --network-port [port number]', 'Default HTTP port is 3000, but if that\'s taken, use this option to set your config')
   .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
-    var webPath = path.resolve(appPath, '../web'),
+    var gitignore,
+        gitignorePath = path.join(projectPath, '.gitignore'),
+        mode          = options.mode || 'development',
+        packagePath   = path.join(projectPath, 'package.json'),
+        port          = Number(options.networkPort || 3000),
         templates = {
           application : fs.readFileSync(scaffoldPath + '/templates/hooks/application.js'),
-          package     : fs.readFileSync(scaffoldPath + '/templates/package.json'),
+          config      : fs.readFileSync(scaffoldPath + '/templates/citizen.config.js', 'utf8'),
+          env         : fs.readFileSync(scaffoldPath + '/templates/env', 'utf8'),
+          error       : fs.readdirSync(scaffoldPath +  '/templates/error'),
+          gitignore   : fs.readFileSync(scaffoldPath + '/templates/gitignore'),
           request     : fs.readFileSync(scaffoldPath + '/templates/hooks/request.js'),
           response    : fs.readFileSync(scaffoldPath + '/templates/hooks/response.js'),
           session     : fs.readFileSync(scaffoldPath + '/templates/hooks/session.js'),
-          start       : fs.readFileSync(scaffoldPath + '/templates/start.js'),
-          error       : fs.readdirSync(scaffoldPath +  '/templates/error')
+          start       : fs.readFileSync(scaffoldPath + '/templates/start.js')
         },
+        application = templates.application.toString(),
+        config = templates.config.replace(/\[port\]/g, port),
         controller = buildController({
           pattern: 'index',
           appName: 'app'
         }),
+        env = templates.env.replace(/\[mode\]/g, mode),
         model = buildModel({
           pattern: 'index',
           appName: 'app',
@@ -112,25 +107,38 @@ program
             text:   'How easy was that?'
           }
         }),
-        view = buildView({
-          pattern: 'index'
-        }),
-        config = buildConfig({
-          mode: options.mode,
-          port: options.networkPort
-        }),
-        application = templates.application.toString(),
-        packageJSON = templates.package.toString(),
+        packageJSON,
         request     = templates.request.toString(),
         response    = templates.response.toString(),
         session     = templates.session.toString(),
-        start       = templates.start.toString()
+        start       = templates.start.toString(),
+        view = buildView({
+          pattern: 'index'
+        }),
+        webPath = path.join(projectPath, 'web')
+
+    if ( !fs.existsSync(packagePath) ) {
+      throw new Error('citizen scaffold must be run from a project root containing package.json. Initialize or install the project package, then run the scaffold again.')
+    }
+    if ( !Number.isFinite(port) ) throw new TypeError('The network port must be a number.')
+
+    packageJSON = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
+    packageJSON.engines = packageJSON.engines || {}
+    packageJSON.engines.node = '>=22.0.0'
+    packageJSON.type = 'module'
 
     fs.mkdirSync(appPath)
-    fs.writeFileSync(appPath + '/package.json', packageJSON)
+    fs.writeFileSync(path.join(projectPath, '.env'), env)
+    fs.writeFileSync(path.join(projectPath, '.env.example'), env)
+    fs.writeFileSync(path.join(projectPath, 'citizen.config.js'), config)
+    if ( fs.existsSync(gitignorePath) ) {
+      gitignore = fs.readFileSync(gitignorePath, 'utf8')
+      if ( !gitignore.split(/\r?\n/).includes('.env') ) fs.appendFileSync(gitignorePath, `${gitignore.endsWith('\n') ? '' : '\n'}.env\n`)
+    } else {
+      fs.writeFileSync(gitignorePath, templates.gitignore)
+    }
+    fs.writeFileSync(packagePath, JSON.stringify(packageJSON, null, 2) + '\n')
     fs.writeFileSync(appPath + '/start.js', start)
-    fs.mkdirSync(appPath +     '/config')
-    fs.writeFileSync(appPath + '/config/' + config.name, config.contents)
     fs.mkdirSync(appPath +     '/controllers')
     fs.mkdirSync(appPath +     '/controllers/hooks')
     fs.writeFileSync(appPath + '/controllers/hooks/application.js', application)
@@ -150,20 +158,17 @@ program
       var template,
           viewRegex = new RegExp(/.+\.html$/)
 
-      if ( viewRegex.test(file) ) {
-        template = fs.readFileSync(scaffoldPath + '/templates/error/' + file)
-      }
-
+      if ( viewRegex.test(file) ) template = fs.readFileSync(scaffoldPath + '/templates/error/' + file)
       fs.writeFileSync(appPath + '/views/error/' + file, template)
     })
     fs.mkdirSync(webPath)
 
     console.log('')
-    console.log('Your app\'s skeleton was successfully created in ' + path.resolve(appPath, '../'))
+    console.log('Your app\'s skeleton was successfully created in ' + projectPath)
     console.log('')
     console.log('To start your app:')
     console.log('')
-    console.log('  $ node ' + appPath + '/start.js')
+    console.log('  $ node app/start.js')
     console.log('')
   })
   .on('--help', function(){
@@ -172,13 +177,16 @@ program
     console.log('')
     console.log('  Examples:')
     console.log('')
-    console.log('    $ node scaffold skeleton')
+    console.log('    $ node node_modules/citizen/util/scaffold.js skeleton')
     console.log('')
-    console.log('    Creates the following files:')
+    console.log('    Creates or updates the following files:')
     console.log('')
+    console.log('    .env')
+    console.log('    .env.example')
+    console.log('    .gitignore')
+    console.log('    citizen.config.js')
+    console.log('    package.json')
     console.log('    app/')
-    console.log('      config/')
-    console.log('        citizen.json')
     console.log('      controllers/')
     console.log('        hooks/')
     console.log('          application.js')
@@ -202,7 +210,7 @@ program
     console.log('')
     console.log('  After creating the skeleton:')
     console.log('')
-    console.log('    $ node start.js')
+    console.log('    $ node app/start.js')
     console.log('')
   })
 
@@ -227,34 +235,30 @@ program
         })
 
     fs.writeFileSync(appPath + '/controllers/routes/' + controller.name, controller.contents)
-    if ( options.model ) {
-      fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
-    }
-    if ( options.view ) {
-      fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
-    }
+    if ( options.model ) fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
+    if ( options.view ) fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
 
     console.log(pattern + ' pattern created')
   })
   .on('--help', function(){
-      console.log('')
-      console.log('  The pattern command creates the files and folders needed for a working citizen MVC pattern.')
-      console.log('')
-      console.log('  Examples:')
-      console.log('')
-      console.log('    $ node scaffold pattern foo')
-      console.log('')
-      console.log('    Creates the following pattern:')
-      console.log('')
-      console.log('    app/')
-      console.log('      controllers/')
-      console.log('        routes/')
-      console.log('          foo.js')
-      console.log('      models/')
-      console.log('        foo.js')
-      console.log('      views/')
-      console.log('        foo.html')
-      console.log('')
-    })
+    console.log('')
+    console.log('  The pattern command creates the files and folders needed for a working citizen MVC pattern.')
+    console.log('')
+    console.log('  Examples:')
+    console.log('')
+    console.log('    $ node node_modules/citizen/util/scaffold.js pattern foo')
+    console.log('')
+    console.log('    Creates the following pattern:')
+    console.log('')
+    console.log('    app/')
+    console.log('      controllers/')
+    console.log('        routes/')
+    console.log('          foo.js')
+    console.log('      models/')
+    console.log('        foo.js')
+    console.log('      views/')
+    console.log('        foo.html')
+    console.log('')
+  })
 
 program.parse(process.argv)

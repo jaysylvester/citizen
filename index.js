@@ -1,17 +1,18 @@
 // Initializes the framework
 
 // citizen
-import config   from './init/config.js'
-import patterns from './init/patterns.js'
+import configure from './init/config.js'
+import patterns  from './init/patterns.js'
 
 
-const controllers = {
-        hooks   : await patterns.getHooks(config.citizen.directories.controllers + '/hooks'),
-        routes  : await patterns.getRoutes(config.citizen.directories.controllers + '/routes')
+const config = await configure(),
+      controllers = {
+        hooks   : await patterns.getHooks(config.directories.controllers + '/hooks'),
+        routes  : await patterns.getRoutes(config.directories.controllers + '/routes')
       },
-      helpers = await patterns.getHelpers(config.citizen.directories.helpers),
-      models  = await patterns.getModels(config.citizen.directories.models),
-      views   = await patterns.getViews(config.citizen.directories.views)
+      helpers = await patterns.getHelpers(config.directories.helpers),
+      models  = await patterns.getModels(config.directories.models),
+      views   = await patterns.getViews(config.directories.views)
 
 
 global.CTZN = {

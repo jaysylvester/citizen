@@ -1,0 +1,5 @@
+# Application environment
+# Values remain available to the application through process.env.
+NODE_ENV=[mode]
+
+# Application settings
