@@ -1,6 +1,6 @@
 todo (2.0):
 
-1. Comprehensive security review (XSS, cookie parsing, injection, config, log file contents)
+1. Comprehensive security review (XSS, cookie parsing, injection, config, log file contents, CORS implementation)
 
 2. HTML escaping in template literal views using double-bracket notation ${{local.whatever}}
    — plan: plans/html-escaping-double-bracket.md

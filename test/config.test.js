@@ -41,6 +41,7 @@ function configure(root, options = {}) {
 
   delete env.APP_VALUE
   delete env.CITIZEN_APP_PATH
+  delete env.NODE_ENV
   Object.assign(env, options.env)
 
   return spawnSync(process.execPath, ['--input-type=module', '--eval', script], {
@@ -71,12 +72,13 @@ async function getPort() {
 }
 
 
-function request(port, pathname, origin) {
+function request(port, pathname, origin, headers = {}) {
   return new Promise( (resolve, reject) => {
     let call = http.request({
       headers: {
         accept: 'text/html',
-        origin: origin
+        ...( origin ? { origin: origin } : {} ),
+        ...headers
       },
       hostname: '127.0.0.1',
       path: pathname,
@@ -92,14 +94,14 @@ function request(port, pathname, origin) {
 }
 
 
-function started(child) {
+function waitFor(child, expected) {
   return new Promise( (resolve, reject) => {
     let output = '',
-        timer = setTimeout(() => reject(new Error('Timed out waiting for the scaffolded server to start.\n' + output)), 3000)
+        timer = setTimeout(() => reject(new Error('Timed out waiting for output: ' + expected + '\n' + output)), 3000)
 
     child.stdout.on('data', chunk => {
       output += chunk
-      if ( output.includes('HTTP server started') ) {
+      if ( output.includes(expected) ) {
         clearTimeout(timer)
         resolve()
       }
@@ -157,6 +159,14 @@ test('project config preserves typed values and does not mutate defaults', () =>
 })
 
 
+test('unsupported resolved modes fall back to production', () => {
+  let root = project(),
+      config = resolve({ mode: 'test' }, { appPath: path.join(root, 'app') })
+
+  assert.equal(config.mode, 'production')
+})
+
+
 test('relative directories resolve from the project root and app cannot be relocated', () => {
   let root = project(),
       app = path.join(root, 'app'),
@@ -197,6 +207,33 @@ test('project .env loads application values without copying them into config', (
   assert.equal(output.config.mode, 'development')
   assert.equal(output.env, 'from-file')
   assert.equal(output.config.APP_VALUE, undefined)
+})
+
+
+test('unsupported NODE_ENV warns and falls back to production', () => {
+  let root = project()
+
+  fs.writeFileSync(path.join(root, '.env'), 'NODE_ENV=test\n')
+  let child = configure(root),
+      output = result(child)
+
+  assert.equal(child.status, 0, child.stderr)
+  assert.equal(output.config.mode, 'production')
+  assert.match(child.stderr, /Unsupported Citizen mode "test"; using production/)
+})
+
+
+test('project mode overrides an unsupported NODE_ENV without warning', () => {
+  let root = project()
+
+  fs.writeFileSync(path.join(root, '.env'), 'NODE_ENV=test\n')
+  fs.writeFileSync(path.join(root, 'citizen.config.js'), 'export default { mode: "development" }\n')
+  let child = configure(root),
+      output = result(child)
+
+  assert.equal(child.status, 0, child.stderr)
+  assert.equal(output.config.mode, 'development')
+  assert.doesNotMatch(child.stderr, /Unsupported Citizen mode/)
 })
 
 
@@ -292,6 +329,16 @@ test('the process-only app directory selects another project', () => {
 })
 
 
+test('a blank process app path uses the conventional app directory', () => {
+  let root = project(),
+      child = configure(root, { env: { CITIZEN_APP_PATH: '' } }),
+      output = result(child)
+
+  assert.equal(child.status, 0, child.stderr)
+  assert.equal(output.config.directories.app, path.join(root, 'app'))
+})
+
+
 test('a missing selected app directory fails clearly', () => {
   let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-missing-')),
       child = configure(root)
@@ -311,6 +358,29 @@ test('legacy JSON fails without being parsed', () => {
   assert.notEqual(child.status, 0)
   assert.match(child.stderr, /JSON configuration files are no longer supported/)
   assert.doesNotMatch(child.stderr, /Unexpected token/)
+})
+
+
+test('legacy JSON guard catches multi-dot and case-insensitive filenames but not directories', () => {
+  let root = project()
+
+  fs.mkdirSync(path.join(root, 'app/config'))
+  fs.mkdirSync(path.join(root, 'app/config/archive.json'))
+  fs.writeFileSync(path.join(root, 'app/config/web01.prod.JSON'), '{}')
+  let child = configure(root)
+
+  assert.notEqual(child.status, 0)
+  assert.match(child.stderr, /JSON configuration files are no longer supported/)
+})
+
+
+test('legacy JSON guard ignores directories ending in .json', () => {
+  let root = project()
+
+  fs.mkdirSync(path.join(root, 'app/config/archive.json'), { recursive: true })
+  let child = configure(root)
+
+  assert.equal(child.status, 0, child.stderr)
 })
 
 
@@ -390,6 +460,44 @@ test('scaffold fails clearly outside a project', () => {
 })
 
 
+test('scaffold preserves existing project config files and rejects repeat runs', () => {
+  let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-existing-')),
+      files = {
+        '.env': 'NODE_ENV=production\nDB_PASSWORD=secret\n',
+        '.env.example': 'NODE_ENV=production\nDB_PASSWORD=replace-me\n',
+        'citizen.config.js': 'export default { http: { port: 9999 } }\n'
+      }
+
+  fs.writeFileSync(path.join(root, 'package.json'), '{"name":"fixture","private":true}\n')
+  Object.entries(files).forEach( file => fs.writeFileSync(path.join(root, file[0]), file[1]) )
+  fs.mkdirSync(path.join(root, 'web'))
+  fs.writeFileSync(path.join(root, 'web/existing.txt'), 'keep me\n')
+  let child = spawnSync(process.execPath, [scaffoldPath, 'skeleton'], {
+        cwd: root,
+        encoding: 'utf8'
+      })
+
+  assert.equal(child.status, 0, child.stderr)
+  Object.entries(files).forEach( file => assert.equal(fs.readFileSync(path.join(root, file[0]), 'utf8'), file[1]) )
+  assert.match(child.stdout, /Keeping existing project file: .*\.env/)
+  assert.match(child.stdout, /Keeping existing project file: .*\.env\.example/)
+  assert.match(child.stdout, /Keeping existing project file: .*citizen\.config\.js/)
+  assert.match(child.stdout, /Keeping existing project directory: .*web/)
+  assert.equal(fs.readFileSync(path.join(root, 'web/existing.txt'), 'utf8'), 'keep me\n')
+
+  let packageJSON = fs.readFileSync(path.join(root, 'package.json'), 'utf8'),
+      repeat = spawnSync(process.execPath, [scaffoldPath, 'skeleton'], {
+        cwd: root,
+        encoding: 'utf8'
+      })
+
+  assert.notEqual(repeat.status, 0)
+  assert.match(repeat.stderr, /app directory already exists/)
+  assert.equal(fs.readFileSync(path.join(root, 'package.json'), 'utf8'), packageJSON)
+  Object.entries(files).forEach( file => assert.equal(fs.readFileSync(path.join(root, file[0]), 'utf8'), file[1]) )
+})
+
+
 test('scaffolded project imports flat config and callable public exports', () => {
   let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-public-')),
       packagePath = path.join(root, 'package.json')
@@ -447,6 +555,71 @@ test('scaffolded project imports flat config and callable public exports', () =>
 })
 
 
+test('package allowlist includes public docs and templates but excludes internal files', () => {
+  let cache = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-npm-cache-')),
+      child = spawnSync('npm', ['pack', '--dry-run', '--json', '--cache', cache], {
+        cwd: projectPath,
+        encoding: 'utf8'
+      }),
+      pack = child.status === 0 && JSON.parse(child.stdout)[0],
+      files = pack && pack.files.map( file => file.path )
+
+  assert.equal(child.status, 0, child.stderr)
+  assert.ok(files.includes('README.md'))
+  assert.ok(files.includes('MIGRATION.md'))
+  assert.ok(files.includes('util/templates/citizen.config.js'))
+  assert.ok(files.includes('util/templates/env'))
+  assert.equal(files.some( file => file.startsWith('docs/') ), false)
+  assert.equal(files.some( file => file.startsWith('test/') ), false)
+  assert.equal(files.includes('eslint.config.js'), false)
+})
+
+
+test('development watcher polling options reach Chokidar', async () => {
+  let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-watcher-'))
+
+  fs.writeFileSync(path.join(root, 'package.json'), '{"name":"fixture","private":true,"type":"module"}\n')
+  let scaffold = spawnSync(process.execPath, [scaffoldPath, 'skeleton', '--mode', 'development'], {
+        cwd: root,
+        encoding: 'utf8'
+      })
+
+  assert.equal(scaffold.status, 0, scaffold.stderr)
+  fs.mkdirSync(path.join(root, 'node_modules'))
+  fs.symlinkSync(projectPath, path.join(root, 'node_modules/citizen'), 'dir')
+  fs.writeFileSync(path.join(root, 'citizen.config.js'), `
+    export default {
+      development: {
+        watcher: {
+          interval: 25,
+          usePolling: true
+        }
+      },
+      http: { enabled: false }
+    }
+  `)
+
+  let child = spawn(process.execPath, ['app/start.js'], {
+    cwd: root,
+    stdio: ['ignore', 'pipe', 'pipe']
+  })
+
+  try {
+    await waitFor(child, 'Starting watcher for hot module replacement')
+    await new Promise( resolve => setTimeout(resolve, 250) )
+    let reloaded = waitFor(child, 'Model reinitialized: index')
+
+    fs.appendFileSync(path.join(root, 'app/models/index.js'), '\n// watcher test\n')
+    await reloaded
+  } finally {
+    if ( child.exitCode === null ) {
+      child.kill()
+      await once(child, 'exit')
+    }
+  }
+})
+
+
 test('global CORS merges, overrides, and disables through a scaffolded server', async context => {
   let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-cors-')),
       port
@@ -454,7 +627,9 @@ test('global CORS merges, overrides, and disables through a scaffolded server', 
   try {
     port = await getPort()
   } catch ( err ) {
-    if ( err.code !== 'EPERM' ) throw err
+    if ( err.code !== 'EPERM' ) {
+      throw err
+    }
     context.skip('This environment does not permit listening on a local port.')
     return
   }
@@ -477,6 +652,7 @@ test('global CORS merges, overrides, and disables through a scaffolded server', 
       },
       http: {
         keepAliveTimeout: 5000,
+        maxHeaderSize: 1024,
         port: ${port}
       },
       https: {
@@ -505,10 +681,11 @@ test('global CORS merges, overrides, and disables through a scaffolded server', 
   })
 
   try {
-    await started(child)
+    await waitFor(child, 'HTTP server started')
     let baseline = await request(port, '/', 'https://global.example'),
         override = await request(port, '/index/action/override', 'https://override.example'),
-        disabled = await request(port, '/index/action/private', 'https://global.example')
+        disabled = await request(port, '/index/action/private', 'https://global.example'),
+        oversized = await request(port, '/', null, { 'x-oversized': 'x'.repeat(2048) })
 
     assert.equal(baseline.status, 200)
     assert.equal(baseline.headers['access-control-allow-origin'], 'https://global.example')
@@ -516,6 +693,7 @@ test('global CORS merges, overrides, and disables through a scaffolded server', 
     assert.equal(override.headers['access-control-allow-headers'], 'Content-Type')
     assert.equal(override.headers['access-control-allow-origin'], 'https://override.example')
     assert.equal(disabled.status, 403)
+    assert.equal(oversized.status, 431)
   } finally {
     if ( child.exitCode === null ) {
       child.kill()

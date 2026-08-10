@@ -220,7 +220,7 @@ Paths in `directories`, other than the bootstrap-owned `directories.app`, may be
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
-| `mode` | String | `NODE_ENV` or `production` | `development` enables verbose logging, URL debugging, and hot module replacement; `production` enables view caching and quieter output. |
+| `mode` | String | `NODE_ENV` or `production` | Supported values are `development` and `production`. Development enables verbose logging, URL debugging, and hot module replacement; production enables view caching and quieter output. Unsupported values produce a startup warning and fall back to production; set this explicitly in `citizen.config.js` when `NODE_ENV` uses another value such as `test`. |
 | `global` | String | `app` | Global name populated when `app.start()` runs. |
 | `http.enabled` | Boolean | `true` | Starts the HTTP server. |
 | `http.hostname` | String | `127.0.0.1` | HTTP listen hostname; an empty string listens on all available hosts. |
@@ -2132,6 +2132,7 @@ app/
       session.js
     routes/
       index.js
+  helpers/
   models/
     index.js
   views/
@@ -2146,6 +2147,8 @@ web/
 ```
 
 Run `node node_modules/citizen/util/scaffold.js skeleton -h` for options.
+
+The scaffold preserves existing `.env`, `.env.example`, and `citizen.config.js` files. It fails without making changes if `app/` already exists.
 
 
 #### pattern

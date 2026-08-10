@@ -11,6 +11,16 @@ const scaffoldPath = fileURLToPath(new URL('./', import.meta.url)),
       appPath      = path.join(projectPath, 'app')
 
 
+const writeNew = (file, contents) => {
+  if ( fs.existsSync(file) ) {
+    console.log('Keeping existing project file: ' + file)
+    return
+  }
+
+  fs.writeFileSync(file, contents)
+}
+
+
 const buildController = (options) => {
   var template = fs.readFileSync(scaffoldPath + '/templates/controller.js'),
       pattern  = options.pattern,
@@ -77,7 +87,10 @@ program
   .option('-m, --mode [mode]', 'Set the config mode to development (default) or production')
   .action( function (options) {
     var gitignore,
-        gitignorePath = path.join(projectPath, '.gitignore'),
+        configPath     = path.join(projectPath, 'citizen.config.js'),
+        envExamplePath = path.join(projectPath, '.env.example'),
+        envPath        = path.join(projectPath, '.env'),
+        gitignorePath  = path.join(projectPath, '.gitignore'),
         mode          = options.mode || 'development',
         packagePath   = path.join(projectPath, 'package.json'),
         port          = Number(options.networkPort || 3000),
@@ -120,7 +133,15 @@ program
     if ( !fs.existsSync(packagePath) ) {
       throw new Error('citizen scaffold must be run from a project root containing package.json. Initialize or install the project package, then run the scaffold again.')
     }
-    if ( !Number.isFinite(port) ) throw new TypeError('The network port must be a number.')
+    if ( fs.existsSync(appPath) ) {
+      throw new Error('citizen scaffold cannot create the application because the app directory already exists: ' + appPath)
+    }
+    if ( fs.existsSync(webPath) && !fs.statSync(webPath).isDirectory() ) {
+      throw new Error('citizen scaffold cannot use the static web path because it is not a directory: ' + webPath)
+    }
+    if ( !Number.isFinite(port) ) {
+      throw new TypeError('The network port must be a number.')
+    }
 
     packageJSON = JSON.parse(fs.readFileSync(packagePath, 'utf8'))
     packageJSON.engines = packageJSON.engines || {}
@@ -128,12 +149,14 @@ program
     packageJSON.type = 'module'
 
     fs.mkdirSync(appPath)
-    fs.writeFileSync(path.join(projectPath, '.env'), env)
-    fs.writeFileSync(path.join(projectPath, '.env.example'), env)
-    fs.writeFileSync(path.join(projectPath, 'citizen.config.js'), config)
+    writeNew(envPath, env)
+    writeNew(envExamplePath, env)
+    writeNew(configPath, config)
     if ( fs.existsSync(gitignorePath) ) {
       gitignore = fs.readFileSync(gitignorePath, 'utf8')
-      if ( !gitignore.split(/\r?\n/).includes('.env') ) fs.appendFileSync(gitignorePath, `${gitignore.endsWith('\n') ? '' : '\n'}.env\n`)
+      if ( !gitignore.split(/\r?\n/).includes('.env') ) {
+        fs.appendFileSync(gitignorePath, `${gitignore.endsWith('\n') ? '' : '\n'}.env\n`)
+      }
     } else {
       fs.writeFileSync(gitignorePath, templates.gitignore)
     }
@@ -158,10 +181,16 @@ program
       var template,
           viewRegex = new RegExp(/.+\.html$/)
 
-      if ( viewRegex.test(file) ) template = fs.readFileSync(scaffoldPath + '/templates/error/' + file)
+      if ( viewRegex.test(file) ) {
+        template = fs.readFileSync(scaffoldPath + '/templates/error/' + file)
+      }
       fs.writeFileSync(appPath + '/views/error/' + file, template)
     })
-    fs.mkdirSync(webPath)
+    if ( fs.existsSync(webPath) ) {
+      console.log('Keeping existing project directory: ' + webPath)
+    } else {
+      fs.mkdirSync(webPath)
+    }
 
     console.log('')
     console.log('Your app\'s skeleton was successfully created in ' + projectPath)
@@ -235,8 +264,12 @@ program
         })
 
     fs.writeFileSync(appPath + '/controllers/routes/' + controller.name, controller.contents)
-    if ( options.model ) fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
-    if ( options.view ) fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
+    if ( options.model ) {
+      fs.writeFileSync(appPath + '/models/' + model.name, model.contents)
+    }
+    if ( options.view ) {
+      fs.writeFileSync(appPath + '/views/' + view.name, view.contents)
+    }
 
     console.log(pattern + ' pattern created')
   })

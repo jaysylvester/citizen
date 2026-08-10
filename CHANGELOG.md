@@ -27,6 +27,7 @@
 * Regular expressions survive config copying and merging
 * Public cache, log, session, and start exports remain callable
 * CORS origin and method checks use exact comparisons instead of request-derived regular expressions
+* Unsupported application modes warn at startup and fall back to production
 * Default error templates render their backslash correctly
 
 # 1.0.2
@@ -75,7 +76,7 @@
 ## Breaking changes
 * New default directory structure, but you can keep the old structure by editing the directory config
 * The default rendering engine is now based on template literals, and [consolidate](https://github.com/ladjs/consolidate) is no longer included as a dependency by default
-  * To use another template engine, install [consolidate](https://github.com/ladjs/consolidate) and your preferred package (handlebars, pug, etc.), then update the `templateEngine` setting
+  * To use another template engine, install [consolidate](https://github.com/ladjs/consolidate) and your preferred package (handlebars, pug, etc.), then update `config.citizen.templateEngine` with the package name
 * The `handoff` directive has been renamed to `next`
 * The `route` property has been removed from the `include` directive
   * Route controller includes now accept a pathname string as shorthand for an included route

@@ -11,6 +11,9 @@ import { pathToFileURL } from 'node:url'
 import helpers           from '../lib/helpers.js'
 
 
+const modes = new Set(['development', 'production'])
+
+
 function getDefaults(options = {}) {
   let app  = path.resolve(options.appPath || 'app'),
       mode = options.nodeEnv || 'production',
@@ -139,9 +142,13 @@ function getDefaults(options = {}) {
 
 function checkApp(app) {
   try {
-    if ( fs.statSync(app).isDirectory() ) return
+    if ( fs.statSync(app).isDirectory() ) {
+      return
+    }
   } catch ( err ) {
-    if ( err.code !== 'ENOENT' && err.code !== 'ENOTDIR' ) throw err
+    if ( err.code !== 'ENOENT' && err.code !== 'ENOTDIR' ) {
+      throw err
+    }
   }
 
   throw new Error('Application directory not found: ' + app + '. Run citizen from the project root or set CITIZEN_APP_PATH to an absolute path in the process environment.')
@@ -153,9 +160,11 @@ function checkLegacy(app) {
       files
 
   try {
-    files = fs.readdirSync(configDirectory).filter( file => /^[A-Za-z0-9_-]*\.json$/.test(file) )
+    files = fs.readdirSync(configDirectory, { withFileTypes: true }).filter( file => file.isFile() && /\.json$/i.test(file.name) )
   } catch ( err ) {
-    if ( err.code === 'ENOENT' || err.code === 'ENOTDIR' ) return
+    if ( err.code === 'ENOENT' || err.code === 'ENOTDIR' ) {
+      return
+    }
     throw err
   }
 
@@ -168,7 +177,9 @@ function checkLegacy(app) {
 function loadEnv(root) {
   let file = path.join(root, '.env')
 
-  if ( !fs.existsSync(file) ) return null
+  if ( !fs.existsSync(file) ) {
+    return null
+  }
 
   loadEnvFile(file)
   return file
@@ -179,7 +190,9 @@ async function loadProjectConfig(root) {
   let file = path.join(root, 'citizen.config.js'),
       module
 
-  if ( !fs.existsSync(file) ) return { config: {}, file: null }
+  if ( !fs.existsSync(file) ) {
+    return { config: {}, file: null }
+  }
 
   module = await import(pathToFileURL(file).href)
   if ( !Object.hasOwn(module, 'default') || !module.default || module.default.constructor !== Object ) {
@@ -195,9 +208,14 @@ function resolve(projectConfig = {}, options = {}) {
       config = helpers.extend(getDefaults({ appPath: app, nodeEnv: options.nodeEnv }), projectConfig),
       root = path.dirname(app)
 
+  if ( !modes.has(config.mode) ) {
+    config.mode = 'production'
+  }
   config.directories.app = app
   Object.keys(config.directories).forEach( directory => {
-    if ( directory !== 'app' ) config.directories[directory] = path.resolve(root, config.directories[directory])
+    if ( directory !== 'app' ) {
+      config.directories[directory] = path.resolve(root, config.directories[directory])
+    }
   })
 
   return config
@@ -206,13 +224,16 @@ function resolve(projectConfig = {}, options = {}) {
 
 async function configure(options = {}) {
   let appVariable = Object.hasOwn(process.env, 'CITIZEN_APP_PATH'),
-      selectedApp = options.appPath || process.env.CITIZEN_APP_PATH || 'app',
+      appValue = process.env.CITIZEN_APP_PATH?.trim(),
+      selectedApp = options.appPath || appValue || 'app',
       app,
       root,
       envFile,
-      project
+      project,
+      mode,
+      resolved
 
-  if ( !options.appPath && appVariable && !path.isAbsolute(selectedApp) ) {
+  if ( !options.appPath && appValue && !path.isAbsolute(selectedApp) ) {
     throw new TypeError('CITIZEN_APP_PATH must be an absolute path.')
   }
   app = path.resolve(selectedApp)
@@ -229,6 +250,8 @@ async function configure(options = {}) {
     console.warn('  Ignored CITIZEN_APP_PATH from .env; set it in the process environment before importing citizen to select another app directory.')
   }
   project = await loadProjectConfig(root)
+  mode = Object.hasOwn(project.config, 'mode') ? project.config.mode : process.env.NODE_ENV
+  resolved = resolve(project.config, { appPath: app, nodeEnv: process.env.NODE_ENV })
 
   if ( envFile ) {
     console.log('  Loaded project environment: ' + envFile)
@@ -240,8 +263,11 @@ async function configure(options = {}) {
   } else {
     console.log('  No citizen.config.js found (optional); using Citizen defaults.\n')
   }
+  if ( mode !== undefined && !modes.has(mode) ) {
+    console.warn('  Unsupported Citizen mode "' + String(mode) + '"; using production. Supported modes are development and production.\n')
+  }
 
-  return resolve(project.config, { appPath: app, nodeEnv: process.env.NODE_ENV })
+  return resolved
 }
 
 

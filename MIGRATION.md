@@ -206,4 +206,4 @@ Then verify that:
 5. Controller/action overrides, CORS, HTTP/HTTPS, sessions, caching, logs, and watcher behavior still work.
 6. The normal test suite and representative endpoint smoke tests pass under Node.js 22.
 
-Cases requiring manual review include multiple host configs, arbitrary application nodes, computed startup values, config aliases, dynamic property access, and secret-bearing tracked files. See [the migration automation plan](docs/plans/migration-1-to-2.md) for the proposed dry-run-first workflow.
+Cases requiring manual review include multiple host configs, arbitrary application nodes, computed startup values, config aliases, dynamic property access, and secret-bearing tracked files.

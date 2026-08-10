@@ -17,6 +17,10 @@ export default [
   },
   {
     rules: {
+      curly: [
+        'error',
+        'all'
+      ],
       'linebreak-style': [
         'error',
         'unix'

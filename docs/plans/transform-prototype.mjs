@@ -1,8 +1,12 @@
 // SafeString marks framework-trusted HTML (e.g. include output)
 class SafeString { constructor(v){ this.value = v } toString(){ return this.value } }
 const $ctznEscape = (v) => {
-  if (v === null || v === undefined) return v          // preserve "null"/"undefined" coercion
-  if (v instanceof SafeString) return v                // trusted, raw
+  if (v === null || v === undefined) {
+    return v                                           // preserve "null"/"undefined" coercion
+  }
+  if (v instanceof SafeString) {
+    return v                                           // trusted, raw
+  }
   return String(v)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -35,10 +39,11 @@ function readInterp(s, j, raw) {
   let depth = 1, start = j
   while (j < s.length) {
     const c = s[j]
-    if (c === "'" || c === '"') { j = skipString(s, j, c); continue }
+    if (c === '\'' || c === '"') { j = skipString(s, j, c); continue }
     if (c === '`') { j = skipTemplate(s, j); continue }
-    if (c === '{') depth++
-    else if (c === '}') {
+    if (c === '{') {
+      depth++
+    } else if (c === '}') {
       depth--
       if (depth === 0) {
         return raw ? [s.slice(start, j), j + 2] : [s.slice(start, j), j + 1]
@@ -50,20 +55,34 @@ function readInterp(s, j, raw) {
 }
 function skipString(s, j, q) {
   j++
-  while (j < s.length) { if (s[j] === '\\') j += 2; else if (s[j] === q) return j + 1; else j++ }
+  while (j < s.length) {
+    if (s[j] === '\\') {
+      j += 2
+    } else if (s[j] === q) {
+      return j + 1
+    } else {
+      j++
+    }
+  }
   throw new Error('unterminated string')
 }
 function skipTemplate(s, j) { // returns index just after the closing backtick
   j++
   while (j < s.length) {
     if (s[j] === '\\') { j += 2; continue }
-    if (s[j] === '`') return j + 1
+    if (s[j] === '`') {
+      return j + 1
+    }
     if (s[j] === '$' && s[j+1] === '{') {         // skip nested ${...}
       let d = 1; j += 2
       while (j < s.length && d > 0) {
-        if (s[j] === "'" || s[j] === '"') { j = skipString(s, j, s[j]); continue }
+        if (s[j] === '\'' || s[j] === '"') { j = skipString(s, j, s[j]); continue }
         if (s[j] === '`') { j = skipTemplate(s, j); continue }
-        if (s[j] === '{') d++; else if (s[j] === '}') d--
+        if (s[j] === '{') {
+          d++
+        } else if (s[j] === '}') {
+          d--
+        }
         j++
       }
       continue
@@ -77,7 +96,7 @@ function transformExpr(e) {
   let out = '', i = 0
   while (i < e.length) {
     const c = e[i]
-    if (c === "'" || c === '"') { const k = skipString(e, i, c); out += e.slice(i, k); i = k; continue }
+    if (c === '\'' || c === '"') { const k = skipString(e, i, c); out += e.slice(i, k); i = k; continue }
     if (c === '`') {
       const k = skipTemplate(e, i)               // whole nested template literal text
       const body = e.slice(i + 1, k - 1)
