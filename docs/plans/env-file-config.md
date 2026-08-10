@@ -1,8 +1,8 @@
 # Plan: .env file configuration
 
 Target release: **2.0** (see `docs/todo.md` #3)
-Status: **Additive.** The JSON config convention stays as a deprecated fallback,
-so 2.0 requires no migration. Removal targeted at 3.0.
+Status: **Superseded by `project-config-module.md`.** This file records the
+abandoned full env-mapping design and is retained as rationale and reference.
 
 ## Current state
 
@@ -215,7 +215,7 @@ currently documents, becomes `CITIZEN_HTTPS_PFX=…`. Since that's a documented
 - **2.x** — `start({ citizen: … })` still applies, at lowest precedence (below
   both the deprecated JSON file and env), and logs a deprecation warning naming
   the env variables that replace the keys it saw
-- **3.0** — the `citizen` node in `start()` options is ignored
+- **Future version** — the `citizen` node in `start()` options is ignored
 
 Final chain, lowest to highest:
 
@@ -231,7 +231,7 @@ Final chain, lowest to highest:
 The root-level `host` key has no function left under env config — it existed
 solely to select among JSON files. It stays readable at `app.config.host` for the
 deprecated path and for `start()`, documented as deprecated, and disappears with
-the JSON loader in 3.0.
+the JSON loader in a future version.
 
 ### 8. Startup logging
 
@@ -261,7 +261,7 @@ What it costs:
 | Retain `getConfig()` + `host` matching                       | ~0 — existing code, untouched |
 | Deprecation warnings, JSON + `start({ citizen })`            | ~15 lines |
 | Two extra `extend()` calls in the chain                      | 2 lines |
-| README documents two conventions until 3.0                   | moderate, the real cost |
+| README documents two conventions until a future version      | moderate, the real cost |
 | Test matrix roughly doubles (json-only, env-only, both, +`start()`) | ~8 extra cases |
 
 What makes it *not* free:
@@ -288,7 +288,7 @@ What makes it *not* free:
 The alternative — removing JSON in 2.0 — saves perhaps 40 lines and a README
 section, and costs every existing app a migration in a release that is already
 carrying a breaking view-syntax change. Not worth it. Deprecate in 2.0, warn
-throughout 2.x, remove in 3.0.
+until its removal in a future version.
 
 ## Work breakdown
 
@@ -364,7 +364,7 @@ the env implementation walks the same merge code.
 ## Remaining decision
 
 **How hard to deprecate `start({ citizen: … })`.** The plan proposes warn-and-honor
-through 2.x, removal in 3.0, matching the JSON file's treatment. The alternative
+until removal in a future version, matching the JSON file's treatment. The alternative
 is ignoring it outright in 2.0: cleaner, enforces the split immediately, and
 breaks the HTTPS setup of anyone following the current README example. Since 2.0
 is already carrying a breaking view-syntax change, adding a second breaking

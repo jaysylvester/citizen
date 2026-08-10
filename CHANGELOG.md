@@ -1,3 +1,33 @@
+# 2.0.0
+
+## New configuration model
+
+* Citizen automatically loads an optional project-root `.env` with Node's native dotenv support
+  * Secrets and deployment inputs remain in `process.env`; Citizen does not map or coerce them into config
+  * Existing process values take precedence over matching file values
+* An optional project-root `citizen.config.js` default-exports typed Citizen and application settings as a plain object
+  * Arrays, regular expressions, nulls, Node HTTP/HTTPS options, and nested objects retain their native types
+  * Framework settings remain under `app.config.citizen.*` and `params.config.citizen.*`; typed application settings remain at their top-level paths
+* `app.start(options)` continues to extend application configuration; Citizen settings must be loaded from the config module
+* Application-wide CORS can be configured as a baseline and extended, overridden, or disabled by controller/action config
+* Development watcher polling options pass through to Chokidar for Docker and network-filesystem use
+
+## Breaking changes
+
+* Node.js 22 or newer is required
+* Legacy `app/config/*.json` files and hostname selection are no longer supported; startup fails with a migration message while JSON files remain
+* The `citizen` property is no longer accepted by `app.start()` because framework settings must be resolved before application modules load
+* Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing Citizen
+
+## Enhancements and fixes
+
+* The scaffold now works from the project root, updates the existing package, and creates `.env`, `.env.example`, `citizen.config.js`, and an idempotent Git ignore rule
+* The scaffold no longer creates a duplicate package or an `app/config` directory
+* HTTPS credential files are read only when HTTPS is enabled
+* Regular expressions survive config copying and merging
+* CORS origin and method checks use exact comparisons instead of request-derived regular expressions
+* Unsupported application modes warn at startup and fall back to production
+
 # 1.0.2
 * Rewrote config init to accommodate an empty config directory error
 * README updates and fixes

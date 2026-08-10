@@ -1,11 +1,12 @@
 // Initializes the framework
 
 // citizen
-import config   from './init/config.js'
-import patterns from './init/patterns.js'
+import configure from './init/config.js'
+import patterns  from './init/patterns.js'
 
 
-const controllers = {
+const config = await configure(),
+      controllers = {
         hooks   : await patterns.getHooks(config.citizen.directories.controllers + '/hooks'),
         routes  : await patterns.getRoutes(config.citizen.directories.controllers + '/routes')
       },
