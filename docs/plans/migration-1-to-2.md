@@ -1,12 +1,12 @@
-# Plan: Citizen 1.x to 2.x migration automation
+# Plan: citizen 1.x to 2.x migration automation
 
 Status: **Draft**
 
-Companion guide: [Migrating Citizen 1.x applications to 2.x](../../MIGRATION.md)
+Companion guide: [Migrating citizen 1.x applications to 2.x](../../MIGRATION.md)
 
 ## Objective
 
-Build a dry-run-first migration assistant that inventories a Citizen 1.x application, applies only meaning-preserving 2.x rewrites, and reports every value or code path requiring a user decision.
+Build a dry-run-first migration assistant that inventories a citizen 1.x application, applies only meaning-preserving 2.x rewrites, and reports every value or code path requiring a user decision.
 
 Start with an agent workflow. Consider a standalone command only after the workflow has been exercised against representative applications and its safe transformations are understood.
 
@@ -16,7 +16,7 @@ A legacy application may contain multiple hostname-selected files, arbitrary app
 
 ## Operating rules
 
-1. Run from the application repository, never from the Citizen package.
+1. Run from the application repository, never from the citizen package.
 2. Default to analysis only and require explicit approval before writing.
 3. Record the baseline worktree and avoid overlapping user changes.
 4. Never print or copy values classified as secrets into reports or committed examples.
@@ -28,7 +28,7 @@ A legacy application may contain multiple hostname-selected files, arbitrary app
 
 Inspect:
 
-- the project root, app directory, start file, Citizen version, Node engine, and package manager;
+- the project root, app directory, start file, citizen version, Node engine, and package manager;
 - every `app/config/*.json` file and `host` value;
 - every argument passed to `app.start()`;
 - existing env files, examples, ignore rules, and deployment configuration;
@@ -67,7 +67,7 @@ Group findings into safe automatic edits, proposals requiring approval, manual w
 
 ### 1. Preflight
 
-Confirm the repository root, branch, worktree, Node version, package manager, installed Citizen version, app layout, and baseline tests. Make no changes.
+Confirm the repository root, branch, worktree, Node version, package manager, installed citizen version, app layout, and baseline tests. Make no changes.
 
 ### 2. Inventory and classification
 
@@ -77,12 +77,12 @@ Present the report and resolve ambiguous deployments, deployment-owned values, a
 
 ### 3. Safe edits
 
-1. Update the Node engine and Citizen dependency.
+1. Update the Node engine and citizen dependency.
 2. Add `.env` to ignore rules and generate a safe deployment-input example.
-3. Create `citizen.config.js` from the selected Citizen and application objects.
+3. Create `citizen.config.js` from the selected citizen and application objects.
 4. Preserve namespaced framework member expressions.
 5. Move only approved deployment inputs and secrets to explicit environment reads.
-6. Move startup Citizen settings into the module while retaining application-only startup overrides.
+6. Move startup citizen settings into the module while retaining application-only startup overrides.
 7. Consolidate approved global CORS while retaining route exceptions.
 8. Format changed files with the application's existing tools.
 
@@ -111,7 +111,7 @@ Potential options include an explicit legacy config source, report path, suppres
 - Analysis never mutates the application.
 - Apply mode changes only classified or explicitly approved items.
 - No secret value appears in reports, examples, output, or diffs.
-- The generated config module preserves known Citizen and application values and types.
+- The generated config module preserves known citizen and application values and types.
 - A second apply run is a no-op.
 - Legacy config is never deleted automatically.
 - The migrated app passes only application configuration to `app.start()`.

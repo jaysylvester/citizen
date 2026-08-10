@@ -57,7 +57,7 @@ Check out [model-citizen](https://github.com/jaysylvester/model-citizen), a basi
 ```
 .env                  // Local application environment (uncommitted)
 .env.example          // Committed environment reference
-citizen.config.js     // Typed Citizen and application configuration (optional)
+citizen.config.js     // Typed citizen and application configuration (optional)
 package.json
 app/
   controllers/
@@ -109,7 +109,7 @@ $ node app/start.js
 
 ### Configuration
 
-Citizen and application settings share the project-root `citizen.config.js` file. Citizen settings belong under `citizen`; other top-level properties belong to the application.
+citizen and application settings share the project-root `citizen.config.js` file. citizen settings belong under `citizen`; other top-level properties belong to the application.
 
 ```js
 // citizen.config.js
@@ -128,22 +128,22 @@ export default {
 }
 ```
 
-Citizen maps the exported object directly to `app.config`. In this example, `citizen.http.port` is available as `app.config.citizen.http.port`, while `db.port` is available as `app.config.db.port`.
+citizen maps the exported object directly to `app.config`. In this example, `citizen.http.port` is available as `app.config.citizen.http.port`, while `db.port` is available as `app.config.db.port`.
 
 Project configuration is resolved in this order, from lowest to highest precedence:
 
-1. Citizen defaults, with `NODE_ENV` supplying the default `citizen.mode` when present.
-2. Citizen and application settings exported by `citizen.config.js`.
+1. citizen defaults, with `NODE_ENV` supplying the default `citizen.mode` when present.
+2. citizen and application settings exported by `citizen.config.js`.
 3. Application settings passed to `app.start()`.
 
-The result is exposed as `app.config`. For each request, Citizen copies `app.config` to `params.config`, then applies request configuration in this order:
+The result is exposed as `app.config`. For each request, citizen copies `app.config` to `params.config`, then applies request configuration in this order:
 
 1. Route controller settings extend `params.config.citizen` for that controller.
 2. Controller action settings further extend `params.config.citizen` for that action.
 
 #### Environment
 
-Citizen loads the optional project-root `.env` before importing `citizen.config.js`. Its values are available through `process.env`, so the config module can use them where needed:
+citizen loads the optional project-root `.env` before importing `citizen.config.js`. Its values are available through `process.env`, so the config module can use them where needed:
 
 ```bash
 # .env
@@ -179,7 +179,7 @@ app.start({
 })
 ```
 
-With the earlier config file, this produces `app.config.db` with `host`, `port`, and the overridden `max` value. Startup configuration cannot contain `citizen` because Citizen settings must be resolved before application modules load.
+With the earlier config file, this produces `app.config.db` with `host`, `port`, and the overridden `max` value. Startup configuration cannot contain `citizen` because citizen settings must be resolved before application modules load.
 
 #### Controller configuration
 
@@ -202,7 +202,7 @@ The project config remains available globally as `app.config`. During a request,
 
 #### Default configuration
 
-Citizen begins with the following config, which `citizen.config.js` extends:
+citizen begins with the following config, which `citizen.config.js` extends:
 
 ```js
 {
@@ -327,9 +327,9 @@ Citizen begins with the following config, which `citizen.config.js` extends:
 
 #### Config settings
 
-`citizen.http` and `citizen.https` also accept options supported by Node's [`http.createServer()`](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener) and [`https.createServer()`](https://nodejs.org/api/https.html#httpscreateserveroptions-requestlistener). For HTTPS credentials, provide file paths in `citizen.https.pfx` or in both `citizen.https.key` and `citizen.https.cert`; Citizen reads those files only when HTTPS is enabled.
+`citizen.http` and `citizen.https` also accept options supported by Node's [`http.createServer()`](https://nodejs.org/api/http.html#httpcreateserveroptions-requestlistener) and [`https.createServer()`](https://nodejs.org/api/https.html#httpscreateserveroptions-requestlistener). For HTTPS credentials, provide file paths in `citizen.https.pfx` or in both `citizen.https.key` and `citizen.https.cert`; citizen reads those files only when HTTPS is enabled.
 
-Paths in `citizen.directories`, other than the bootstrap-owned `citizen.directories.app`, may be absolute or relative to the project root. Citizen exposes all resolved directory values as absolute paths.
+Paths in `citizen.directories`, other than the bootstrap-owned `citizen.directories.app`, may be absolute or relative to the project root. citizen exposes all resolved directory values as absolute paths.
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -355,7 +355,7 @@ Paths in `citizen.directories`, other than the bootstrap-owned `citizen.director
 | `citizen.layout.controller` | String | `''` | Default layout controller. |
 | `citizen.layout.view` | String | `''` | Default layout view. |
 | `citizen.contentTypes` | Array | HTML, text, JSON, JavaScript | Response formats allowed during content negotiation. |
-| `citizen.forms.enabled` | Boolean | `true` | Enables Citizen's request payload parsing. |
+| `citizen.forms.enabled` | Boolean | `true` | Enables citizen's request payload parsing. |
 | `citizen.forms.maxPayloadSize` | Number | `524288` | Maximum parsed payload size in bytes. |
 | `citizen.cache.application.enabled` | Boolean | `true` | Enables application object and controller-result caching. |
 | `citizen.cache.application.encoding` | String | `utf-8` | Encoding for files read into application cache. |
@@ -393,13 +393,13 @@ Paths in `citizen.directories`, other than the bootstrap-owned `citizen.director
 | `citizen.directories.views` | String | `app/views` | View directory. |
 | `citizen.directories.web` | String | `<project>/web` | Static web root. |
 
-To start outside the project root, set `CITIZEN_APP_PATH` to the absolute app path before importing Citizen. Because this locates the project and its `.env`, set it in the process environment rather than inside `.env`:
+To start outside the project root, set `CITIZEN_APP_PATH` to the absolute app path before importing citizen. Because this locates the project and its `.env`, set it in the process environment rather than inside `.env`:
 
 ```bash
 CITIZEN_APP_PATH=/srv/site/app node /srv/site/app/start.js
 ```
 
-Citizen uses [Chokidar](https://www.npmjs.com/package/chokidar) for log rotation and development hot reload. Its watcher objects accept Chokidar options directly:
+citizen uses [Chokidar](https://www.npmjs.com/package/chokidar) for log rotation and development hot reload. Its watcher objects accept Chokidar options directly:
 
 ```js
 export default {
@@ -432,7 +432,7 @@ This documentation assumes the default global app variable name, `app`. Adjust e
       <code>app.config</code>
     </td>
     <td>
-      The resolved project configuration, including Citizen settings such as <code>app.config.citizen.forms.maxPayloadSize</code> and typed application settings such as <code>app.config.db.port</code>.
+      The resolved project configuration, including citizen settings such as <code>app.config.citizen.forms.maxPayloadSize</code> and typed application settings such as <code>app.config.db.port</code>.
     </td>
   </tr>
   <tr>

@@ -12,19 +12,19 @@ Use each configuration format for the values it represents naturally:
 
 - Node loads one optional project-root `.env` into `process.env` for secrets and
   values supplied by the deployment environment.
-- One optional project-root `citizen.config.js` exports typed Citizen and
+- One optional project-root `citizen.config.js` exports typed citizen and
   application configuration.
-- Citizen settings remain under the established `citizen` namespace.
+- citizen settings remain under the established `citizen` namespace.
 - Typed application settings remain at top-level application-owned paths.
 - `app.start(options)` may extend application configuration but cannot change
-  Citizen settings after framework initialization.
-- Controller and action config continues to override Citizen settings for an
+  citizen settings after framework initialization.
+- Controller and action config continues to override citizen settings for an
   individual request.
 
 ## Rationale
 
 The full `CITIZEN_*` environment mapping proved that a string-only key/value
-format is a poor representation of Citizen's typed configuration tree. It
+format is a poor representation of citizen's typed configuration tree. It
 required generated names, coercers, special maps, JSON escape hatches, path
 normalization, and increasingly subtle validation.
 
@@ -37,7 +37,7 @@ application config. That overcorrected the boundary:
   same values came from JSON;
 - application settings could no longer be grouped and accessed through
   `app.config`;
-- flattening Citizen settings created potential collisions with application
+- flattening citizen settings created potential collisions with application
   properties such as `forms`.
 
 Restoring the `citizen` namespace solves the collision problem and preserves the
@@ -50,7 +50,7 @@ boundary.
 ```text
 .env                 # local secrets and deployment inputs; gitignored
 .env.example         # committed environment reference
-citizen.config.js     # committed typed Citizen and application config
+citizen.config.js     # committed typed citizen and application config
 package.json
 app/                  # application source directory
   start.js
@@ -71,7 +71,7 @@ CLI config flag, or `CITIZEN_CONFIG_FILE` selector.
 
 ### `.env` and `process.env`
 
-Citizen loads exactly `<project>/.env` through Node's native
+citizen loads exactly `<project>/.env` through Node's native
 `process.loadEnvFile()`. A missing file is normal. Values already present in the
 process environment remain authoritative.
 
@@ -82,7 +82,7 @@ Use the environment for:
 - container service discovery;
 - values genuinely supplied by the deployment environment.
 
-Citizen does not generate environment names, infer paths, coerce strings, or
+citizen does not generate environment names, infer paths, coerce strings, or
 copy environment values into `app.config` automatically.
 
 ### `citizen.config.js`
@@ -125,7 +125,7 @@ where consumed rather than exported through the publicly accessible
 
 ### Config module contract
 
-- Missing `citizen.config.js` loads Citizen defaults and no application config.
+- Missing `citizen.config.js` loads citizen defaults and no application config.
 - A present module must default-export a plain object.
 - A present `citizen` property must also be a plain object.
 - Reject nulls, arrays, functions, promises, and primitive module exports with
@@ -154,9 +154,9 @@ app.config:               db.port
 params.config:            db.port
 ```
 
-Citizen configuration precedence, lowest to highest:
+citizen configuration precedence, lowest to highest:
 
-1. Citizen defaults, with `NODE_ENV` supplying the default mode.
+1. citizen defaults, with `NODE_ENV` supplying the default mode.
 2. `citizen.config.js` → `citizen`.
 3. Route controller config.
 4. Controller action config.
@@ -167,9 +167,9 @@ Application configuration precedence, lowest to highest:
 2. Application properties passed to `app.start(options)`.
 
 Controller/action config extends only `params.config.citizen`. It cannot mutate
-application-owned properties that happen to share a name with Citizen settings.
+application-owned properties that happen to share a name with citizen settings.
 
-Unsupported Citizen modes warn at startup and fall back to production. An
+Unsupported citizen modes warn at startup and fall back to production. An
 explicit `citizen.mode` overrides `NODE_ENV`.
 
 ## `app.start(options)`
@@ -188,7 +188,7 @@ The argument must be a plain object. Its application properties deep-extend the
 module's application properties before the application-start hook and server
 creation.
 
-Reject a `citizen` property with an actionable message. Citizen configuration
+Reject a `citizen` property with an actionable message. citizen configuration
 must be available while directories and application modules are loaded, so
 accepting only the subset that happens to be consumed at server startup would
 create inconsistent behavior.
@@ -198,9 +198,9 @@ available through `app.config`.
 
 ## Bootstrap app directory
 
-Citizen needs the app directory before it can locate `.env` or
+citizen needs the app directory before it can locate `.env` or
 `citizen.config.js`. The default is `<cwd>/app`. Starting elsewhere may use
-`CITIZEN_APP_PATH` as the one process-only Citizen bootstrap variable.
+`CITIZEN_APP_PATH` as the one process-only citizen bootstrap variable.
 
 It must be absolute and present before import. A blank value behaves as unset.
 It cannot be supplied by `.env` or changed through `citizen.config.js`.
@@ -217,9 +217,9 @@ resolve app and project paths
   -> reject legacy app/config/*.json
   -> load optional project .env through Node
   -> import optional citizen.config.js
-  -> merge Citizen defaults into projectConfig.citizen
+  -> merge citizen defaults into projectConfig.citizen
   -> preserve typed application properties
-  -> normalize Citizen directory paths
+  -> normalize citizen directory paths
   -> import app patterns
   -> merge optional app.start() application overrides
   -> start app
@@ -299,7 +299,7 @@ Discard:
 - optional/JSON env maps;
 - applied/unknown/passthrough env-key logging;
 - generated framework `.env.example` catalogs;
-- any Citizen-owned dotenv parser or stricter dotenv grammar.
+- any citizen-owned dotenv parser or stricter dotenv grammar.
 
 ## Scaffold
 
@@ -323,12 +323,12 @@ Configuration and runtime:
 - defaults with neither optional project file;
 - Node `.env` loading and process-environment precedence;
 - config-module access to environment values;
-- preservation of typed Citizen and application settings;
+- preservation of typed citizen and application settings;
 - invalid module and invalid `citizen` exports;
 - mode precedence, warning, and production fallback;
 - relative directory resolution and immutable bootstrap app path;
 - missing app and legacy JSON failures;
-- application-only `app.start()` deep extension and Citizen rejection;
+- application-only `app.start()` deep extension and citizen rejection;
 - controller/action extension limited to `params.config.citizen`;
 - global CORS merge, override, disable, and exact matching;
 - HTTP/HTTPS options reaching Node;
@@ -341,17 +341,17 @@ Scaffold and packaging:
 - existing project files are preserved;
 - repeat scaffold fails before package mutation;
 - no app package or legacy config directory is created;
-- scaffolded app boots with namespaced Citizen and typed app config;
+- scaffolded app boots with namespaced citizen and typed app config;
 - `npm pack --dry-run` contains public docs/templates and excludes internal files.
 
 ## Acceptance criteria
 
-- Citizen delegates dotenv grammar to Node and reads exactly one project file.
+- citizen delegates dotenv grammar to Node and reads exactly one project file.
 - No generic framework env-key generator or coercion system remains.
-- `citizen.config.js` retains typed Citizen and application values.
+- `citizen.config.js` retains typed citizen and application values.
 - `app.config.citizen` and `params.config.citizen` remain intuitive and
   collision-free.
-- `app.start(options)` extends application config and rejects Citizen config.
+- `app.start(options)` extends application config and rejects citizen config.
 - Secrets are not automatically copied into public config.
 - Missing optional files load defaults; missing app directories and legacy JSON
   fail clearly.

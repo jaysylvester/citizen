@@ -2,13 +2,13 @@
 
 ## New configuration model
 
-* Citizen automatically loads an optional project-root `.env` with Node's native dotenv support
-  * Secrets and deployment inputs remain in `process.env`; Citizen does not map or coerce them into config
+* citizen automatically loads an optional project-root `.env` with Node's native dotenv support
+  * Secrets and deployment inputs remain in `process.env`; citizen does not map or coerce them into config
   * Existing process values take precedence over matching file values
-* An optional project-root `citizen.config.js` default-exports typed Citizen and application settings as a plain object
+* An optional project-root `citizen.config.js` default-exports typed citizen and application settings as a plain object
   * Arrays, regular expressions, nulls, Node HTTP/HTTPS options, and nested objects retain their native types
   * Framework settings remain under `app.config.citizen.*` and `params.config.citizen.*`; typed application settings remain at their top-level paths
-* `app.start(options)` continues to extend application configuration; Citizen settings must be loaded from the config module
+* `app.start(options)` continues to extend application configuration; citizen settings must be loaded from the config module
 * Application-wide CORS can be configured as a baseline and extended, overridden, or disabled by controller/action config
 * Development watcher polling options pass through to Chokidar for Docker and network-filesystem use
 
@@ -17,7 +17,7 @@
 * Node.js 22 or newer is required
 * Legacy `app/config/*.json` files and hostname selection are no longer supported; startup fails with a migration message while JSON files remain
 * The `citizen` property is no longer accepted by `app.start()` because framework settings must be resolved before application modules load
-* Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing Citizen
+* Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing citizen
 
 ## Enhancements and fixes
 

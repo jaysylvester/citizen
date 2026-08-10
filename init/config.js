@@ -1,6 +1,6 @@
 // config
 //
-// Loads the project environment and resolves Citizen and application configuration.
+// Loads the project environment and resolves citizen and application configuration.
 
 // node
 import fs                from 'node:fs'
@@ -265,12 +265,12 @@ async function configure(options = {}) {
     console.log('  No project .env loaded (optional); using the process environment.')
   }
   if ( project.file ) {
-    console.log('  Loaded Citizen configuration: ' + project.file + '\n')
+    console.log('  Loaded citizen configuration: ' + project.file + '\n')
   } else {
-    console.log('  No citizen.config.js found (optional); using Citizen defaults.\n')
+    console.log('  No citizen.config.js found (optional); using citizen defaults.\n')
   }
   if ( mode !== undefined && !modes.has(mode) ) {
-    console.warn('  Unsupported Citizen mode "' + String(mode) + '"; using production. Supported modes are development and production.\n')
+    console.warn('  Unsupported citizen mode "' + String(mode) + '"; using production. Supported modes are development and production.\n')
   }
 
   return resolved

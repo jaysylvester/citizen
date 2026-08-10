@@ -228,7 +228,7 @@ test('unsupported NODE_ENV warns and falls back to production', () => {
 
   assert.equal(child.status, 0, child.stderr)
   assert.equal(output.config.citizen.mode, 'production')
-  assert.match(child.stderr, /Unsupported Citizen mode "test"; using production/)
+  assert.match(child.stderr, /Unsupported citizen mode "test"; using production/)
 })
 
 
@@ -242,7 +242,7 @@ test('project mode overrides an unsupported NODE_ENV without warning', () => {
 
   assert.equal(child.status, 0, child.stderr)
   assert.equal(output.config.citizen.mode, 'development')
-  assert.doesNotMatch(child.stderr, /Unsupported Citizen mode/)
+  assert.doesNotMatch(child.stderr, /Unsupported citizen mode/)
 })
 
 
@@ -306,7 +306,7 @@ for ( const [name, source] of [
   ['an array', 'export default { citizen: [] }'],
   ['a primitive', 'export default { citizen: "invalid" }']
 ] ) {
-  test('config module rejects ' + name + ' Citizen config', () => {
+  test('config module rejects ' + name + ' citizen config', () => {
     let root = project()
 
     fs.writeFileSync(path.join(root, 'citizen.config.js'), source)
@@ -422,7 +422,7 @@ test('helpers.copy preserves regular expressions', () => {
 })
 
 
-test('controller and action config extend Citizen request config without changing application config', () => {
+test('controller and action config extend citizen request config without changing application config', () => {
   let previous = global.CTZN
 
   global.CTZN = {
@@ -454,7 +454,7 @@ test('controller and action config extend Citizen request config without changin
 })
 
 
-test('app.start config extends application settings and rejects Citizen settings', () => {
+test('app.start config extends application settings and rejects citizen settings', () => {
   let config = resolve({
         citizen: { http: { enabled: false } },
         db: { host: 'localhost', max: 10 }
@@ -583,7 +583,7 @@ test('scaffold preserves existing project config files and rejects repeat runs',
 })
 
 
-test('scaffolded project imports namespaced Citizen and typed application config', () => {
+test('scaffolded project imports namespaced citizen and typed application config', () => {
   let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-public-')),
       packagePath = path.join(root, 'package.json')
 
