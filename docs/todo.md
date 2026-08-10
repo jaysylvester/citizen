@@ -1,17 +1,40 @@
 todo (2.0):
 
-1. Security review
+1. Comprehensive security review (XSS, cookie parsing, injection, config, log file contents, CORS implementation)
+   - Add request-level regression coverage for literal CORS origins containing
+     regular-expression metacharacters
 
 2. HTML escaping in template literal views using double-bracket notation ${{local.whatever}}
    — plan: plans/html-escaping-double-bracket.md
 
-3. Config using env files instead of static files
-   — plan: plans/env-file-config.md
+3. Option to send production logs to stdout
 
-4. Option to send production logs to stdout
+4. Cluster support that maintains citizen cache, session scope, etc.
+
+5. Fix `app.cache.exists()` throwing when the requested built-in cache scope
+   (`app` or `files`) has not been created or was removed after its last item
+   was cleared; missing entries should return `false`
+
+6. Add public API contract tests that call exported functions and load
+   representative helper/model/view modules; type-only smoke tests cannot verify
+   `app.log()`, `app.cache.*`, `app.session.end()`, or `app.start()` behavior
+
+7. Test harness
+
+8. Parse URL query params and add to params.url (API redirects coming from outside sources use traditional URLs, requiring parsing workarounds in citizen apps today)
+
+9. Validate and implement 1.x -> 2.x migration automation
+   — guide: ../MIGRATION.md
+   — plan: plans/migration-1-to-2.md
+
+10. Safe shutdown
 
 
-todo (3.0):
+Consider (weigh pros/cons):
 
-1. Remove deprecated config conventions (JSON config files, citizen node in start())
-   — plan: plans/3.0-deprecation-removals.md
+1. Self-contained includes/components
+   - Component directory containing controller and deps, frontend JS/CSS, bundled into site files for deployment
+
+2. Get rid of controllers directory and move routes and hooks up to the app directory
+
+3. Replace chokidar with native Node file watcher (requires some workarounds/fallbacks that chokidar currently handles)

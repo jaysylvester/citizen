@@ -1,0 +1,4 @@
+# Secrets and deployment inputs remain available through process.env.
+NODE_ENV=[mode]
+
+# Add local secrets or deployment-specific values below.
