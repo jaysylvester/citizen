@@ -27,6 +27,21 @@
 * Regular expressions survive config copying and merging
 * CORS origin and method checks use exact comparisons instead of request-derived regular expressions
 * Unsupported application modes warn at startup and fall back to production
+* Cache lifespans honor explicit numeric values and the `'application'` sentinel; explicit `resetOnAccess: false` and `synchronous: false` options retain their values
+* Application values and supplied file contents can be cached when they are falsy
+* Replacing a cached file with a custom key clears that key rather than the source path, preventing recursive replacement from overflowing the stack
+* Cache existence checks handle missing scopes and documented route-only lookups
+* Request-cache lookup and insertion use the same full URL, including the query string, so query variants are cached and retrieved separately
+* Clearing a specific cached content type preserves other types, including when the target has no expiration timer
+* Explicit request-cache `lastModified` values apply to cold responses, including controller chains and request fills from cached actions
+* Request-cache hits preserve controller header directives from the completed chain, including later controllers' overrides
+* Request-cache hits apply live headers and redirects from `session.start`, `request.end`, and `response.start`, including conditional requests; cached pages no longer bypass hook redirects used for access checks
+* Action-cache hits replay cached context and directives while reusing rendered output and includes
+* JSON and JSONP responses retain cached includes' local data
+* Cached action contexts omit consumed include directives, avoiding copies of include working objects and configuration while preserving rendered output and local include data
+* Invalid action-cache URL parameters report an error and bypass insertion while rendering continues under `capture`; `exit` behavior is unchanged
+* The unused `cache.invalidUrlParams` setting is removed from the defaults and documentation; citizen has ignored it since 0.9.0, so configs that still set it are unaffected
+* Cache documentation describes existing file-cache defaults
 
 # 1.0.2
 * Rewrote config init to accommodate an empty config directory error

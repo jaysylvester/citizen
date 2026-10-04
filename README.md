@@ -272,7 +272,6 @@ citizen begins with the following config, which `citizen.config.js` extends:
         lifespan       : 15, // minutes
         resetOnAccess  : true
       },
-      invalidUrlParams : 'warn',
       control          : {}
     },
     errors             : 'capture',
@@ -363,7 +362,6 @@ Paths in `citizen.directories`, other than the bootstrap-owned `citizen.director
 | `citizen.cache.application.resetOnAccess` | Boolean | `true` | Extends cache lifetime when an item is read. |
 | `citizen.cache.application.synchronous` | Boolean | `false` | Uses synchronous file reads when caching files. |
 | `citizen.cache.control` | Object | `{}` | Maps static paths or wildcard paths to `Cache-Control` header values. |
-| `citizen.cache.invalidUrlParams` | String | `warn` | `warn` bypasses request cache for unrecognized URL params; `error` responds with an error. |
 | `citizen.cache.static.enabled` | Boolean | `false` | Enables in-memory static file caching. |
 | `citizen.cache.static.lifespan` | Number | `15` | Static cache lifetime in minutes. |
 | `citizen.cache.static.resetOnAccess` | Boolean | `true` | Extends static cache lifetime when an item is read. |
@@ -1523,13 +1521,15 @@ return {
 
 For the request cache directive to work, it must be placed in the first controller in the chain; in other words, the original requested route controller (index in this case). It will be ignored in any subsequent controllers.
 
-The URL serves as the cache key, so each of the following URLs would generate its own cache item:
+The full URL, including its query string, serves as the cache key, so each of the following URLs would generate its own cache item:
 
 http://cleverna.me/article
 
 http://cleverna.me/article/My-Article
 
 http://cleverna.me/article/My-Article/page/2
+
+For example, `/article?variant=a` and `/article?variant=b` also have separate request-cache entries. Query-string parameters are not yet added to `params.url` or checked by the `urlParams` cache allowlist.
 
 The example above is shorthand for default cache settings. The `cache.request` directive can also be an object with options:
 
@@ -1639,7 +1639,7 @@ http://cleverna.me/article/My-Article-Title/dosattack/2
 
 http://cleverna.me/article/My-Article-Title/page/2/dosattack/3
 
-The server logs a warning when invalid URL parameters are present, but continues processing without caching the result.
+Invalid cache URL parameters report an error through the application error handler and bypass cache insertion. With the default `capture` error policy, rendering continues. The `exit` policy retains its normal process-exit behavior.
 
 
 ##### `lifespan`
@@ -1887,6 +1887,8 @@ app/
 
 `request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what actions they perform and what they output—content, citizen directives, custom directives—is up to you.
 
+These hooks also run on request-cache hits; `session.start()` runs when a new session is created. Their headers, cookies, session values, and redirects apply to the current request. Cached controller headers take precedence over hook headers. Server-side redirects take precedence over conditional responses; refresh redirects retain their configured status and serve the cached page even with a matching `If-None-Match`.
+
 All files and exports are optional. citizen parses them at startup and only calls them if they exist. For example, you could have only a request.js module that exports `start()`.
 
 Here's an example of a request module that checks for a username cookie at the beginning of every request and redirects the user to the login page if it doesn't exist. We also avoid a redirect loop by making sure the requested controller isn't the login controller:
@@ -1983,6 +1985,10 @@ citizen has a built-in application cache where you can store basically anything:
 You can store any object in citizen's cache. The benefits of using `cache` over storing content in your own global app variables are built-in cache expiration and extension, as well as wrappers for reading, parsing, and storing file content.
 
 citizen's default cache time is 15 minutes, which you can change in the config (see [Configuration](#configuration)). Cached item lifespans are extended whenever they're accessed unless you pass `resetOnAccess: false` or change that setting in the config.
+
+Explicit lifespans override the configured default. Values such as `false`, `0`, an empty string, and `null` can also be cached; use `cache.exists()` to distinguish a stored `false` from a missing item. An omitted value or explicit `undefined` is not stored; for files, either causes citizen to read the file contents.
+
+Currently, file caching requires `citizen.cache.static.enabled: true`. Files use the static lifespan default and the application reset default unless those options are supplied explicitly. File-reading options come from `citizen.cache.application`.
 
 ```js
 // Cache a string in the default app scope for 15 minutes (default). Keys

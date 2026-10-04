@@ -88,7 +88,6 @@ function getDefaults(options = {}) {
         lifespan: 15, // minutes
         resetOnAccess: true
       },
-      invalidUrlParams: 'warn',
       control: {}
     },
     errors: 'capture',
