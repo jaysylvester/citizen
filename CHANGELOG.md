@@ -32,6 +32,7 @@
 * Replacing a cached file with a custom key clears that key rather than the source path, preventing recursive replacement from overflowing the stack
 * Cache existence checks handle missing scopes and documented route-only lookups
 * Request-cache lookup and insertion use the same full URL, including the query string, so query variants are cached and retrieved separately
+* Request and action caches retain the first completed entry during concurrent cold fills, preserving its output, stored validator, and expiration timer; cold requests still render independently
 * Clearing a specific cached content type preserves other types, including when the target has no expiration timer
 * Explicit request-cache `lastModified` values apply to cold responses, including controller chains and request fills from cached actions
 * Request-cache hits preserve controller header directives from the completed chain, including later controllers' overrides

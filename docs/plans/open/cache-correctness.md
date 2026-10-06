@@ -1,7 +1,7 @@
 # Plan: Cache bug fixes and cold-fill design proposals
 
-Target release: **2.0** (see `docs/todo.md` #5)
-Status: **Settled bug fixes implemented; remaining design decisions deferred**
+Target release: **2.0** (see `docs/plans/todo.md` #5)
+Status: **Settled bug fixes and first-entry retention implemented; remaining design decisions deferred**
 
 Before changing cache behavior, read
 [Appendix: cache design history and rationale](#appendix-cache-design-history-and-rationale).
@@ -50,10 +50,10 @@ body even with a matching validator. Ordinary hits still support 304 responses.
 Cookie/session handling, direct-request redirect suppression, and stored cache
 entries are preserved. See "Hook directives on request-cache hits."
 
-Validation: **84 of 84 tests passed** (38 existing plus 46 cache regression
+Validation: **87 of 87 tests passed** (38 existing plus 49 cache regression
 tests), including all HTTP tests, with none skipped. Changed-file lint and
-`git diff --check` pass. Single-flight, insertion-only behavior, method
-eligibility, and stronger invalidation remain deferred.
+`git diff --check` pass. Single-flight, method eligibility, and stronger
+invalidation remain deferred.
 
 The maintainer also approved the include-storage performance follow-up below.
 Action entries now omit the consumed top-level `include` directive after
@@ -62,6 +62,22 @@ Rendered output, `local.include` data, and the remaining cached context and
 directives are retained. Existing HTTP tests now cover two includes in cached
 JSON/JSONP chains, verify that their working objects are absent from storage,
 and check that repeated hits preserve output and do not invoke includes again.
+
+The maintainer then selected first-entry retention instead of coordinating
+cold fills. `setRoute()` now leaves an existing route/content-type entry intact,
+before converting a duplicate writer's lifespan or allocating its timer. Both
+request and action entries retain their original output, context, stored
+validator, and expiration bookkeeping. Clearing or expiration still allows a
+new fill. This is the explicit insertion-policy choice in decision 10, not an
+additional bug classification.
+
+Direct regressions cover numeric and `'application'` lifespans, unchanged timer
+identity and allocation count, other content types, and refills after expiry or
+clearing. Controlled HTTP races cover request and action fills: both cold
+requests render independently, the first completed entry survives the later
+writer, and subsequent requests reuse it. Single-flight is deferred; no waiting
+registry, method policy, publication guard, or default cold-response ETag
+equality was added.
 
 ## Implementation update — 2026-10-03
 
@@ -353,6 +369,33 @@ actions reuse context. It does not establish a GET/HEAD-only cache contract.
 The behavior and its implications should be recorded, without equating the
 preferred method restriction with a confirmed documented bug.
 
+### Forced content types and the cache
+
+Found on 2026-10-04; awaiting the maintainer's classification (decision 17).
+
+The README's "Forcing a Content Type" section lets a controller set
+`response.contentType`. Cache lookups run before the controller: the request
+cache in `serverResponse()`, and the action cache at the start of
+`fireController()`. They use the negotiated type. Insertion runs after the
+controller and uses the forced type.
+
+An HTTP probe of a request-cached controller that forces JSON showed:
+
+- requests whose Accept header matches the forced type hit the stored entry;
+- every other request misses and re-renders; and
+- under first-entry retention, those misses leave the stored entry unchanged.
+  Under 1.0's replacement branch, each one replaced it.
+
+For clients whose Accept header differs, the cache never helps. Their output
+is correct, so the cost is performance, not correctness. The action cache
+follows the same lookup and insertion pattern, by code inspection. Caching
+causes the difference, which is the criterion used to classify hook directives
+on request-cache hits as in scope.
+
+Separately, misses in this scenario send the negotiated `Content-Type` header
+with the forced body. That also happens on uncached routes, so it is not a
+cache issue; it is tracked in todo #12.
+
 ### File-cache enablement and reset defaults
 
 `cache.set({ file })` uses `cache.static.enabled`, which defaults to `false`, so
@@ -472,12 +515,12 @@ pathnames into absolute request-cache keys, or changing precedence for mixed
 
 ## Proposed cold-fill design
 
-Sections 3–6 describe one possible solution to the observed duplicate work.
-Their architecture and policies are recommendations for review. They are not
-requirements for completing sections 1–2, and no public single-flight guarantee
-exists yet. Section 6's insertion-only remedy can be implemented independently
-of sections 3–5. Integration constraints on waiters apply only if a registry is
-implemented.
+Sections 3–5 describe a deferred proposal to coordinate the observed duplicate
+work. Their architecture and policies are recommendations for review, not
+requirements for completing sections 1–2. No public single-flight guarantee
+exists. Section 6's independent first-entry retention policy was selected and
+implemented on 2026-10-04. Integration constraints on waiters apply only if a
+registry is implemented later.
 
 ### 3. Maintain in-flight state separately from completed entries
 
@@ -567,26 +610,34 @@ guarantee. If selected, settlement alone is insufficient: use a publication
 guard or equivalent and account for requests started during reload. A
 generation counter is a proposed technique, not the required implementation.
 
-### 6. Make completed insertion explicit and non-destructive
+### 6. Retain the first completed entry
 
-`cache.setRoute()` currently clears and recursively recreates an entry if a
-writer has already populated it. `cacheRoute()` is its only non-recursive
-caller, and there is no separate intentional-refresh call site to preserve.
-Normal cache hits skip the work; races and inconsistent keys can still produce
-duplicate writers. Do not add a replacement API without an actual requirement.
+Selected and implemented on 2026-10-04. `cache.setRoute()` previously cleared
+and recursively recreated an entry if a writer had already populated it.
+`cacheRoute()` is its only production caller, and there is no separate
+intentional-refresh call site to preserve. `setRoute()` is not exposed through
+`app.cache`. Normal cache hits skip the work. Duplicate writers still occur
+through concurrent misses, and through controllers that force a content type
+(see "Forced content types and the cache"). No replacement API was added.
 
-A small independent remedy is to retain the first completed entry for the
-route/content type. Check for an existing entry before converting options or
-allocating a candidate timer. This stops repeated replacements and stored
-ETag/timer churn without adding an in-flight registry. Duplicate controllers
-and renders still run, so it does not deliver single-execution behavior.
+This restores the framework's pre-2024 behavior. Until April 2024, the callers
+`cacheResponse()` and `cacheController()` checked `cache.exists()` immediately
+before inserting and skipped insertion when an entry existed, so citizen always
+kept the first entry. The replacement branch in `setRoute()` was added on
+2021-05-31 alongside the public `cache.set()` overwrite change, but no framework
+caller reached it until `9826573` removed that guard.
+
+Insertion retains the first completed entry for the route/content type,
+checking for an existing entry before converting options or allocating a
+candidate timer. This stops repeated replacements and stored ETag/timer churn
+without adding an in-flight registry. Duplicate controllers and renders still
+run. Once the entry expires or is cleared, a new completed fill can be stored.
 
 This also connects finding 7 to the captured cold wave: a duplicate HTML writer
 with lifespan `'application'` calls `clear()` and deletes JSON for the same
 route. A direct probe reproduced that behavior. Correcting the targeted clear
-preserves JSON during replacement. Retaining the first completed HTML entry
-would additionally stop duplicate replacements and timer/ETag churn; it remains
-a separate insertion-policy decision.
+preserved JSON during replacement. The separately selected retention policy now
+also stops duplicate replacements and timer/ETag churn.
 
 Keeping input options separate from stored records is recommended. If a
 registry is added, publish the selected entry before releasing followers.
@@ -653,10 +704,17 @@ not delete other types. Omitting `contentType` must still clear the whole route.
 Cover expiration and replacement preserving other types, cancellation of removed
 timers, and removal of the route container after its final type is cleared.
 
-If the insertion-only remedy is selected, test competing writes for an
-identical route/content type with numeric and `'application'` lifespans. Verify
-the first entry, timer, and stored validator survive and other content types
-remain present. These tests require no in-flight registry.
+Implemented retention tests cover competing writes for an identical
+route/content type with numeric and `'application'` lifespans. They verify that
+the first entry, timer, and stored validator survive, no duplicate timer is
+allocated, and other content types remain present. Expiry and clearing allow
+refills. Controlled HTTP races verify request and action retention without an
+in-flight registry.
+
+Not yet covered: the forced-content-type path, which reaches insertion with an
+existing entry without any race. Add a test in which a request-cached
+controller forces JSON. A JSON-Accept request then hits the first stored entry
+after a later HTML-Accept miss has re-rendered.
 
 New invalid-lifespan rules, caching explicit `undefined` as a value, a `false` get
 override, changed file enablement/reset defaults, changed `exit`-mode handling
@@ -721,7 +779,8 @@ Run the full test suite, lint, and `git diff --check` after focused tests pass.
    zero, negative numbers, and non-finite values?
 2. Should explicit `undefined` become a cacheable value? This bug-fix pass
    preserves and documents the existing treatment as an omitted value.
-3. Should single-flight be automatic with application caching or separately
+3. Single-flight is deferred on 2026-10-04 in favor of first-entry retention.
+   If revisited, should it be automatic with application caching or separately
    configurable?
 4. Should GET and HEAD share an in-flight key initially?
 5. Should action-cache fills be coalesced in the first implementation or after
@@ -736,10 +795,12 @@ Run the full test suite, lint, and `git diff --check` after focused tests pass.
    GET/HEAD equivalence hold? Method policy remains open.
 9. Should cold leaders and cached responses always share a default ETag, and
    should insertion return the selected record to support that behavior?
-10. Should cold insertion retain the first completed entry to stop duplicate
-    replacements and ETag/timer churn independently of a registry? The loss of
-    other content types in finding 7 is repaired by correcting targeted clear;
-    no separate refresh operation is currently called.
+10. Resolved on 2026-10-04: cold insertion retains the first completed entry
+    for each route/content type, independently of a registry. This is
+    implemented for request and action entries, stopping duplicate replacements
+    and stored ETag/timer churn while allowing refills after clearing or expiry.
+    The loss of other content types in finding 7 was repaired separately by
+    correcting targeted clear; no separate refresh operation is currently called.
 11. Withdrawn. Header replay is unfiltered; see the appendix's header replay
     timeline for why.
 12. Should `get({ resetOnAccess: false })` be supported, and should unspecified
@@ -760,6 +821,9 @@ Run the full test suite, lint, and `git diff --check` after focused tests pass.
     `response.start` hooks, as misses do. The maintainer classified the old
     behavior as a bug, and it is fixed; see "Hook directives on request-cache
     hits."
+17. When a controller forces a content type, should requests whose Accept
+    header differs be able to hit the request and action caches? If so, how?
+    See "Forced content types and the cache."
 
 ## Review addendum: findings classified against the framework contract
 
@@ -981,9 +1045,9 @@ the route container only when it is empty. Manual whole-route clears still
 flush every type, while expiration and replacement clear only the affected
 representation. Tests cover both branches and the final-container cleanup.
 
-Retaining the first completed entry remains a separate
-decision about duplicate replacements and timer/ETag churn. `cacheRoute()` is
-the only non-recursive caller; no distinct refresh operation needs preserving.
+Retaining the first completed entry was separately selected and implemented on
+2026-10-04 to stop duplicate replacements and timer/ETag churn. `cacheRoute()` is
+the only production caller; no distinct refresh operation needs preserving.
 Neither the targeted-clear repair nor an insertion-only change requires an
 in-flight registry or stronger HMR invalidation. An insertion-only change does
 not eliminate duplicate controller/render work.
@@ -1266,6 +1330,15 @@ establish that replay is intended.
   before 2021. File entries have always used the application reset default.
   `c7e1121` (2021-05-31) introduced both the static lifespan default for files
   and the lifespan precedence bug.
+- **Replacing an existing route entry (restored to first entry):** until May
+  2021, `setRoute()` threw if an entry already existed, unless the caller
+  passed `overwrite` (`d3a8af0`). `05b3e01` (2021-05-31) added clear-and-replace,
+  a day before `5f7348c` (#90) made the public `cache.set()` replace an
+  existing key instead of throwing. The framework's callers checked
+  `cache.exists()` first and skipped insertion, though, so internally the first
+  entry was always kept. `9826573` (April 2024) dropped that guard, which made
+  replacement live; it caused the repeated replacements in the captured cold
+  wave. 2.0 moves first-entry retention into `setRoute()` itself.
 - **Hook directives on request-cache hits (bug):** before the 2026-10-04 repair,
   only `request.start` headers and redirects were handled before the cache
   lookup. Headers and redirects from `session.start`, `request.end`, and

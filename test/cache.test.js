@@ -243,14 +243,57 @@ test('cache.clear isolates content types with and without expiration timers', co
 })
 
 
-test('cache.setRoute replacement preserves other content types', () => {
-  cache.setRoute({ route: '/fixture', contentType: 'text/html', output: 'old', lifespan: 'application' })
-  cache.setRoute({ route: '/fixture', contentType: 'application/json', output: '{}', lifespan: 'application' })
-  cache.setRoute({ route: '/fixture', contentType: 'text/html', output: 'new', lifespan: 'application' })
+for ( let lifespan of ['application', 2] ) {
+  test('cache.setRoute retains the first entry with lifespan ' + lifespan + ' until clearing or expiry', context => {
+    context.mock.timers.enable({ apis: ['Date', 'setTimeout'], now: 1000 })
+    let timers = context.mock.method(global, 'setTimeout')
 
-  assert.equal(cache.getRoute({ route: '/fixture', contentType: 'text/html' }).output, 'new')
-  assert.equal(cache.getRoute({ route: '/fixture', contentType: 'application/json' }).output, '{}')
-})
+    cache.setRoute({
+      route: '/fixture', contentType: 'text/html', lifespan: lifespan,
+      output: 'first', encodings: { identity: 'first' }, context: { local: { version: 'first' } },
+      lastModified: '2020-01-02T03:04:05.000Z', lastAccessed: Date.now(), resetOnAccess: false
+    })
+    cache.setRoute({ route: '/fixture', contentType: 'application/json', output: '{}', lifespan: 'application' })
+    let first = cache.getRoute({ route: '/fixture', contentType: 'text/html' }),
+        timer = first.timer,
+        json = cache.getRoute({ route: '/fixture', contentType: 'application/json' }),
+        timerCount = timers.mock.callCount()
+
+    context.mock.timers.tick(1000)
+    for ( let duplicateLifespan of [3, 'application'] ) {
+      cache.setRoute({
+        route: '/fixture', contentType: 'text/html', lifespan: duplicateLifespan,
+        output: 'later', encodings: { identity: 'later' }, context: { local: { version: 'later' } },
+        lastModified: '2021-01-02T03:04:05.000Z', lastAccessed: Date.now(), resetOnAccess: true
+      })
+    }
+    assert.equal(cache.getRoute({ route: '/fixture', contentType: 'text/html' }), first)
+    assert.equal(first.output, 'first')
+    assert.deepEqual(first.encodings, { identity: 'first' })
+    assert.deepEqual(first.context, { local: { version: 'first' } })
+    assert.equal(first.lastModified, '2020-01-02T03:04:05.000Z')
+    assert.equal(first.lastAccessed, 1000)
+    assert.equal(first.resetOnAccess, false)
+    assert.equal(first.lifespan, lifespan === 'application' ? lifespan : 120000)
+    assert.equal(first.timer, timer)
+    assert.equal(timers.mock.callCount(), timerCount)
+    assert.equal(cache.getRoute({ route: '/fixture', contentType: 'application/json' }), json)
+
+    if ( lifespan === 'application' ) {
+      context.mock.timers.tick(86400000)
+      assert.equal(cache.getRoute({ route: '/fixture', contentType: 'text/html' }), first)
+      cache.clear({ route: '/fixture', contentType: 'text/html' })
+    } else {
+      context.mock.timers.tick(118999)
+      assert.equal(cache.exists({ route: '/fixture', contentType: 'text/html' }), true)
+      context.mock.timers.tick(1)
+    }
+    assert.equal(cache.exists({ route: '/fixture', contentType: 'text/html' }), false)
+    cache.setRoute({ route: '/fixture', contentType: 'text/html', output: 'refilled', lifespan: 'application' })
+    assert.equal(cache.getRoute({ route: '/fixture', contentType: 'text/html' }).output, 'refilled')
+    assert.equal(cache.getRoute({ route: '/fixture', contentType: 'application/json' }), json)
+  })
+}
 
 
 test('route expiration removes only the expiring content type', context => {

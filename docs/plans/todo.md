@@ -11,9 +11,9 @@ todo (2.0):
 
 4. Cluster support that maintains citizen cache, session scope, etc.
 
-5. Fix cache option handling, missing-scope lookups, and concurrent cold-cache
-   stampedes
-   — plan: plans/cache-correctness.md
+5. Fix cache correctness and retain the first completed cold-cache entry
+   — plan: open/cache-correctness.md
+   - Confirmed fixes and first-entry retention implemented; single-flight deferred
 
 6. Add public API contract tests that call exported functions and load
    representative helper/model/view modules; type-only smoke tests cannot verify
@@ -32,6 +32,16 @@ todo (2.0):
    — plan: plans/migration-1-to-2.md
 
 10. Safe shutdown
+
+11. Review for request blockers and other single-threaded behavior
+
+12. Forcing `response.contentType` in a controller (README "Forcing a Content
+    Type") leaves the negotiated `Content-Type` header in place
+   - `serve()` sets the header during content negotiation, before the
+     controller runs; only request-cache hits reset it from
+     `response.contentType`
+   - An uncached route that forces JSON returns `Content-Type: text/html` with a
+     JSON body
 
 Consider (weigh pros/cons):
 

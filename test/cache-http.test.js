@@ -219,6 +219,25 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
     `)
     fs.writeFileSync(path.join(root, 'app/views', name + '.html'), name + ':${local.calls}')
   }
+  for ( let kind of ['request', 'action'] ) {
+    fs.writeFileSync(path.join(root, 'app/controllers/routes', 'retention' + kind + '.js'), `
+      export const handler = async (params, request) => {
+        app.counts.retention${kind}++
+        let id = request.headers['x-fixture-fill-id'] || 'refill',
+            validator = id === 'first' ? '${lastModified}' : '2021-01-02T03:04:05.000Z'
+        if ( request.headers['x-fixture-fill-id'] ) {
+          await new Promise(resolve => {
+            app.pendingFills[id] = resolve
+            process.send({ waiting: id })
+          })
+        }
+        return {
+          cache: { ${kind}: { lifespan: ${kind === 'request' ? 3 : '\'application\''}, resetOnAccess: false, lastModified: validator } },
+          local: { id }, header: { 'X-Fill': id, ETag: validator }
+        }
+      }
+    `)
+  }
   fs.writeFileSync(path.join(root, 'app/controllers/routes/_layout.js'), 'export const handler = async () => ({ local: { layout: true } })\n')
   fs.writeFileSync(path.join(root, 'app/controllers/routes/headerchain.js'), `
     let calls = 0
@@ -321,8 +340,14 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
     app.errorReports = 0
     app.hookResponses = 0
     app.hookSession = null
-    app.counts = { action: 0, actionView: 0, include: 0, includeView: 0, tail: 0, middle: 0, cachedInclude: 0, refresh: 0, refreshView: 0 }
+    app.counts = { action: 0, actionView: 0, include: 0, includeView: 0, tail: 0, middle: 0, cachedInclude: 0, refresh: 0, refreshView: 0, retentionrequest: 0, retentionaction: 0 }
+    app.pendingFills = {}
     process.on('message', message => {
+      if (message.releaseFill) {
+        app.pendingFills[message.releaseFill]()
+        delete app.pendingFills[message.releaseFill]
+        return
+      }
       if (message.clear) app.cache.clear(message.clear)
       let entries = {}, headers = {}, stored = {}, accessed = {}
       for (let [route, types] of Object.entries(CTZN.cache.routes || {})) {
@@ -337,7 +362,7 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
           headers[route][type] = entry.context.header
           stored[route] = stored[route] || {}
           stored[route][type] = {
-            context: entry.context, output: entry.output,
+            context: entry.context, output: entry.output, lastModified: entry.lastModified,
             controller: entry.controller, action: entry.action, params: entry.params
           }
           accessed[route] = accessed[route] || {}
@@ -367,6 +392,54 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
 
 test('HTTP cache fixes preserve directive options, validators, and rendering', { timeout: 30000 }, async context => {
   let server = await fixture(context)
+
+  for ( let kind of ['request', 'action'] ) {
+    await context.test(kind + ' cache retains the first completed cold fill', async () => {
+      let pathname = '/retention' + kind,
+          key = kind === 'request' ? server.url + pathname : pathname,
+          waiting = once(server.child, 'message'),
+          duplicateRequest = request(server.port, pathname, { 'x-fixture-fill-id': 'duplicate' })
+
+      assert.deepEqual((await waiting)[0], { waiting: 'duplicate' })
+      waiting = once(server.child, 'message')
+      let firstRequest = request(server.port, pathname, { 'x-fixture-fill-id': 'first' })
+
+      assert.deepEqual((await waiting)[0], { waiting: 'first' })
+      // The request that started second finishes first and wins insertion.
+      server.child.send({ releaseFill: 'first' })
+      let first = await firstRequest,
+          published = await server.snapshot()
+
+      assert.equal(first.status, 200)
+      assert.equal(first.headers['x-fill'], 'first')
+      assert.equal(published.stored[key]['application/json'].lastModified, lastModified)
+      server.child.send({ releaseFill: 'duplicate' })
+      let duplicate = await duplicateRequest,
+          hit = await request(server.port, pathname),
+          retained = await server.snapshot()
+
+      // Both cold requests render independently; subsequent requests reuse the winner.
+      assert.equal(duplicate.status, 200)
+      assert.equal(duplicate.headers['x-fill'], 'duplicate')
+      assert.notEqual(duplicate.body, first.body)
+      assert.equal(hit.status, 200)
+      assert.equal(hit.body, first.body)
+      assert.equal(hit.headers['x-fill'], 'first')
+      assert.equal(hit.headers.etag, first.headers.etag)
+      assert.deepEqual(retained.stored[key], published.stored[key])
+      assert.deepEqual(retained.entries[key], published.entries[key])
+      assert.equal(retained.counts['retention' + kind], 2)
+
+      await server.snapshot({ route: key })
+      let refill = await request(server.port, pathname)
+
+      assert.equal(refill.status, 200)
+      assert.equal(refill.headers['x-fill'], 'refill')
+      assert.notEqual(refill.body, first.body)
+      assert.equal((await server.snapshot()).counts['retention' + kind], 3)
+      assert.equal((await request(server.port, pathname)).body, refill.body)
+    })
+  }
 
   await context.test('request and action insertions retain explicit false and lifespans', async () => {
     for ( let pathname of ['/request', '/actioncache', '/sentinel'] ) {
