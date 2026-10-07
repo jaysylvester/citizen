@@ -5,6 +5,9 @@ configuration module and an optional project environment. The established
 `citizen` namespace remains intact, and typed application configuration can
 remain alongside it.
 
+The default template literal engine also escapes HTML data by default. Audit
+view composition and trusted markup as described in step 7 below.
+
 | 1.x | 2.x |
 | --- | --- |
 | Node.js 16 or newer | Node.js 22 or newer |
@@ -15,6 +18,7 @@ remain alongside it.
 | Typed application config such as `app.config.db` | Typed application config such as `app.config.db` |
 | citizen settings passed to `app.start()` | `citizen` in `citizen.config.js` |
 | Application settings passed to `app.start()` | Still supported as optional application overrides |
+| Raw `${…}` output in HTML template literal views | Escaped `${…}` data; `${{…}}` for trusted markup |
 
 Controller and action configuration remains a typed object and continues to
 override citizen settings for an individual request.
@@ -256,7 +260,55 @@ Classify each old value as one of:
 - a controller/action override;
 - obsolete and intentionally removed.
 
-## 7. Verify
+## 7. Migrate template literal views
+
+In `text/html` responses from the default engine, ordinary `${expression}`
+escapes `&`, `<`, `>`, `"`, and `'`. Keep request and application data in ordinary
+interpolations, including error messages and stacks. Null/undefined output is
+unchanged, and intermediate templates or JSON inside an ordinary expression
+retain their native values; only the final result is escaped.
+
+Audit every expression that produces markup:
+
+- Use `${{local.trustedHtml}}` for HTML already trusted or sanitized by your
+  application. Raw output does not sanitize HTML.
+- Keep direct top-level includes such as `${include._head}` as they are.
+  Include values remain strings. Conditional includes, nested include
+  references, concatenated includes, and controller-chain output need explicit
+  raw syntax, for example `${{route.chain.article.output}}`.
+- Change layout loops to
+  `${{Object.keys(route.chain).map(name => route.chain[name].output).join('')}}`.
+- Convert markup concatenation into a nested template whose data is escaped:
+  ``${{cookie.username ? `<p>Welcome, ${cookie.username}</p>` : '<a href="/login">Login</a>'}}``.
+  Direct helper results, ternary strings, and `.join()` separators inside raw
+  expressions are emitted raw; do not mechanically mark untrusted
+  concatenations as raw.
+- Inside raw expressions, untagged nested templates are markup builders, even
+  when used as keys or comparison values. Build intermediate data outside the
+  raw expression. Ordinary nested interpolations own their final escaping
+  boundary. Tagged templates stay native, and raw markers inside them fail
+  compilation.
+- Write `${ {a: 1} }` for an object expression. Adjacent `${{a: 1}}` is now
+  interpreted as raw syntax and fails because `a: 1` is not an expression.
+
+Use supported output contexts: HTML text and quoted ordinary attributes.
+HTML escaping does not filter URL schemes or protect unquoted attributes,
+JavaScript-bearing attributes, or `<script>`/`<style>` content. Prefer
+`data-state="${JSON.stringify(local.state)}"` for client-side data. For a JSON
+script data block, serialize it in the controller with
+`JSON.stringify(state).replaceAll('<', '\\u003c')`, then emit only that serialized
+JSON with `${{…}}`. This prevents embedded `</script>` and `<!--` sequences;
+the replacement is not a serializer for arbitrary JavaScript or CSS.
+
+View code remains trusted JavaScript; `eval()` and `with` are outside the
+escaping protection contract. Plain-text responses normalize raw markers but
+do not escape values. JSON/JSONP and third-party engines are unchanged.
+
+Test representative normal and error views, includes, layouts, and cached
+responses before deploying. Syntax failures name the view path and never fall
+back to an older compiled function or raw source.
+
+## 8. Verify
 
 Confirm that no active JSON configuration or startup citizen settings remain:
 
@@ -274,6 +326,7 @@ Then verify that:
 5. `app.start()` application overrides merge without changing `app.config.citizen`.
 6. Controller/action overrides, CORS, HTTP/HTTPS, sessions, caching, logs, and watchers behave as expected.
 7. The normal test suite and representative endpoint smoke tests pass under Node.js 22.
+8. Ordinary view data is escaped, trusted markup composition works, and cached HTML retains the same behavior.
 
 Cases requiring manual review include multiple host configs, computed startup
 values, config aliases, dynamic property access, and secret-bearing tracked

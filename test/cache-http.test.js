@@ -102,7 +102,8 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
   fs.writeFileSync(path.join(root, 'citizen.config.js'), `
     export default {
       citizen: {
-        mode: 'production',
+        mode: ${JSON.stringify(options.mode || 'production')},
+        development: { debug: { view: ${Boolean(options.debug)} } },
         errors: ${JSON.stringify(errors)},
         http: { port: ${port} },
         sessions: { enabled: ${Boolean(options.sessions)} },
@@ -373,10 +374,12 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
     })
     app.start()
   `)
+  options.prepare?.(root)
   child = spawn(process.execPath, ['app/start.js'], { cwd: root, env: env, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] })
   await waitForServer(child)
 
   return {
+    root: root,
     child: child,
     port: port,
     url: 'http://127.0.0.1:' + port,
@@ -947,4 +950,191 @@ test('HTTP invalid cache parameters preserve exit-mode behavior', { timeout: 300
       assert.equal((await exited)[0], 1)
     })
   }
+})
+
+
+const htmlValue = '<img src=x onerror=alert(1)> & "\'',
+      htmlEscaped = '&lt;img src=x onerror=alert(1)&gt; &amp; &quot;&#39;'
+
+
+function prepareEscapingFixture(root) {
+  const controller = (name, source) => fs.writeFileSync(path.join(root, 'app/controllers/routes', name + '.js'), source),
+        view = (name, source) => fs.writeFileSync(path.join(root, 'app/views', name + '.html'), source)
+
+  controller('escaped', `
+    let calls = 0
+    export const handler = async (params, request) => ({
+      local: { value: request.headers['x-escape-value'], calls: ++calls },
+      cache: { action: { lifespan: 'application' }, request: { lifespan: 'application' } }
+    })
+  `)
+  view('escaped', '<article title="${local.value}">${local.value}|${local.calls}</article>')
+  controller('escapedlayout', 'export const handler = async () => ({})')
+  view('escapedlayout', '<main>${{route.chain.escaped.output}}</main>')
+  controller('escapedincludes', `
+    export const handler = async () => ({
+      include: { fresh: '/freshpiece', cached: '/escapedpiece' }
+    })
+  `)
+  view('escapedincludes', '${include.fresh}|${include[\'cached\']}|${typeof include.cached}')
+  for ( let [name, cached] of [['freshpiece', false], ['escapedpiece', true]] ) {
+    controller(name, `
+      let calls = 0
+      export const handler = async (params, request) => ({
+        local: { value: request.headers['x-escape-value'], calls: ++calls },
+        ${cached ? 'cache: { action: { lifespan: \'application\' } }' : ''}
+      })
+    `)
+    view(name, '<p>${local.value}|${local.calls}</p>')
+  }
+  controller('plainshared', `
+    export const handler = async (params, request) => ({ local: { value: request.headers['x-escape-value'] } })
+  `)
+  view('plainshared', '${local.value}|${{ `<li>${local.value}</li>` }}')
+  controller('liveview', 'export const handler = async (params, request) => ({ local: { value: request.headers[\'x-escape-value\'] } })')
+  view('liveview', '<p>${local.value}</p>')
+  controller('escapingerror', 'export const handler = async () => { throw new Error(' + JSON.stringify(htmlValue) + ') }')
+  // Exercise the unmodified normal scaffold with hostile data too.
+  controller('index', 'export const handler = async () => ({ local: ' + JSON.stringify({
+    metaData: { title: htmlValue, description: htmlValue, keywords: htmlValue },
+    main: { header: htmlValue, text: htmlValue }
+  }) + ' })')
+}
+
+
+test('HTTP template literal escaping survives includes, caches, and production view edits', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare: prepareEscapingFixture }),
+      headers = { accept: 'text/html', 'x-escape-value': htmlValue }
+
+  await context.test('fresh and action-cached includes remain strings with raw rendered markup', async () => {
+    let first = await request(server.port, '/escapedincludes', headers),
+        second = await request(server.port, '/escapedincludes', headers),
+        snapshot = await server.snapshot()
+
+    assert.equal(first.status, 200)
+    assert.equal(first.body, '<p>' + htmlEscaped + '|1</p>|<p>' + htmlEscaped + '|1</p>|string')
+    assert.equal(second.body, '<p>' + htmlEscaped + '|2</p>|<p>' + htmlEscaped + '|1</p>|string')
+    assert.equal(typeof snapshot.stored['/escapedpiece']['text/html'].output, 'string')
+  })
+
+  await context.test('layout markup and escaping survive an action hit with a cold request cache', async context => {
+    let server = await fixture(context, 'capture', false, { prepare(root) {
+      prepareEscapingFixture(root)
+      let configPath = path.join(root, 'citizen.config.js')
+
+      fs.writeFileSync(configPath, fs.readFileSync(configPath, 'utf8').replace('errors:', 'layout: { controller: \'escapedlayout\' }, errors:'))
+    } }),
+        first = await request(server.port, '/escaped', headers),
+        expected = '<main><article title="' + htmlEscaped + '">' + htmlEscaped + '|1</article></main>'
+
+    assert.equal(first.status, 200, first.body)
+    assert.equal(first.body, expected)
+    await server.snapshot({ route: server.url + '/escaped', contentType: 'text/html' })
+    let warm = await request(server.port, '/escaped', { ...headers, 'x-escape-value': 'changed' }),
+        hit = await request(server.port, '/escaped', { ...headers, 'x-escape-value': 'changed again' })
+
+    assert.equal(warm.body, expected)
+    assert.equal(hit.body, expected)
+    let snapshot = await server.snapshot()
+
+    assert.equal(snapshot.stored['/escaped']['text/html'].context.local.calls, 1)
+    assert.equal(snapshot.stored[server.url + '/escaped']['text/html'].output, expected)
+  })
+
+  await context.test('shared HTML/plain-text views use different compilation modes', async () => {
+    let html = await request(server.port, '/plainshared', headers),
+        plain = await request(server.port, '/plainshared', { ...headers, accept: 'text/plain' })
+
+    assert.equal(html.body, htmlEscaped + '|<li>' + htmlEscaped + '</li>')
+    assert.equal(plain.headers['content-type'], 'text/plain')
+    assert.equal(plain.body, htmlValue + '|<li>' + htmlValue + '</li>')
+  })
+
+  await context.test('JSON and JSONP retain application strings without HTML entities', async () => {
+    let json = await request(server.port, '/plainshared', { ...headers, accept: 'application/json' }),
+        jsonp = await request(server.port, '/plainshared/callback/show', { ...headers, accept: 'application/javascript' }),
+        expected = { plainshared: { value: htmlValue } }
+
+    assert.deepEqual(JSON.parse(json.body), expected)
+    assert.ok(jsonp.body.startsWith('show('))
+    assert.deepEqual(JSON.parse(jsonp.body.slice(5, -2)), expected)
+  })
+
+  await context.test('production reads changed views and never serves stale code after a compile failure', async () => {
+    let first = await request(server.port, '/liveview', headers),
+        file = path.join(server.root, 'app/views/liveview.html')
+
+    assert.equal(first.body, '<p>' + htmlEscaped + '</p>')
+    fs.writeFileSync(file, '<section>${local.value}</section>')
+    assert.equal((await request(server.port, '/liveview', headers)).body, '<section>' + htmlEscaped + '</section>')
+    fs.writeFileSync(file, '${{local.value}X')
+    let failed = await request(server.port, '/liveview', headers)
+
+    assert.equal(failed.status, 500)
+    assert.match(failed.body, /Could not compile view/)
+    assert.ok(!failed.body.includes(htmlValue))
+    assert.ok(!failed.body.includes('<section>'))
+    fs.writeFileSync(file, '<aside>${local.value}</aside>')
+    let recovered = await request(server.port, '/liveview', headers)
+
+    assert.equal(recovered.status, 200)
+    assert.equal(recovered.body, '<aside>' + htmlEscaped + '</aside>')
+  })
+
+  await context.test('normal scaffold values are escaped without raw markers', async () => {
+    let result = await request(server.port, '/', headers)
+
+    assert.equal(result.status, 200)
+    assert.ok(result.body.includes('<title>' + htmlEscaped + '</title>'))
+    assert.ok(result.body.includes('content="' + htmlEscaped + '"'))
+    assert.ok(result.body.includes('<h1>' + htmlEscaped + '</h1>'))
+    assert.ok(!result.body.includes(htmlValue))
+  })
+})
+
+
+test('HTTP error views and every fallback escape HTML stack text', { timeout: 15000 }, async context => {
+  for ( let kind of ['scaffold', 'missing', 'failing', 'layout'] ) {
+    await context.test(kind, async context => {
+      let secondary = '<b>' + kind + ' failed</b> & "\'',
+          secondaryEscaped = '&lt;b&gt;' + kind + ' failed&lt;/b&gt; &amp; &quot;&#39;',
+          server = await fixture(context, 'capture', false, { prepare(root) {
+            prepareEscapingFixture(root)
+            if ( kind === 'missing' ) {
+              fs.rmSync(path.join(root, 'app/views/error'), { recursive: true })
+            } else if ( kind === 'failing' ) {
+              fs.writeFileSync(path.join(root, 'app/views/error/500.html'), '${(() => {throw new Error(' + JSON.stringify(secondary) + ')})()}')
+            } else if ( kind === 'layout' ) {
+              let configPath = path.join(root, 'citizen.config.js')
+
+              fs.writeFileSync(configPath, fs.readFileSync(configPath, 'utf8').replace('errors:', 'layout: { controller: \'_layout\' }, errors:'))
+              fs.writeFileSync(path.join(root, 'app/controllers/routes/_layout.js'), 'export const handler = async () => { throw new Error(' + JSON.stringify(secondary) + ') }')
+            }
+          } }),
+          html = await request(server.port, '/escapingerror', { accept: 'text/html' }),
+          plain = await request(server.port, '/escapingerror', { accept: 'text/plain' })
+
+      assert.equal(html.status, 500)
+      assert.ok(html.body.includes(htmlEscaped))
+      assert.ok(!html.body.includes(htmlValue))
+      assert.equal(plain.status, 500)
+      assert.ok(plain.body.includes(htmlValue))
+      if ( kind === 'failing' || kind === 'layout' ) {
+        assert.ok(html.body.includes(secondaryEscaped))
+        assert.ok(!html.body.includes(secondary))
+        assert.ok(plain.body.includes(secondary))
+      }
+    })
+  }
+})
+
+
+test('HTML escaping preserves development debug insertion', { timeout: 10000 }, async context => {
+  let server = await fixture(context, 'capture', false, { mode: 'development', debug: true, prepare: prepareEscapingFixture }),
+      response = await request(server.port, '/', { accept: 'text/html' })
+
+  assert.equal(response.status, 200)
+  assert.ok(response.body.includes('<h1>' + htmlEscaped + '</h1>'))
+  assert.ok(response.body.includes('<div id="citizen-debug">\n<pre>'))
+  assert.ok(response.body.includes('</pre>\n</div>\n</body>'))
 })

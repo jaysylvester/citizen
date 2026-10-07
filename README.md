@@ -762,6 +762,60 @@ In `article.html`, you can reference variables you placed within the `local` obj
 ```
 
 
+#### HTML escaping and trusted markup
+
+The default `templateLiterals` engine HTML-escapes the final value of each
+`${expression}` in HTML responses. It escapes `&`, `<`, `>`, `"`, and `'`, so
+ordinary data is safe in HTML text and quoted ordinary attribute values.
+Expressions keep their native JavaScript behavior: `null` and `undefined`
+render as those words, arrays keep their comma-separated string conversion,
+and nested templates or JSON building inside an ordinary expression are
+escaped only at the final output boundary.
+
+Use `${{expression}}` to emit trusted markup:
+
+```html
+<h1>${local.title}</h1>
+<section>${{local.trustedHtml}}</section>
+<ul>${{local.items.map(item => `<li>${item}</li>`).join('')}}</ul>
+```
+
+Inside a raw markup builder, ordinary interpolations in untagged nested
+templates still escape their values. The list above preserves the `<li>`
+markup and escapes each item. Use `.join('')` to avoid commas between elements.
+Strings returned directly by helpers, ternary branches, or concatenations in
+a raw expression are emitted raw. Only use raw output for content you trust
+or have sanitized in your application. Untagged templates used as lookup keys
+or comparison values inside a raw builder are also transformed; build those
+values outside it. Tagged templates keep their native strings and values;
+the enclosing interpolation determines whether their result is escaped.
+Raw markers inside tagged templates are compilation errors.
+
+Direct include references such as `${include._head}` at the top level of a
+view emit the framework-rendered markup without escaping it again. Includes
+used in conditionals, nested templates, or other expressions, and controller
+chain output, require explicit raw output; see [Includes](#includes-components)
+and [Controller Chaining](#controller-chaining).
+
+Templates remain trusted application JavaScript. HTML escaping does not
+sanitize raw HTML, filter URL schemes, or provide JavaScript/CSS escaping.
+Unquoted attributes, JavaScript-bearing attributes, `<script>`/`<style>`
+content, and name resolution through `eval()` or `with` are outside its
+protection contract. Pass client-side data through an ordinary quoted attribute
+such as `data-state="${JSON.stringify(local.state)}"`. For a JSON script data
+block, serialize in the controller with
+`JSON.stringify(state).replaceAll('<', '\\u003c')` and emit only that serialized
+value with `${{…}}`; this replacement is appropriate for serialized JSON, not
+arbitrary JavaScript or CSS.
+
+`text/plain` responses keep native string output without HTML entities and
+accept the same raw syntax. JSON/JSONP and third-party template engines keep
+their existing behavior. Invalid template or raw-marker syntax fails
+compilation with the view path rather than emitting the source or reusing an
+older compiled view. Write `${ {a: 1} }` for ordinary object interpolation;
+adjacent `${{` and `}}` delimit explicit raw expressions.
+
+
 #### Rendering alternate views
 
 By default, the server renders the view whose name matches that of the controller. To render a different view, [use the `view` directive in your return statement](#alternate-views).
@@ -937,6 +991,11 @@ After the application error handler fires, citizen will exit the process.
 ### Error Views
 
 To create custom error views for server errors, create a directory called `/app/views/error` and populate it with templates named after the HTTP response code or Node error code.
+
+Keep error messages and stacks in ordinary `${…}` interpolations so they are
+HTML-escaped. Missing or failing error views also escape fallback stack text
+in HTML responses. A layout should emit the rendered error view with
+`${{route.chain.error.output}}`, like other controller-chain output.
 
 ```
 app/
@@ -1170,7 +1229,7 @@ Let's say our article pattern's template has the following contents. The head se
   </head>
   <body>
     <header>
-      ${ cookie.username ? '<p>Welcome, ' + cookie.username + '</p>' : '<a href="/login">Login</a>' }
+      ${{ cookie.username ? `<p>Welcome, ${cookie.username}</p>` : '<a href="/login">Login</a>' }}
     </header>
     <main>
       <h1>${local.article.title} — Page ${url.page}</h1>
@@ -1332,6 +1391,13 @@ http://cleverna.me/_header
 This is great for handling the first request server-side and then updating content with a client-side library.
 
 
+With the default template engine, direct top-level references such as
+`${include._head}` emit rendered includes as markup. Include values remain
+ordinary strings. In other expressions, choose raw output explicitly, for
+example `${{local.showHeader ? include._header : ''}}`; an ordinary conditional
+interpolation would escape its final result.
+
+
 #### Should I use a citizen include or a view partial?
 
 citizen includes provide rich functionality, but they do have limitations and can be overkill in certain situations.
@@ -1444,11 +1510,11 @@ export const handler = async (params) => {
     ${include._header}
     <main>
       <!-- You can render each controller's view explicitly -->
-      ${route.chain.index.output}
-      ${route.chain.article.output}
+      ${{route.chain.index.output}}
+      ${{route.chain.article.output}}
 
       <!-- Or, you can loop over the route.chain object to output the view from each controller in the chain -->
-      ${Object.keys(route.chain).map( controller => { return route.chain[controller].output }).join('')}
+      ${{Object.keys(route.chain).map( controller => { return route.chain[controller].output }).join('')}}
     </main>
     ${include._footer}
   </body>

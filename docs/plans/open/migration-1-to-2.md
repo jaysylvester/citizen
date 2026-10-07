@@ -2,7 +2,7 @@
 
 Status: **Draft**
 
-Companion guide: [Migrating citizen 1.x applications to 2.x](../../MIGRATION.md)
+Companion guide: [Migrating citizen 1.x applications to 2.x](../../../MIGRATION.md)
 
 ## Objective
 
@@ -117,3 +117,11 @@ Potential options include an explicit legacy config source, report path, suppres
 - The migrated app passes only application configuration to `app.start()`.
 - Tests and selected endpoint checks pass under Node.js 22.
 - Every unresolved item is visible and actionable.
+
+## Deferred-work tracking — 2026-10-07
+
+The agent workflow remains todo #9. The possible standalone CLI is explicitly
+tracked under Consider #19 in [the todo list](../todo.md), after the workflow
+has been exercised against representative applications. This records the
+proposal without making a CLI part of the current implementation requirement.
+Corrected the companion-guide and todo plan paths during the tracking audit.

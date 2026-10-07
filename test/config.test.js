@@ -23,6 +23,7 @@ function project() {
   let root = fs.mkdtempSync(path.join(os.tmpdir(), 'citizen-config-'))
 
   fs.mkdirSync(path.join(root, 'app'))
+  fs.writeFileSync(path.join(root, 'package.json'), '{"private":true,"type":"module"}\n')
   return fs.realpathSync(root)
 }
 
@@ -349,6 +350,7 @@ test('the process-only app directory selects another project', () => {
       app = path.join(selected, 'app')
 
   fs.mkdirSync(app, { recursive: true })
+  fs.writeFileSync(path.join(selected, 'package.json'), '{"private":true,"type":"module"}\n')
   fs.writeFileSync(path.join(selected, 'citizen.config.js'), 'export default { citizen: { http: { port: 4567 } } }')
   let child = configure(root, { env: { CITIZEN_APP_PATH: app } }),
       output = result(child)

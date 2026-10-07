@@ -15,12 +15,17 @@
 ## Breaking changes
 
 * Node.js 22 or newer is required
+* The default `templateLiterals` engine HTML-escapes ordinary `${…}` output; trusted markup expressions and controller-chain output require `${{…}}`. Direct top-level include references remain raw, and include values remain strings
+* Adjacent `${{` and `}}` now delimit raw expressions; use `${ {a: 1} }` for ordinary object interpolation. Shared plain-text views accept raw markers without HTML escaping
 * Legacy `app/config/*.json` files and hostname selection are no longer supported; startup fails with a migration message while JSON files remain
 * The `citizen` property is no longer accepted by `app.start()` because framework settings must be resolved before application modules load
 * Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing citizen
 
 ## Enhancements and fixes
 
+* Template compilation uses a pinned Acorn parser with grammar-aware raw markers, one final escaping boundary per ordinary interpolation, and helper names checked against decoded identifiers
+* Compiled views are memoized by path, output mode, and current source; production still reads view files on every render and picks up edits without restarting
+* HTML error fallbacks escape stack text, including failures while rendering error views or their layouts
 * The scaffold now works from the project root, updates the existing package, and creates `.env`, `.env.example`, `citizen.config.js`, and an idempotent Git ignore rule
 * The scaffold no longer creates a duplicate package or an `app/config` directory
 * HTTPS credential files are read only when HTTPS is enabled

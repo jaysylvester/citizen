@@ -41,6 +41,7 @@
     "MIGRATION.md"
   ],
   "dependencies": {
+    "acorn": "8.11.3",
     "chokidar": "^3.6.x",
     "commander": "^12.0.x"
   },

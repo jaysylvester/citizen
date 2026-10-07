@@ -118,8 +118,8 @@ separate, and clearing one query variant preserves the others. Query parameters
 are not yet added to `params.url` or checked by the `urlParams` allowlist; that
 remains todo #8, and the README records this interim behavior.
 
-Added regression coverage in [test/cache.test.js](../../test/cache.test.js) and
-[test/cache-http.test.js](../../test/cache-http.test.js), updated README option
+Added regression coverage in [test/cache.test.js](../../../test/cache.test.js) and
+[test/cache-http.test.js](../../../test/cache-http.test.js), updated README option
 semantics and retired-mode documentation, and added release notes. Review
 follow-up added the custom file-key regression and a yielding error-hook case.
 Action-cache `exit` tests assert process exit rather than an HTTP status that
@@ -812,10 +812,12 @@ Run the full test suite, lint, and `git diff --check` after focused tests pass.
 13. Should the retired invalid-parameter modes return in 2.0? Restoring them is
     new work, separate from preventing the action-cache 500.
 14. Should caller options be guaranteed immutable?
-15. Should an invalid URL cache parameter terminate the process under
-    `citizen.errors: 'exit'`? Client input triggers it. This is optional. The
-    action-cache 500 can be fixed under `capture` while keeping current exit
-    behavior.
+15. Resolved policy on 2026-10-06 for todo #8: an unlisted cache URL parameter
+    produces a nonfatal cache warning and bypasses insertion, with normal
+    request processing under both `capture` and `exit`. It must not invoke the
+    server error event, application error hook, or process-exit policy. The
+    current bug-fix baseline retains exit behavior until this future change
+    lands; see the [query plan decision log](url-query-params-history.md#nonfatal-cache-warning-decision).
 16. Resolved on 2026-10-04: request-cache hits should act on headers and
     redirects returned by the `session.start`, `request.end`, and
     `response.start` hooks, as misses do. The maintainer classified the old
@@ -844,7 +846,7 @@ Classification: **Lookup/insertion disagreement is a bug, now repaired using
 full-URL identity selected by the maintainer. Restricting methods remains a
 design decision.**
 
-Before the repair in [lib/server.js](../../lib/server.js), `serverResponse()` read
+Before the repair in [lib/server.js](../../../lib/server.js), `serverResponse()` read
 using `params.route.base + params.route.pathname`, while `cacheRoute()` wrote using
 `options.params.route.parsed.href`. A direct probe stored
 `http://example.test/article?variant=a` but looked up
@@ -876,7 +878,7 @@ proposal.**
 
 Settling waiters cannot stop a running fill from publishing after a clear. With
 first-successful-writer-wins insertion, old work could also beat a newer fill.
-In [lib/hooks/application.js](../../lib/hooks/application.js), HMR clears before
+In [lib/hooks/application.js](../../../lib/hooks/application.js), HMR clears before
 awaiting replacement imports, leaving an interval in which requests can still
 execute the old module.
 
@@ -894,7 +896,7 @@ Releasing waiters alone must not be described as providing that guarantee.
 Classification: **Future integration requirement, not a demonstrated current
 bug.**
 
-In [lib/server.js](../../lib/server.js), `fireController()` can resolve the first
+In [lib/server.js](../../../lib/server.js), `fireController()` can resolve the first
 chain link from the action cache rather than invoking the controller. Its
 uncached path also preserves request-cache directives supplied by hooks.
 Observing only freshly returned directives could miss a decision in a new
@@ -913,7 +915,7 @@ Classification: **Explicit validator propagation and loss of intended header
 replay are bugs, now repaired; unfiltered replay is restored. Broader response
 architecture remains a decision.**
 
-In [lib/server.js](../../lib/server.js), `fireController()` assigns an ETag during
+In [lib/server.js](../../../lib/server.js), `fireController()` assigns an ETag during
 processing, `cacheRoute()` independently selects stored `lastModified`, and
 `serverResponse()` uses the stored value on hits. The cold and cached ETags are
 not guaranteed to match; default timestamps can coincide by chance.
@@ -954,7 +956,7 @@ architectures implied by these bugs.
 Classification: **The action-cache 500 is a bug; unused modes are stale
 documentation/configuration, not missing runtime implementations.**
 
-`urlParamCheck()` in [lib/server.js](../../lib/server.js) always emits `error`
+`urlParamCheck()` in [lib/server.js](../../../lib/server.js) always emits `error`
 and does not consult `cache.invalidUrlParams`. The 0.9.0 changelog explicitly
 changed the contract to always report an error without preventing rendering.
 Commit `e596f28` removes the old mode switches. The request-cache path invokes
@@ -1015,8 +1017,8 @@ existing bug definition.
 
 Classification: **Bug.**
 
-The [README](../../README.md) explicitly demonstrates `{ route }` as a lookup.
-In [lib/cache.js](../../lib/cache.js), the route branch requires both `route` and
+The [README](../../../README.md) explicitly demonstrates `{ route }` as a lookup.
+In [lib/cache.js](../../../lib/cache.js), the route branch requires both `route` and
 `contentType`. A direct probe confirmed that `{ route: '/article' }` throws even
 when the supplied key has entries. Commit `1599649` (May 29, 2024) introduced
 the branch with the comment "If only a route is provided" while requiring
@@ -1159,7 +1161,7 @@ the cold output, and include invocation counts remain unchanged.
 
 Classification: **Integration constraint, not an existing single-flight bug.**
 
-The pipeline in [lib/server.js](../../lib/server.js) contains event-driven and
+The pipeline in [lib/server.js](../../../lib/server.js) contains event-driven and
 unawaited continuations, including `Promise.all(includes)`, `next()`, and
 `respond()`. Awaiting `fireController()` alone does not establish completion of
 rendering and response delivery. A new registry must follow actual completion
@@ -1349,3 +1351,78 @@ establish that replay is intended.
   2026-10-04 because caching caused the difference from a miss. Shared header
   and redirect handling now applies the live directives on hits, including
   conditional requests.
+
+## Cache validation reporting decision
+
+Date: **2026-10-06**. During the todo #8 plan discussion, the maintainer selected
+a nonfatal cache warning for unlisted URL parameters from path and query
+syntax. The cache allowlist determines eligibility for caching; rejecting a
+name does not establish a server failure or invalidate the HTTP request.
+Continue normal request processing and bypass cache insertion, with no server
+error event, application error-hook call, error response assignment, or process
+exit for the cache rejection. Genuine runtime errors retain their error policy.
+
+This resolves decision 15 as a future implementation policy and is recorded in
+the [query parameter plan](url-query-params.md#3-check-cache-allowlists-and-report-nonfatal-warnings).
+The historical findings and completed fixes above retain the behavior observed
+and implemented at that time. Runtime code and invalid-parameter tests still
+need to change when todo #8 is implemented; this entry does not claim that the
+warning behavior has shipped.
+
+## Direct-request redirect policy for todo #8
+
+Date: **2026-10-06**. During todo #8 review, the maintainer selected a direct
+request contract that skips `next` and the default layout while honoring hook
+and controller redirects. Apply this to path, query, and underscore-prefixed
+routes, including action directive replay and request-cache hits. Server-side
+redirects precede conditional 304/body output; refresh redirects retain their
+configured status and body.
+
+This supersedes retained direct-request redirect suppression for the future
+todo #8 implementation, including the corresponding cache HTTP regression's
+expectations. The earlier cache repair's findings and completed baseline remain
+historical implementation context. Runtime behavior and tests still need to
+change; this entry does not claim the repair has shipped. Scope and rationale
+are recorded in the [query plan's decision log](url-query-params-history.md#direct-requests-honor-redirects-review-decisions-reconciled).
+Later on 2026-10-06, the repair moved out of todo #8 into its own plan under
+todo #1: [direct-request-redirects.md](direct-request-redirects.md).
+
+Reference maintenance on the same date: corrected relative code/test/README
+links for this plan's current `open/` directory depth. This changes navigation
+targets only; the historical findings above are unchanged.
+
+## Deferred-work tracking — 2026-10-07
+
+The maintainer requested that no deferred work remain discoverable only in a
+plan. Audited current plans, their split ownership, and superseding decisions,
+then indexed every remaining cache proposal/API question in
+[the todo list](../todo.md). These are Consider entries, not newly approved
+changes to the completed cache fixes or requirements for the query plan.
+
+| Cache decision | Todo location |
+| --- | --- |
+| 1 — Lifespan validation/fallback | Consider #10 |
+| 2 — Explicit undefined values | Consider #11 |
+| 3–6 — Single-flight configuration, scope, followers, GET/HEAD in-flight behavior | Consider #6; method policy also #7 |
+| 7 — Clear/HMR publication protection | Consider #8 |
+| 8 — Remaining method eligibility/equivalence question | Consider #7 |
+| 9 — Cold/default ETag consistency and selected-record return | Consider #9 |
+| 12 — False get override, file enablement/reset defaults | Consider #12 and #13 |
+| 13 — Possible restored invalid-parameter modes | Consider #15; #8 retains its selected warning policy |
+| 14 — Caller-options immutability | Consider #14 |
+| 17 — Forced-format lookup/insertion mismatch | Consider #16; independent of todo #12's header fix |
+
+Decision 8's full-URL repair, decisions 10 and 16, and the completed bug fixes
+remain implemented. Decision 11 remains withdrawn. Decision 15's future warning
+behavior is owned by todo #8. These are not reopened as deferred work.
+
+The wider audit also indexed the public raw-value API, class-copying contract,
+and possible migration CLI under Consider #17–19. Query filtering and grouped
+clearing were already tracked under Consider #4–5, and the extracted security,
+URL-copy, and object-next repairs already had todo ownership. Added the explicit
+query/OAuth log/debug review under security todo #1 and corrected migration
+navigation. Superseded env-configuration proposals and removed renderer
+integration designs remain historical, rather than new backlog commitments.
+The separate API suggestions for translating pathname keys and defining mixed
+lookup-selector precedence are also indexed under Consider #20–21.
+No runtime code or selected implementation scope changed.
