@@ -1129,12 +1129,24 @@ test('HTTP error views and every fallback escape HTML stack text', { timeout: 15
 })
 
 
-test('HTML escaping preserves development debug insertion', { timeout: 10000 }, async context => {
+test('development debug insertion preserves replacement patterns and literal HTML text', { timeout: 10000 }, async context => {
   let server = await fixture(context, 'capture', false, { mode: 'development', debug: true, prepare: prepareEscapingFixture }),
-      response = await request(server.port, '/', { accept: 'text/html' })
+      patterns = '$& $$ $` $\'',
+      headers = { accept: 'text/html', cookie: 'debugPatterns=' + patterns + '; debugEntities=&#60<>&"\'', 'x-debug-entities': '&lt;<>&"\'' },
+      response = await request(server.port, '/', headers)
 
   assert.equal(response.status, 200)
   assert.ok(response.body.includes('<h1>' + htmlEscaped + '</h1>'))
   assert.ok(response.body.includes('<div id="citizen-debug">\n<pre>'))
   assert.ok(response.body.includes('</pre>\n</div>\n</body>'))
+  assert.ok(response.body.includes('$&amp; $$ $` $&#39;'))
+  assert.ok(response.body.includes('&amp;#60&lt;&gt;&amp;&quot;&#39;'))
+  assert.equal(response.body.match(/<\/body>/g).length, 1)
+
+  let selected = await request(server.port, '/index/ctzn_debug/true/ctzn_inspect/request.headers', headers)
+
+  assert.equal(selected.status, 200)
+  assert.ok(selected.body.includes('$&amp; $$ $`'))
+  assert.ok(selected.body.includes('&amp;lt;&lt;&gt;&amp;&quot;&#39;'))
+  assert.equal(selected.body.match(/<\/body>/g).length, 1)
 })

@@ -787,9 +787,11 @@ Strings returned directly by helpers, ternary branches, or concatenations in
 a raw expression are emitted raw. Only use raw output for content you trust
 or have sanitized in your application. Untagged templates used as lookup keys
 or comparison values inside a raw builder are also transformed; build those
-values outside it. Tagged templates keep their native strings and values;
-the enclosing interpolation determines whether their result is escaped.
-Raw markers inside tagged templates are compilation errors.
+values outside it. Tagged templates keep their native strings and substitution
+values; the enclosing interpolation determines whether their result is
+escaped. The expression selecting the tag follows the normal transformation
+rules. Raw markers within a tagged template's substitutions are compilation
+errors.
 
 Direct include references such as `${include._head}` at the top level of a
 view emit the framework-rendered markup without escaping it again. Includes

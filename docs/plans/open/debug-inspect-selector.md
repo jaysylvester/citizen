@@ -57,6 +57,10 @@ Keep development-only HTML debug gating, `ctzn_debug`, configured scope output
 when no selector is supplied, depth and hidden-property settings, and the
 escaped `<pre>` presentation.
 
+Reuse the shared internal HTML escaper after `util.inspect()`, including for
+selector diagnostics. Preserve literal entities such as `&lt;` as displayed
+text and keep dollar sequences literal when inserting the debug wrapper.
+
 Before landing, check representative existing selector forms and accessor
 fields against the resolver, and resolve compatibility gaps rather than quietly
 reducing useful inspection.
@@ -75,6 +79,9 @@ In development HTML responses, on a stable fixture:
   `remoteAddress` getter against direct property reads.
 - Check depth and hidden-value settings, configured output without a selector,
   missing properties, and production-mode suppression.
+- Preserve literal entity strings and all five HTML characters in inspected
+  values and selector diagnostics; dollar sequences must not alter the page
+  during insertion.
 - Executable and malformed selectors, and blocked segments in dot and bracket
   forms, neither run code nor fail the request. Use a side-effect marker to
   prove a function-call selector does not run, and a throwing getter to prove
@@ -94,3 +101,11 @@ URL getter tests do not depend on todo #13's controller/view copy repair.
 Clarified that forbidden execution means selector expressions, while trusted
 getters may run during the ordinary reads already specified. This remains a
 shipping prerequisite for #8. No runtime or test code was changed.
+
+## HTML-escaping code review — 2026-10-07
+
+The HTML-escaping follow-up already corrected debug formatting to use the
+shared five-character escaper and replacement callbacks during insertion.
+HTTP coverage checks configured output and selected request headers. Keep
+those fixes when replacing selector evaluation; selector removal remains
+pending.

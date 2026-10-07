@@ -23,9 +23,10 @@
 
 ## Enhancements and fixes
 
-* Template compilation uses a pinned Acorn parser with grammar-aware raw markers, one final escaping boundary per ordinary interpolation, and helper names checked against decoded identifiers
+* Template compilation uses Acorn 8.19.0 with grammar-aware raw markers, one final escaping boundary per ordinary interpolation, and helper names checked against decoded identifiers
 * Compiled views are memoized by path, output mode, and current source; production still reads view files on every render and picks up edits without restarting
 * HTML error fallbacks escape stack text, including failures while rendering error views or their layouts
+* Development debug output escapes all five HTML characters and preserves literal dollar sequences during insertion into views
 * The scaffold now works from the project root, updates the existing package, and creates `.env`, `.env.example`, `citizen.config.js`, and an idempotent Git ignore rule
 * The scaffold no longer creates a duplicate package or an `app/config` directory
 * HTTPS credential files are read only when HTTPS is enabled

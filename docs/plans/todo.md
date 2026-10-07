@@ -19,7 +19,8 @@ todo (2.0):
 2. HTML escaping in template literal views using double-bracket notation ${{local.whatever}}
    — plan: open/html-escaping-double-bracket.md
    - Complete: compiler, renderer, error fallbacks, and migration documentation
-     implemented; all 113 tests pass on Node.js 22.0.0 and 24.13.1
+     implemented and review corrections applied; 118 tests pass on Node.js
+     24.13.1, with 115 passing and 3 unsupported-syntax skips on Node.js 22.0.0
 
 3. Option to send production logs to stdout
 

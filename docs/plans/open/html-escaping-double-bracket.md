@@ -47,10 +47,11 @@ retain their own semantics.
   interpolation again owns its final boundary; nested raw markers are explicit
   bypasses. Normalize custom marker syntax inside ordinary expressions without
   adding extra escaping boundaries.
-- Tagged templates are opaque: do not transform their strings or substitution
-  expressions. An enclosing ordinary interpolation escapes the tag's result; an
-  enclosing raw interpolation makes a trust choice. A raw marker inside a tagged
-  template is a compile error.
+- Tagged template strings and substitution expressions are opaque. Transform
+  the expression selecting the tag according to the normal rules. An enclosing
+  ordinary interpolation escapes the tag's result; an enclosing raw
+  interpolation makes a trust choice. A raw marker within a tagged template's
+  substitutions is a compile error.
 - A top-level interpolation whose entire expression is a direct include
   reference (`include.name` or `include['name']`) compiles to raw output. Top
   level means directly in the view's own template, where `include` can only be
@@ -124,8 +125,10 @@ output is; they resolve names at runtime, which compile-time name selection
 cannot control.
 
 Reject malformed raw closing markers instead of skipping the following byte.
-Compile errors name the view path and include Acorn's line and column when
-Acorn reports the error. Do not execute expressions during compilation.
+Compile errors name the view path and include positions in the original view
+when Acorn reports the error. Remove the generated function/template prefix
+from the parser offset before computing the line and column. Do not execute
+expressions during compilation.
 
 Acorn's parser extension depends on its internal methods. Keep the extension
 isolated and run the compiler grammar suite before changing the pinned
@@ -160,7 +163,9 @@ the slot; otherwise compile, and store the result only on success. A changed
 view can never reuse stale code, so the memo needs no invalidation, cache-clear
 integration, or mode gating, and production keeps picking up view changes
 without a restart, as it does today. Store only compiled functions, never
-request values or rendered output.
+request values or rendered output. Create the returned renderer outside the
+compiler's lexical scope so cached closures do not retain parser trees or
+transformation helpers.
 
 ### 4. Escape error fallback text
 
@@ -220,10 +225,15 @@ integration. Assert outputs and failures, not just printed generated source:
   nested template or conditional is escaped; include values remain strings.
 - Comments, regexes versus division, escaped quotes/backslashes/backticks,
   literal escaped interpolation, object expressions, malformed/empty/unterminated
-  raw markers, tagged templates, comma expressions, and helper-name collisions,
-  including an escaped spelling such as `\u0024ctzn0`, behave according to
+  raw markers, tagged templates and their tag expressions, comma expressions,
+  and helper-name collisions, including an escaped spelling such as
+  `\u0024ctzn0`, behave according to
   the compiler contract. Malformed input fails with the view path and cannot
-  emit raw output.
+  emit raw output. Error coordinates refer to the original view on first and
+  later lines, including CRLF and Unicode line separators.
+- Regex modifiers, duplicate named regex groups, and `using` declarations
+  compile when the running Node version accepts them natively; skip these
+  cases only after checking native syntax support.
 - The documented script-data pattern round-trips a `</script><script>` payload
   through `JSON.parse` without ending the script element early.
 - Plain-text mode normalizes raw markers without escaping.
@@ -240,6 +250,9 @@ Extend the child-process scaffold in `test/cache-http.test.js`:
 - JSON/JSONP output is unchanged.
 - In production, editing a view on an uncached route changes the next response
   without a restart.
+- Development debug output preserves replacement-pattern dollar sequences and
+  displays literal HTML entities and all five escaped characters, with and
+  without an inspection selector.
 
 Run the focused suites and `npm test`, including under Node.js 22, the minimum
 supported version.
@@ -435,3 +448,37 @@ the next view's route with a fresh route whose chain is empty. The configured
 layout path is covered here; the existing handoff defect is recorded as todo
 #15 and is outside this feature's implementation. Todo #2 is complete. The
 combined decoded-query regression remains todo #8's later shipping gate.
+
+### Code review corrections
+
+Date: **2026-10-07**. Review of commit `8e2b8a0` found five implementation
+defects, all corrected:
+
+- Move the returned renderer to a module-level factory. Heap snapshots of 20
+  retained renderers for distinct 44 KB views showed **160,040 retained Acorn
+  AST nodes before** and **zero after** the change, using the same parser
+  version for both measurements.
+- Update the exact Acorn pin to **8.19.0**. Its parser accepts regex modifiers,
+  duplicate named capture groups, and `using` declarations that newer supported
+  Node runtimes already accept. Native syntax checks gate the regressions on
+  older Node runtimes.
+- Traverse tag-selection expressions while leaving tagged strings and
+  substitutions opaque.
+- Translate parser error offsets, locations, and message coordinates back to
+  the original view source.
+- Share the combined-error fallback markup between both error paths.
+
+Two additional debug findings were small independent fixes: use replacement
+callbacks so dollar sequences remain literal, and reuse the internal escaper
+after `util.inspect()` so entity strings and all five HTML characters display
+as text. The [debug selector plan](debug-inspect-selector.md) still owns removal
+of executable selector expressions.
+
+The helper remains an extra function argument: deliberate view code can access
+or overwrite it through `arguments`, consistent with the trusted-JavaScript
+contract. Acorn still loads eagerly; its reported one-time startup cost alone
+does not justify changing the synchronous compiler design.
+
+Validation: **118 tests passed on Node.js 24.13.1**; on **Node.js 22.0.0**,
+**115 passed and three unsupported-syntax cases were skipped**. Heap snapshots,
+ESLint, and `git diff --check` also passed their checks.

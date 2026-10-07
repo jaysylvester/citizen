@@ -286,8 +286,9 @@ Audit every expression that produces markup:
 - Inside raw expressions, untagged nested templates are markup builders, even
   when used as keys or comparison values. Build intermediate data outside the
   raw expression. Ordinary nested interpolations own their final escaping
-  boundary. Tagged templates stay native, and raw markers inside them fail
-  compilation.
+  boundary. Tagged template strings and substitutions stay native; the
+  expression selecting the tag follows normal transformation rules. Raw
+  markers within tagged substitutions fail compilation.
 - Write `${ {a: 1} }` for an object expression. Adjacent `${{a: 1}}` is now
   interpreted as raw syntax and fails because `a: 1` is not an expression.
 
