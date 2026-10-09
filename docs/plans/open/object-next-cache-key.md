@@ -2,11 +2,11 @@
 
 Target release: **2.0** (see [todo #14](../todo.md)).
 Status: **Approved; implementation pending.** Bug; reproduced; predates query
-parsing ([todo #8](url-query-params.md)).
+parsing ([todo #8](../done/url-query-params.md)).
 
 Moved out of the query plan (pre-split step 5, findings R7 and S1) on
 2026-10-06. Review history is in
-[url-query-params-history.md](url-query-params-history.md). Line references are
+[url-query-params-history.md](../done/url-query-params-history.md). Line references are
 as of commit `1bfb0b2`.
 
 ## Problem

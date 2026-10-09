@@ -302,7 +302,7 @@ implementing the production compiler or changing dependencies.
 Repository review also found missing contracts for the shared HTML/plain-text
 branch, layout `route.chain.*.output`, and direct error fallback markup; those
 are included above. Compiled-function caching is now a source-keyed memo (see
-the decision log). The [prototype](transform-prototype.mjs) remains historical
+the decision log). The [prototype](../open/transform-prototype.mjs) remains historical
 demonstration code. At this review stage, the implementation plan was ready;
 the prototype and runtime feature had not passed production acceptance or
 been implemented. See [Implementation completion](#implementation-completion)

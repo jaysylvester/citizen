@@ -5,9 +5,9 @@
 > [url-query-params.md](url-query-params.md). Existing-behavior repairs found
 > during review moved to their own plans and todo entries:
 > [debug selectors](debug-inspect-selector.md),
-> [JSONP callbacks](jsonp-callback-validation.md),
-> [direct-request redirects](direct-request-redirects.md),
-> [object `next` cache keys](object-next-cache-key.md), and the URL-copy bug
+> [JSONP callbacks](../open/jsonp-callback-validation.md),
+> [direct-request redirects](../open/direct-request-redirects.md),
+> [object `next` cache keys](../open/object-next-cache-key.md), and the URL-copy bug
 > (todo #13). Where this snapshot conflicts with those documents, they take
 > precedence. Step numbers, status lines, and "this plan" references below
 > describe the pre-split document.

@@ -118,7 +118,7 @@ independently planned and unimplemented:
   separate query scope does not expand their path-based control surfaces.
 - Nonfatal path-cache allowlist diagnostics. Existing application error-hook
   and `citizen.errors` behavior is retained by this feature.
-- URL copying (#13), [object-next cache identity](object-next-cache-key.md)
+- URL copying (#13), [object-next cache identity](../open/object-next-cache-key.md)
   (#14), and string-next chain state (#15).
 - Method policy, eviction, single-flight, and forced-format cache architecture.
 

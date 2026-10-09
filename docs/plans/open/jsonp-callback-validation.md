@@ -2,10 +2,10 @@
 
 Target release: **2.0** (see [todo #1](../todo.md)).
 Status: **Approved; implementation pending.** Forced-format acceptance depends
-on todo #12. Independent of query parsing ([todo #8](url-query-params.md)).
+on todo #12. Independent of query parsing ([todo #8](../done/url-query-params.md)).
 
 Moved out of the query plan (pre-split step 7) on 2026-10-06. Review history is
-in [url-query-params-history.md](url-query-params-history.md). Line references
+in [url-query-params-history.md](../done/url-query-params-history.md). Line references
 are as of commit `1bfb0b2`.
 
 ## Problem

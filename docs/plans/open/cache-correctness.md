@@ -1,6 +1,6 @@
 # Plan: Cache bug fixes and cold-fill design proposals
 
-> Query identity update — 2026-10-09: [todo #8's current plan](url-query-params.md)
+> Query identity update — 2026-10-09: [todo #8's current plan](../done/url-query-params.md)
 > supersedes this document's earlier full-URL query-cache decisions and recorded
 > tests. Request keys now use origin plus pathname; action keys use each
 > action's own pathname. Queries are separate `params.query` data and change
@@ -829,7 +829,7 @@ Run the full test suite, lint, and `git diff --check` after focused tests pass.
     request processing under both `capture` and `exit`. It must not invoke the
     server error event, application error hook, or process-exit policy. The
     current bug-fix baseline retains exit behavior until this future change
-    lands; see the [query plan decision log](url-query-params-history.md#nonfatal-cache-warning-decision).
+    lands; see the [query plan decision log](../done/url-query-params-history.md#nonfatal-cache-warning-decision).
 16. Resolved on 2026-10-04: request-cache hits should act on headers and
     redirects returned by the `session.start`, `request.end`, and
     `response.start` hooks, as misses do. The maintainer classified the old
@@ -1375,7 +1375,7 @@ error event, application error-hook call, error response assignment, or process
 exit for the cache rejection. Genuine runtime errors retain their error policy.
 
 This resolves decision 15 as a future implementation policy and is recorded in
-the [query history](url-query-params-history.md#nonfatal-cache-warning-decision).
+the [query history](../done/url-query-params-history.md#nonfatal-cache-warning-decision).
 The historical findings and completed fixes above retain the behavior observed
 and implemented at that time. Runtime code and invalid-parameter tests still
 need to change when todo #8 is implemented; this entry does not claim that the
@@ -1395,7 +1395,7 @@ todo #8 implementation, including the corresponding cache HTTP regression's
 expectations. The earlier cache repair's findings and completed baseline remain
 historical implementation context. Runtime behavior and tests still need to
 change; this entry does not claim the repair has shipped. Scope and rationale
-are recorded in the [query plan's decision log](url-query-params-history.md#direct-requests-honor-redirects-review-decisions-reconciled).
+are recorded in the [query plan's decision log](../done/url-query-params-history.md#direct-requests-honor-redirects-review-decisions-reconciled).
 Later on 2026-10-06, the repair moved out of todo #8 into its own plan under
 todo #1: [direct-request-redirects.md](direct-request-redirects.md).
 

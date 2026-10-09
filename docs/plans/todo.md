@@ -7,7 +7,7 @@ todo (2.0):
      property selectors; implemented independently of #8; review follow-up
      complete, with shared debug scope selection; 135 tests pass on
      Node.js 24.13.1
-     — plan: open/debug-inspect-selector.md
+     — plan: done/debug-inspect-selector.md
    - Validate JSONP callbacks and reject invalid ones with a nonfatal 400;
      forced-format acceptance depends on #12
      — plan: open/jsonp-callback-validation.md
@@ -16,10 +16,10 @@ todo (2.0):
      — plan: open/direct-request-redirects.md
    - Review query/OAuth values such as `code` and `state` in access logs and
      debug output, alongside configuration secrets
-     — notes: open/url-query-params-history.md#smaller-items
+     — notes: done/url-query-params-history.md#smaller-items
 
 2. HTML escaping in template literal views using double-bracket notation ${{local.whatever}}
-   — plan: open/html-escaping-double-bracket.md
+   — plan: done/html-escaping-double-bracket.md
    - Complete: compiler, renderer, error fallbacks, and migration documentation
      implemented and review corrections applied; 118 tests pass on Node.js
      24.13.1, with 115 passing and 3 unsupported-syntax skips on Node.js 22.0.0
@@ -43,7 +43,7 @@ todo (2.0):
 7. Test harness
 
 8. Parse URL query params into params.query, separate from citizen path params
-   — plan: open/url-query-params.md
+   — plan: done/url-query-params.md
    - Complete: decoded flat queries, independent inherited scopes, path-only
      routing, and query-independent caching; existing path allowlists unchanged
    - Direction updated 2026-10-09: queries do not vary cache keys or eligibility;
@@ -107,11 +107,11 @@ requirements are selected separately from the implementation tasks above.
 
 4. Superseded: opt-in query cache-key filtering; #8 now ignores all query
    names in cache keys and eligibility
-   — notes: open/url-query-params.md#future-work
+   — notes: done/url-query-params.md#future-work
 
 5. Clearing groups of equivalent reordered path parameters instead of exact
    keys only; query variants already share one entry
-   — notes: open/url-query-params.md#future-work
+   — notes: done/url-query-params.md#future-work
 
 6. Single-flight coordination for simultaneous cold-cache requests
    - Decide automatic versus opt-in enablement, GET/HEAD in-flight equivalence,
@@ -184,12 +184,12 @@ requirements are selected separately from the implementation tasks above.
 17. Public trusted-HTML/raw-value API, such as `SafeString` or `raw()`
     - Evaluate separately from #2's selected `${{…}}` syntax; the current
       implementation plan keeps include values as strings
-    — notes: open/html-escaping-double-bracket.md#implementation-readiness-review-and-selected-compiler-policy
+    — notes: done/html-escaping-double-bracket.md#implementation-readiness-review-and-selected-compiler-policy
 
 18. Define `helpers.copy()` behavior for class instances beyond supported types
     - Decide preservation versus cloning independently of the bounded URL fix
       in #13; do not silently expand that repair
-    — notes: open/url-query-params-history.md#repair-url-copying-in-helpers
+    — notes: done/url-query-params-history.md#repair-url-copying-in-helpers
 
 19. Standalone migration CLI after the #9 agent workflow is validated
     - Evaluate only after exercising the workflow against representative apps
