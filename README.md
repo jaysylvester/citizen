@@ -295,6 +295,7 @@ citizen begins with the following config, which `citizen.config.js` extends:
           cookie       : true,
           form         : true,
           payload      : true,
+          query        : true,
           route        : true,
           session      : true,
           url          : true
@@ -500,13 +501,20 @@ If you have an `article` route controller, you'd request it like this:
 http://www.cleverna.me/article
 ```
 
-Instead of query strings, citizen passes URL parameters consisting of name/value pairs. If you had to pass an article ID of 237 and a page number of 2, you'd append name/value pairs to the URL:
+citizen keeps path parameters in `params.url` and traditional query parameters in `params.query`. Both are available to controllers, hooks, and views. For `/article/id/237?id=999&page=2`:
 
-```
-http://www.cleverna.me/article/id/237/page/2
+```js
+params.url   // { id: '237' }
+params.query // { id: '999', page: '2' }
 ```
 
-Valid parameter names may contain letters, numbers, underscores, and dashes, but must start with a letter or underscore.
+Path parameter names may contain letters, numbers, underscores, and dashes, but must start with a letter or underscore. Path values keep their existing encoding: `/article/q/a%20b` supplies `params.url.q === 'a%20b'`.
+
+Query names and values are decoded once and remain strings. `?label=two+words&literal=%2B` supplies `{ label: 'two words', literal: '+' }`. Repeated decoded names use the last value; `?tag=first&tag=last` supplies `{ tag: 'last' }`. Empty values and bare flags supply `''`. Names are literal and case-sensitive: dots, brackets, empty names, and names such as `__proto__` stay ordinary own properties rather than becoming nested objects. To read every repeated occurrence, use `new URL(request.url, params.route.base).searchParams.getAll('tag')`.
+
+Routing uses the citizen path exclusively. Queries named `action`, `direct`, `callback`, or `ctzn_*`, and queries named after a controller, are ordinary data in `params.query`; they do not select actions, direct responses, JSONP callbacks, debug controls, or descriptors. `/article/action/edit?action=review` selects `edit()` and supplies `params.query.action === 'review'`.
+
+Query data stays decoded in controllers and views. Ordinary `${query.name}` HTML interpolation escapes it by default; see [HTML escaping and trusted markup](#html-escaping-and-trusted-markup). Query strings do not change cache keys or eligibility; developers decide whether a route is appropriate to cache, as described under [Caching Requests and Controller Actions](#caching-requests-and-controller-actions).
 
 The default controller action is `handler()`, but you can specify alternate actions with the `action` parameter (more on this later):
 
@@ -598,7 +606,11 @@ The citizen server calls `handler()` after it processes the initial request and 
   </tr>
   <tr>
     <td><code>url</code></td>
-    <td>Any parameters derived from the URL</td>
+    <td>Citizen name/value parameters from the URL pathname</td>
+  </tr>
+  <tr>
+    <td><code>query</code></td>
+    <td>Decoded query string parameters, separate from citizen path parameters</td>
   </tr>
   <tr>
     <td><code>form</code></td>
@@ -1450,6 +1462,8 @@ export const handler = async (params) => {
 
 Each controller in the chain has access to the previous controller's context and views. The last controller in the chain provides the final rendered view. A layout controller with all your site's global elements is a common use for this.
 
+String `next` and include routes extend the original request's path and query scopes separately. A target's path parameters override inherited `params.url` values; its query parameters override inherited `params.query` values. For example, `/article/page/1?code=parent&page=original` including `/_head/page/2?page=child` supplies `params.url.page === '2'` and `params.query === { code: 'parent', page: 'child' }` to the include without changing the parent's maps. Each target selects its action and descriptor from its own path before inheritance. `/_head?action=meta` still selects `handler()`; use `/_head/action/meta` to select `meta()`. Inherited query data does not get appended to the target's URL.
+
 ```js
 // The article controller does its thing, then hands off execution to the _layout controller
 export const handler = async (params, request, response, context) => {
@@ -1589,7 +1603,7 @@ return {
 
 For the request cache directive to work, it must be placed in the first controller in the chain; in other words, the original requested route controller (index in this case). It will be ignored in any subsequent controllers.
 
-The full URL, including its query string, serves as the cache key, so each of the following URLs would generate its own cache item:
+The origin plus pathname serves as the request-cache key, so each of the following URLs would generate its own cache item:
 
 http://cleverna.me/article
 
@@ -1597,7 +1611,9 @@ http://cleverna.me/article/My-Article
 
 http://cleverna.me/article/My-Article/page/2
 
-For example, `/article?variant=a` and `/article?variant=b` also have separate request-cache entries. Query-string parameters are not yet added to `params.url` or checked by the `urlParams` cache allowlist.
+Query strings are ignored by both cache lookup and insertion. `/article`, `/article?tracking=email`, and `/article?tracking=social` share one request entry. Query presence, order, duplicate values, and a bare trailing `?` do not change cache eligibility, keys, or the `urlParams` allowlist. Static file caching also continues to use the file pathname.
+
+Choose caching only when every request for that path can reuse the same cached output and directives. A cache hit skips the cached controller, so routes that must process each query, such as auth callbacks, should remain uncached. Returning a conditional cache directive cannot prevent a hit on an entry already stored for the same path. Put values that must distinguish cached content into the citizen path, or leave that route uncached.
 
 The example above is shorthand for default cache settings. The `cache.request` directive can also be an object with options:
 
@@ -1655,6 +1671,10 @@ return {
 
 When you cache controller actions, their context is also cached. Setting a cookie or session variable in a cached controller action means all future requests for that action will set the same cookie or session variable—probably not something you want to do with user data.
 
+Requested actions and explicit `next`/include targets use their own pathname as the action-cache key. `/article?id=1`, `/article?id=2`, and `/article` share `/article`. Query strings do not vary keys or bypass caching.
+
+Clear an action entry using its target pathname. Inherited parent parameters do not vary that key. Put values that distinguish cached output into the target pathname, or leave that action uncached.
+
 
 #### cache.request and cache.action options
 
@@ -1707,6 +1727,8 @@ http://cleverna.me/article/My-Article-Title/dosattack/2
 
 http://cleverna.me/article/My-Article-Title/page/2/dosattack/3
 
+Query names are separate from `params.url`, so they do not participate in cache `urlParams` allowlists. Existing path-parameter checks, including inherited path parameters for actions and includes, are unchanged.
+
 Invalid cache URL parameters report an error through the application error handler and bypass cache insertion. With the default `capture` error policy, rendering continues. The `exit` policy retains its normal process-exit behavior.
 
 
@@ -1748,7 +1770,7 @@ return {
 
 In most cases, you'll probably want to choose between caching an entire request (URL) or caching individual controller actions, but not both.
 
-When caching an include controller action, the route pathname pointing to that include is used as the cache key. If you use logic to render different views using the same controller action, the first rendered view will be cached. You can pass an additional URL parameter in such cases to get past this limitation and create a unique cache item for different include views.
+When caching an include controller action, its own route pathname forms the cache key. Parent path and query parameters reach the include as inherited data but do not vary that key; the target's query string is also ignored. If you use those values to render different views for the same target path, the first rendered view will be cached. Put values that distinguish output in the target pathname, or leave the include action uncached.
 
 ```js
 export const handler = async (context) => {
@@ -2216,6 +2238,9 @@ app.cache.clear({
   route: '/article/My-Article/page/2'
 })
 
+// Request entries use the origin plus pathname, without a query string
+app.cache.clear({ route: 'https://www.cleverna.me/article/id/237' })
+
 // Clear the entire route scope
 app.cache.clear({ scope: 'routes' })
 
@@ -2225,6 +2250,8 @@ app.cache.clear({ scope: 'files' })
 // Clear the entire cache
 app.cache.clear()
 ```
+
+Clearing is exact-match. A pathname clears that action key; the origin plus pathname clears that request key. Queries share these entries, so omit the query when clearing. Reordered path parameters remain distinct keys. Clearing one content type preserves the other types.
 
 
 ## Logs
@@ -2272,6 +2299,8 @@ Log files appear in the directory exposed as `app.config.citizen.directories.log
 
 If `NODE_ENV=development` or `citizen.mode` is set to `development` in `citizen.config.js`, citizen dumps all major operations to the console.
 
+The `citizen.development.debug.scope.*` settings select scopes for request logs, post-response logs, and configured HTML debug output, including the separate `query` scope.
+
 You can also dump the request context to the view by setting `citizen.development.debug.view` in your config file to `true`, or use the `ctzn_debug` URL parameter on a per-request basis:
 
 ```js
@@ -2295,7 +2324,16 @@ http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params
 
 // Dumps the user's session scope
 http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_inspect/params.session
+
+// Inspect query data using a path selector
+http://www.cleverna.me/article/ctzn_debug/true/ctzn_inspect/params.query?code=abc&state=xyz
 ```
+
+Selectors start with `params`, `request`, `response`, or `context` and support dot properties, quoted literal bracket keys, and nonnegative integer indexes, such as `params.query['a.b']` or `context.items[0]`. Calls, computed expressions, assignments, optional chaining, parentheses, other roots, and `__proto__`, `constructor`, or `prototype` segments are rejected before any property reads. Function values can be inspected but selectors cannot invoke them.
+
+`ctzn_inspect` retains the existing citizen path encoding: its value is not URL-decoded. Spaces, double quotes, and Unicode characters are encoded in the path, and raw backslashes normalize to slashes. Selectors containing those characters or JavaScript string escapes cannot select their decoded keys through this URL control. To inspect query keys containing spaces or Unicode, select the whole `params.query` map.
+
+Missing properties display `undefined`; invalid selectors and throwing getters display fixed diagnostics without failing the request or invoking the application error hook under either error policy. Ordinary reads retain accessor-backed fields such as `params.route.parsed.href`, `params.route.parsed.searchParams`, and `request.socket.remoteAddress`; trusted getters can run. The existing inspection formatting and HTML escaping still apply.
 
 The debug output traverses objects 4 levels deep by default. To display deeper output, use the `citizen.development.debug.depth` setting in your config file or append `ctzn_debugDepth` to the URL. Debug rendering will take longer the deeper you go.
 
@@ -2315,7 +2353,7 @@ export default {
 // http://www.cleverna.me/article/id/237/page/2/ctzn_debug/true/ctzn_debugDepth/4
 ```
 
-In `development` mode, you must specify the `ctzn_debug` URL parameter to display debug output. Debug output is disabled in production mode.
+In `development` mode, `ctzn_debug` enables per-request output unless configured debug views already enable it. Debug controls come from path parameters; query names such as `ctzn_debug` and `ctzn_inspect` remain ordinary query data. Values retain their existing truthiness: a nonempty string such as `false` is truthy. Debug output is disabled in production mode.
 
 
 ## Utilities

@@ -1646,3 +1646,19 @@ table. The second review has no unresolved design choices. Required repairs and
 shipping dependencies remain selected; filtering and grouped clearing remain
 exploratory. Implementation and production acceptance are pending; runtime code
 and test files were not changed by this review.
+
+
+## Direction and scope changes — 2026-10-09
+
+The initial implementation merged queries into `params.url`, added query-aware
+cache keys and metadata, changed allowlist diagnostics, and implemented the
+debug selector prerequisite. Its first full suite passed 154 tests.
+
+The maintainer then selected separate `params.query` data and path-only cache
+identity and eligibility, without a query-specific bypass or configuration.
+A further scope review removed the leftover metadata, action-key API, path
+parser changes, own-route allowlist logic, cache-warning policy, and debug
+selector repair from this feature. Existing path behavior remains intact;
+request-cache lookup/insertion omit queries with two key-expression changes.
+The current contract and validation are in [the active plan](url-query-params.md).
+Earlier merged-query decisions in this archive are superseded.

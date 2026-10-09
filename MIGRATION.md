@@ -19,6 +19,9 @@ view composition and trusted markup as described in step 7 below.
 | citizen settings passed to `app.start()` | `citizen` in `citizen.config.js` |
 | Application settings passed to `app.start()` | Still supported as optional application overrides |
 | Raw `${…}` output in HTML template literal views | Escaped `${…}` data; `${{…}}` for trusted markup |
+| Ignored query strings | Decoded `params.query`, separate from path-only `params.url`, with last-value wins |
+| Query-bearing request-cache keys | Origin plus pathname; queries do not vary cache keys or eligibility |
+| Executable `ctzn_inspect` expressions | Restricted property selectors |
 
 Controller and action configuration remains a typed object and continues to
 override citizen settings for an individual request.
@@ -309,7 +312,58 @@ Test representative normal and error views, includes, layouts, and cached
 responses before deploying. Syntax failures name the view path and never fall
 back to an older compiled function or raw source.
 
-## 8. Verify
+## 8. Review query data, caching, and debug selectors
+
+Query strings now reach `params.query`, while `params.url` remains the citizen
+path scope. Query names and values are decoded once, stay flat and
+case-sensitive, and remain strings; repeated decoded names use their last
+value. Path values keep their existing encoding. Review callback handlers and
+applications that parsed query strings manually.
+
+Queries do not select framework routing fields. `action`, `direct`, controller
+names, `callback`, and `ctzn_*` in a query are ordinary data. Routing, JSONP
+callbacks, and per-request debug controls continue to read citizen path params.
+String include/next targets inherit the original query scope independently;
+the target's own query values override inherited query values only.
+
+Action-cache keys use the action's own pathname. Request-cache keys now use the
+origin plus pathname, without a query. All query variants, including a bare
+trailing `?`, use the same entry and the same eligibility checks. There is no
+query-specific bypass or configuration. Queries do not participate in cache
+`urlParams` allowlists.
+
+Review each cached route: a hit skips its cached controller, so auth callbacks
+and other routes that must act on query values on every request should remain
+uncached. A conditional cache directive returned by the controller cannot
+prevent a pre-existing cache hit. Put values that distinguish cached output in
+the citizen path, or leave that route uncached. Inherited values do not vary a
+child action's key. Use its pathname for exact action clearing and the origin
+plus pathname for request clearing. The independent route-less
+object-next identity repair remains tracked separately.
+
+Existing path allowlist checks and error handling remain unchanged, including
+inherited path checks on child actions and the `exit` policy. Query names stay
+outside those checks because they are absent from `params.url`.
+
+Replace executable `ctzn_inspect` expressions with selectors rooted at
+`params`, `request`, `response`, or `context`. Dot properties, quoted literal
+bracket keys, and nonnegative integer indexes work. Calls, computed expressions,
+assignments, optional chaining, parentheses, and prototype-related segments
+are rejected before any property reads. Function values can be inspected but
+cannot be invoked by a selector. Missing properties retain `undefined`, and
+invalid selectors or throwing getters produce fixed diagnostics without
+failing the request. Trusted getters can still run during ordinary reads.
+
+The `ctzn_inspect` path value remains URL-encoded. Spaces, double quotes, and
+Unicode characters are encoded, and raw backslashes normalize to slashes;
+JavaScript string escapes cannot be passed through this URL control. Select
+the whole `params.query` map to inspect query keys with spaces or Unicode.
+
+Debug controls remain path-only, and a selector can inspect `params.query`.
+Query values cannot enable debug or replace a path selector. Production
+suppression and the existing output formatting remain in place.
+
+## 9. Verify
 
 Confirm that no active JSON configuration or startup citizen settings remain:
 
@@ -328,6 +382,7 @@ Then verify that:
 6. Controller/action overrides, CORS, HTTP/HTTPS, sessions, caching, logs, and watchers behave as expected.
 7. The normal test suite and representative endpoint smoke tests pass under Node.js 22.
 8. Ordinary view data is escaped, trusted markup composition works, and cached HTML retains the same behavior.
+9. Query callbacks, path-only routing and cache identity, cache allowlists and exact clearing, and debug query data behave as documented.
 
 Cases requiring manual review include multiple host configs, computed startup
 values, config aliases, dynamic property access, and secret-bearing tracked

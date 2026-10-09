@@ -1,5 +1,17 @@
 # Plan: Cache bug fixes and cold-fill design proposals
 
+> Query identity update — 2026-10-09: [todo #8's current plan](url-query-params.md)
+> supersedes this document's earlier full-URL query-cache decisions and recorded
+> tests. Request keys now use origin plus pathname; action keys use each
+> action's own pathname. Queries are separate `params.query` data and change
+> neither cache keys nor eligibility. Earlier implementation/review evidence
+> below is historical for that contract. Other cache repairs and deferred
+> decisions remain independently owned. References below to #8's future own-name
+> allowlist checks and nonfatal warning policy are also superseded: scope cleanup
+> leaves existing path checks and error-hook/exit behavior unchanged, with any
+> diagnostic-policy change deferred.
+
+
 Target release: **2.0** (see `docs/plans/todo.md` #5)
 Status: **Settled bug fixes and first-entry retention implemented; remaining design decisions deferred**
 
@@ -1363,7 +1375,7 @@ error event, application error-hook call, error response assignment, or process
 exit for the cache rejection. Genuine runtime errors retain their error policy.
 
 This resolves decision 15 as a future implementation policy and is recorded in
-the [query parameter plan](url-query-params.md#3-check-cache-allowlists-and-report-nonfatal-warnings).
+the [query history](url-query-params-history.md#nonfatal-cache-warning-decision).
 The historical findings and completed fixes above retain the behavior observed
 and implemented at that time. Runtime code and invalid-parameter tests still
 need to change when todo #8 is implemented; this entry does not claim that the

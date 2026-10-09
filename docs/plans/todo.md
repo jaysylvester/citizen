@@ -3,8 +3,10 @@ todo (2.0):
 1. Comprehensive security review (XSS, cookie parsing, injection, config, log file/stdout contents, CORS implementation)
    - Add request-level regression coverage for literal CORS origins containing
      regular-expression metacharacters
-   - Replace the development-mode `ctzn_inspect` `eval()` with restricted
-     property selectors; must land before #8 ships
+   - Complete: replaced development-mode `ctzn_inspect` `eval()` with restricted
+     property selectors; implemented independently of #8; review follow-up
+     complete, with shared debug scope selection; 135 tests pass on
+     Node.js 24.13.1
      — plan: open/debug-inspect-selector.md
    - Validate JSONP callbacks and reject invalid ones with a nonfatal 400;
      forced-format acceptance depends on #12
@@ -40,10 +42,15 @@ todo (2.0):
 
 7. Test harness
 
-8. Parse URL query params and add to params.url (API redirects coming from outside sources use traditional URLs, requiring parsing workarounds in citizen apps today)
+8. Parse URL query params into params.query, separate from citizen path params
    — plan: open/url-query-params.md
-   - Check against cache URL param allowlist
-   - Ships after #2 and the `ctzn_inspect` repair under #1
+   - Complete: decoded flat queries, independent inherited scopes, path-only
+     routing, and query-independent caching; existing path allowlists unchanged
+   - Direction updated 2026-10-09: queries do not vary cache keys or eligibility;
+     developers decide which routes are appropriate to cache
+   - HTML escaping (#2) and independent debug hardening under #1 are complete;
+     cache diagnostic policy changes remain deferred
+   - 130 tests pass on Node.js 24.13.1; cleanup validation is recorded in the plan
 
 9. Validate and implement 1.x -> 2.x migration automation
    — guide: ../../MIGRATION.md
@@ -98,12 +105,12 @@ requirements are selected separately from the implementation tasks above.
 
 3. Replace chokidar with native Node file watcher (requires some workarounds/fallbacks that chokidar currently handles)
 
-4. Opt-in cache-key filtering that reuses the `urlParams` allowlist, so unlisted
-   query names such as tracking parameters neither vary the key nor block caching
+4. Superseded: opt-in query cache-key filtering; #8 now ignores all query
+   names in cache keys and eligibility
    — notes: open/url-query-params.md#future-work
 
-5. Clearing groups of cache variants (query variants of one pathname, or
-   reordered path parameters) instead of exact keys only
+5. Clearing groups of equivalent reordered path parameters instead of exact
+   keys only; query variants already share one entry
    — notes: open/url-query-params.md#future-work
 
 6. Single-flight coordination for simultaneous cold-cache requests
@@ -161,8 +168,8 @@ requirements are selected separately from the implementation tasks above.
     — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
 
 15. Evaluate whether retired invalid-URL-cache-parameter modes should return
-    - Any proposal is separate from #8's selected nonfatal warning policy;
-      those modes are not restored by #8
+    - Nonfatal path-cache diagnostics remain deferred with this policy review;
+      #8 retains existing error-hook and exit behavior
     — decision: cache plan 13
     — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
 

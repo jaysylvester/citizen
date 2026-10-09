@@ -16,16 +16,16 @@ The [`request` handler](../../../lib/server.js#L79) and
 README's login-redirect request hook can therefore be bypassed with
 `/direct/true` or an underscore-prefixed route. A disposable HTTP app
 reproduced a 302 login redirect becoming a 200 controller response with
-`/direct/true`; simulated query parsing reproduced the same result with
-`?direct=true`. The 1.0 CHANGELOG describes `direct` only as bypassing the
+`/direct/true`; the earlier merged-query prototype also reproduced it with
+`?direct=true`. The selected separate query scope no longer activates direct
+requests through query syntax. The 1.0 CHANGELOG describes `direct` only as bypassing the
 controller chain.
 
 ## Decision
 
 The maintainer approved limiting direct requests to skipping `next` and the
 default layout while honoring hook and controller redirects, on misses and
-cache hits, for path parameters, underscore-prefixed routes, and, once todo #8
-lands, query parameters. This is a 2.0 compatibility change.
+cache hits, for path parameters and underscore-prefixed routes. This is a 2.0 compatibility change.
 
 ## Specification
 
@@ -64,7 +64,8 @@ its old expectation.
   304, and refresh redirects keep their configured status and body.
 - Cold and warm requests behave the same, and ordinary conditional responses
   still work without a redirect.
-- After todo #8, repeat the checks with `?direct=true`.
+- After todo #8, verify `?direct=true` remains ordinary query data, so it
+  neither suppresses redirects nor skips chaining.
 
 Document in the README that direct requests skip `next` and the default layout
 while honoring redirects, and record the change from redirect suppression in
@@ -77,3 +78,10 @@ controller coverage, conditional/refresh behavior, and the required update to
 the old suppression regression. Query-specific checks run after both features
 land; the split makes this repair independent of #8's shipping gate. No missing
 implementation contract or new runtime scope was identified in this review.
+
+
+## Query direction update — 2026-10-09
+
+Todo #8 leaves direct-request selection path-only and stores query `direct` in
+`params.query`. The redirect repair remains separate and unimplemented; its
+query acceptance now verifies that the query cannot activate a direct request.

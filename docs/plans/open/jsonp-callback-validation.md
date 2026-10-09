@@ -12,9 +12,9 @@ are as of commit `1bfb0b2`.
 
 [`renderView()`](../../../lib/server.js#L1687) writes `params.url.callback`
 into `application/javascript` responses unescaped. Path input already allows
-calls such as `alert(1)`. Once todo #8 decodes query strings, `?callback=`, the
-conventional JSONP syntax, removes the remaining character limits. A missing
-callback currently produces `undefined({…});` with a 200.
+calls such as `alert(1)`. A missing callback currently produces
+`undefined({…});` with a 200. Todo #8 now puts queries in `params.query`, so
+query `callback` values do not select JSONP callbacks or expand this exposure.
 
 ## Decision
 
@@ -31,10 +31,9 @@ calls, bracket expressions, comments, and additional statements. Define
 identifier and reserved-word handling so accepted callbacks always produce a
 syntactically valid call.
 
-Validate the effective `params.url.callback`. Once todo #8 lands, that value
-follows path precedence and the query decoding and repetition rules: a
-conflicting query must not invalidate a valid path callback. Keep the parameter
-available to the application. The rule applies only when the output is JSONP;
+Validate the effective path-only `params.url.callback`. Query `callback`
+values stay separate in `params.query`; they must not invalidate or replace a
+valid path callback. Keep both parameters available to the application. The rule applies only when the output is JSONP;
 other formats do not reject a `callback` parameter because of this grammar.
 
 For a missing, empty, or malformed callback, return HTTP 400 with a fixed,
@@ -54,15 +53,11 @@ generic error handling or allowing a second response write. This output guard
 does not add cache-allowlist checks on hits.
 
 Valid callbacks keep their existing output and namespace behavior. Cache
-allowlists stay separate. Once todo #8 lands, `callback` and client-added `_`
-names must be listed to permit insertion under its warning policy; before
-then, existing cache-name handling remains. This repair does not implement
-cache warnings, tracking exemptions, or filtered keys.
-
-A changing `_` value creates a distinct exact key each time. Listing it permits
-insertion but does not make those requests reuse entries; document that
-cache-busted JSONP URLs are not usefully cached under the current exact-key
-design. This is guidance about existing keys, not a new filtering policy.
+allowlists stay separate and check only citizen path names. Query `callback`
+and client-added `_` names do not participate in allowlists or cache identity.
+A changing `_` query does not bypass a warm cache entry; developers choose
+whether the route is appropriate to cache. This repair does not add query
+callback support or a cache-busting policy.
 
 ### Dependency: todo #12
 
@@ -96,8 +91,9 @@ Decision 17 remains a separate follow-up, not an additional prerequisite.
   hook call or exit; a following valid request to the same server succeeds.
 - Non-JSONP output keeps callback parameters without this rejection, and the
   existing JSONP regressions still pass.
-- After todo #8, repeat the checks through query syntax, including decoding,
-  repeated names, and path precedence.
+- After todo #8, verify query callback names remain ordinary data and do not
+  replace path callbacks. Query-only JSONP requests still have a missing path
+  callback and receive the selected nonfatal 400.
 
 Document the callback grammar, the 400 behavior, and its independence from
 cache-allowlist eligibility in the README, and add a CHANGELOG entry.
@@ -125,3 +121,11 @@ Cache-correctness decision 17 is explicitly indexed as Consider #16 in
 [the todo list](../todo.md). This keeps the forced-format cache lookup question
 visible while retaining its independence from callback validation and todo
 #12's response-header fix. Its classification and solution remain undecided.
+
+
+## Query direction update — 2026-10-09
+
+Todo #8 now uses separate `params.query` data, path-only framework controls,
+and path-only cache identity/eligibility. The current specification above
+replaces the earlier merged-query assumptions. Callback validation remains
+independent and unimplemented.

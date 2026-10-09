@@ -43,7 +43,7 @@ test('ordinary expressions escape only their final results and keep intermediate
 
 
 test('view scopes and native Function context are preserved', () => {
-  let names = ['config', 'cookie', 'form', 'local', 'payload', 'route', 'session', 'url'],
+  let names = ['config', 'cookie', 'form', 'local', 'payload', 'route', 'session', 'url', 'query'],
       context = Object.fromEntries(names.map(name => [name, { value }]))
 
   assert.equal(render(names.map(name => '${' + name + '.value}').join('|'), context), names.map(() => escaped).join('|'))

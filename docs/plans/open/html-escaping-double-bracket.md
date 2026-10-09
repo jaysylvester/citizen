@@ -10,7 +10,8 @@ The existing scanner is illustrative only; it must not be ported as a
 production compiler.
 
 Shipping dependency: this feature must land before todo #8's query parsing
-ships. See the [query plan's prerequisites](url-query-params.md#shipping-prerequisites).
+ships. This dependency and the combined query acceptance check are satisfied;
+see [query validation](url-query-params.md#validation).
 
 ## Problem and scope
 
@@ -153,7 +154,7 @@ In the `templateLiterals` branch of `renderView()`, resolve the view path with
 the existing root-view and controller-view rules and read the file as today.
 Select HTML or plain-text mode from `response.contentType`. Preserve the
 existing view scopes (`config`, `cookie`, `form`, `local`, `payload`, `route`,
-`session`, `url`, `include`) and development debug insertion. Final output
+`session`, `url`, `include`) and the query scope added by todo #8 and development debug insertion. Final output
 stays a plain string for encoding and response writing. Leave the third-party
 engine branch, its arguments, and its `cache` flag unchanged.
 
@@ -257,10 +258,10 @@ Extend the child-process scaffold in `test/cache-http.test.js`:
 Run the focused suites and `npm test`, including under Node.js 22, the minimum
 supported version.
 
-The query-string HTTP regression is a later cross-feature gate: once todo #8
-is implemented, encoded query markup reaches the controller decoded but renders
-as text through `${url.name}`, on initial and cached responses. Todo #2 can
-land without query parsing; todo #8 cannot ship without this combined check.
+The combined query-string HTTP regression is complete under todo #8. Encoded
+query markup reaches `params.query` decoded and renders as text through
+`${query.name}` on fresh output, an action-cache hit, and a request-cache hit.
+Query variants share cache entries under the selected path-only identity.
 
 ## Files touched during implementation
 
@@ -447,7 +448,8 @@ A separate integration probe found that string-form `next` handoffs replace
 the next view's route with a fresh route whose chain is empty. The configured
 layout path is covered here; the existing handoff defect is recorded as todo
 #15 and is outside this feature's implementation. Todo #2 is complete. The
-combined decoded-query regression remains todo #8's later shipping gate.
+combined decoded-query regression was completed under todo #8 on 2026-10-09
+(see [Combined query acceptance](#combined-query-acceptance)).
 
 ### Code review corrections
 
@@ -482,3 +484,19 @@ does not justify changing the synchronous compiler design.
 Validation: **118 tests passed on Node.js 24.13.1**; on **Node.js 22.0.0**,
 **115 passed and three unsupported-syntax cases were skipped**. Heap snapshots,
 ESLint, and `git diff --check` also passed their checks.
+
+
+### Combined query acceptance
+
+Date: **2026-10-09**. Todo #8 is implemented with decoded values in
+`params.query`, independently of citizen path parameters. The combined HTTP
+regression verifies literal query markup reaches the controller unchanged and
+renders escaped through `${query.name}`. Clearing the request entry exercises
+an action-cache hit and request refill; another query variant then exercises
+a request-cache hit. All three responses retain the same escaped output.
+
+The selected query prerequisite and cross-feature gate are complete. Debug
+selector hardening is now independently implemented (see
+[its plan](debug-inspect-selector.md)); query `ctzn_*` names do not select debug
+controls. The full validation run is recorded in the
+[query plan](url-query-params.md#validation).

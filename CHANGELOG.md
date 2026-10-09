@@ -20,6 +20,9 @@
 * Legacy `app/config/*.json` files and hostname selection are no longer supported; startup fails with a migration message while JSON files remain
 * The `citizen` property is no longer accepted by `app.start()` because framework settings must be resolved before application modules load
 * Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing citizen
+* Request-cache keys now use origin plus pathname; query strings do not vary cache keys or eligibility, so routes that must process queries on every request should remain uncached
+
+* Development `ctzn_inspect` accepts restricted property selectors instead of executable JavaScript; calls, computed expressions, and prototype-related segments are rejected
 
 ## Enhancements and fixes
 
@@ -27,6 +30,10 @@
 * Compiled views are memoized by path, output mode, and current source; production still reads view files on every render and picks up edits without restarting
 * HTML error fallbacks escape stack text, including failures while rendering error views or their layouts
 * Development debug output escapes all five HTML characters and preserves literal dollar sequences during insertion into views
+* Debug selectors preserve literal bracket keys, array indexes, and ordinary accessor reads; invalid selectors and throwing getters produce bounded diagnostics without error hooks or process exits
+* Request logs, post-response logs, and configured HTML debug output share scope selection, including the `query` scope
+* Query strings supply decoded flat `params.query` data to hooks, controllers, and views independently of citizen path parameters and framework routing; repeated names use their last value
+* Query parameter copying and inheritance preserve special own keys such as `__proto__` and `_onTimeout` without sharing mutable maps
 * The scaffold now works from the project root, updates the existing package, and creates `.env`, `.env.example`, `citizen.config.js`, and an idempotent Git ignore rule
 * The scaffold no longer creates a duplicate package or an `app/config` directory
 * HTTPS credential files are read only when HTTPS is enabled
@@ -37,7 +44,7 @@
 * Application values and supplied file contents can be cached when they are falsy
 * Replacing a cached file with a custom key clears that key rather than the source path, preventing recursive replacement from overflowing the stack
 * Cache existence checks handle missing scopes and documented route-only lookups
-* Request-cache lookup and insertion use the same full URL, including the query string, so query variants are cached and retrieved separately
+* Request-cache lookup and insertion use the same origin plus pathname; query variants share entries, while action keys retain their existing pathname identity
 * Request and action caches retain the first completed entry during concurrent cold fills, preserving its output, stored validator, and expiration timer; cold requests still render independently
 * Clearing a specific cached content type preserves other types, including when the target has no expiration timer
 * Explicit request-cache `lastModified` values apply to cold responses, including controller chains and request fills from cached actions

@@ -78,7 +78,8 @@ For object `next` without `params.route`, leave the next controller's
 its URL parameter inheritance, unchanged. An explicitly supplied
 `next.params.route` still replaces the route as before and supplies the
 action's own route. Keep the original request route and full URL intact for
-request-cache identity and response assembly.
+application access and response assembly. Request-cache identity now uses the
+original origin plus pathname, without queries.
 
 Store the derived key with the chain link so insertion uses the same identity
 as lookup; never reconstruct it from the retained route fields. Ordinary
@@ -91,17 +92,20 @@ target route, or no action caching.
 
 ### Interaction with query parsing
 
-When todo #8 lands, a route-less object `next` has no own URL input, so its
-action insertion checks no names, and its derived key is exposed as
-`params.route.actionCacheKey` while its other route fields still describe the
-original request.
+Todo #8 exposes query data separately as `params.query`; query names affect
+neither cache keys nor allowlists. The existing pathname-based action caching
+is unchanged. No action-cache metadata helper or exposed `actionCacheKey` is
+implemented by #8.
 
-Keep the internal identity and own-input provenance with the action, separate
-from its preserved public route. Todo #8's shared key/check helpers must consume
-that record at lookup and insertion rather than derive another key or inherit
-the original request's name set. If #8 lands first, add this record here when
-repairing the collision; if this repair lands first, #8 must preserve it. The
-query plan does not implement this repair or require it as a shipping gate.
+This repair owns capturing its derived key on the chain link for shared lookup
+and insertion, exposing that key as `params.route.actionCacheKey`, and any
+necessary own-parameter eligibility handoff for route-less object `next`.
+Do not derive the key again from the retained public route. Explicit routes
+retain their own pathname identity. Keep inherited query data available through
+the existing params copy without adding query keys or bypass behavior.
+
+The known collision remains independently owned and is not a shipping gate
+for query parsing. There is no need to prewire this repair into #8.
 
 ## Validation
 
@@ -119,7 +123,7 @@ query plan does not implement this repair or require it as a shipping gate.
   URL.
 
 Verify the combined contract once both #8 and #14 land: query-bearing parents
-retain their own first-action keys, object-next actions retain their derived
+retain their own pathname-based first-action keys, object-next actions retain their derived
 keys and empty own-input checks, and neither integration overwrites the other.
 
 Document in the README's caching and chaining sections that route-less object
@@ -133,3 +137,11 @@ key-only repair, public route compatibility, and its independent validation.
 Clarified the internal identity/provenance handoff with todo #8 and ownership
 of combined regressions. Neither landing order silently puts this repair back
 into query scope. No runtime or test changes were made.
+
+
+## Scope cleanup — 2026-10-09
+
+Removed #8's prewired metadata handoff after the maintainer selected separate
+query data and unchanged action caching. This repair will introduce its own
+key capture and public key when implemented; queries remain outside identity
+and eligibility in either landing order.

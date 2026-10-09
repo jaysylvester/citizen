@@ -480,31 +480,16 @@ test('HTTP cache fixes preserve directive options, validators, and rendering', {
     assert.equal((await request(server.port, '/override')).headers.etag, 'controller-tag')
   })
 
-  await context.test('request-cache lookups reuse full URLs and isolate query strings', async () => {
-    let paths = ['/queries', '/queries?variant=a', '/queries?variant=b', '/queries?variant=a&variant=b&label=two%20words'],
-        responses = new Map()
+  await context.test('request-cache lookup and insertion ignore query strings', async () => {
+    let first = await request(server.port, '/queries?tracking=first')
 
-    for ( let [index, pathname] of paths.entries() ) {
-      let first = await request(server.port, pathname),
-          second = await request(server.port, pathname)
-
-      assert.equal(first.status, 200)
-      assert.deepEqual(JSON.parse(first.body), { queries: { calls: index + 1, url: server.url + pathname } })
-      assert.equal(second.body, first.body)
-      responses.set(pathname, first.body)
-    }
-    for ( let pathname of paths ) {
-      assert.equal((await request(server.port, pathname)).body, responses.get(pathname))
+    for ( let suffix of ['', '?', '?tracking=second', '?variant=a&variant=b&label=two%20words'] ) {
+      assert.equal((await request(server.port, '/queries' + suffix)).body, first.body)
     }
     let state = await server.snapshot()
-
-    for ( let pathname of paths ) {
-      assert.deepEqual(state.entries[server.url + pathname]['application/json'], { lifespan: 'application', resetOnAccess: false, timer: false })
-    }
-    await server.snapshot({ route: server.url + paths[1] })
-    assert.deepEqual(JSON.parse((await request(server.port, paths[1])).body), { queries: { calls: paths.length + 1, url: server.url + paths[1] } })
-    assert.equal((await request(server.port, paths[2])).body, responses.get(paths[2]))
-    assert.equal((await request(server.port, paths[0])).body, responses.get(paths[0]))
+    assert.deepEqual(Object.keys(state.entries).filter(key => key.includes('/queries')), [server.url + '/queries'])
+    await server.snapshot({ route: server.url + '/queries' })
+    assert.equal(JSON.parse((await request(server.port, '/queries?refill=second')).body).queries.calls, 2)
   })
 
   await context.test('a warm action supplies an explicit validator while refilling the request cache', async () => {
@@ -683,7 +668,7 @@ test('HTTP request-cache hits apply live hook headers and redirects', { timeout:
     let headers = { accept: 'text/html', 'x-fixture-hook': hook }
 
     await context.test(hook + ' headers remain live on 200 and 304 responses', async () => {
-      let pathname = '/hookrequest?headers=' + hook,
+      let pathname = '/hookrequest/headers-' + hook,
           first = await request(server.port, pathname, headers),
           before = await server.snapshot(),
           key = server.url + pathname
@@ -719,8 +704,8 @@ test('HTTP request-cache hits apply live hook headers and redirects', { timeout:
     await context.test(hook + ' server redirects precede cached bodies and conditional responses', async () => {
       for ( let status of [302, 307] ) {
         let redirectHeaders = { ...headers, 'x-fixture-redirect': 'server', 'x-fixture-redirect-status': String(status) },
-            cold = await request(server.port, '/hookrequest?coldRedirect=' + hook + '&status=' + status, redirectHeaders),
-            pathname = '/hookrequest?warmRedirect=' + hook + '&status=' + status
+            cold = await request(server.port, '/hookrequest/coldRedirect-' + hook + '-' + status, redirectHeaders),
+            pathname = '/hookrequest/warmRedirect-' + hook + '-' + status
 
         assert.equal(cold.status, status)
         assert.equal(cold.headers.location, '/destination')
@@ -750,7 +735,7 @@ test('HTTP request-cache hits apply live hook headers and redirects', { timeout:
 
     await context.test(hook + ' refresh redirects retain their status and cached body with matching validators', async () => {
       for ( let status of [302, 200] ) {
-        let pathname = '/hookrequest?refresh=' + hook + '&status=' + status,
+        let pathname = '/hookrequest/refresh-' + hook + '-' + status,
             redirectHeaders = { ...headers, 'x-fixture-redirect': 'refresh', 'x-fixture-redirect-status': String(status) },
             first = await request(server.port, pathname, redirectHeaders),
             before = await server.snapshot(),
@@ -786,7 +771,7 @@ test('HTTP request-cache hits apply live hook headers and redirects', { timeout:
   }
 
   await context.test('request.start headers and redirects keep their existing handling', async () => {
-    let pathname = '/hookrequest?start=1',
+    let pathname = '/hookrequest/start',
         headers = { accept: 'text/html', 'x-fixture-hook': 'request.start' },
         first = await request(server.port, pathname, headers),
         conditional = await request(server.port, pathname, { ...headers, 'x-fixture-hook-value': 'live', 'if-none-match': first.headers.etag })
@@ -950,6 +935,292 @@ test('HTTP invalid cache parameters preserve exit-mode behavior', { timeout: 300
       assert.equal((await exited)[0], 1)
     })
   }
+})
+
+
+function prepareQueryFixture(root) {
+  const controller = (name, source) => fs.writeFileSync(path.join(root, 'app/controllers/routes', name + '.js'), source),
+        view = (name, source) => fs.writeFileSync(path.join(root, 'app/views', name + '.html'), source)
+
+  fs.writeFileSync(path.join(root, 'app/controllers/hooks/request.js'), `
+    export const start = async params => {
+      return { queryHook: { ...params.query } }
+    }
+  `)
+  for ( let [name, cache] of Object.entries({
+    qcallback: '{}',
+    qaction: '{ action: { lifespan: \'application\', urlParams: [\'id\', \'action\'] } }',
+    qrequest: '{ request: { lifespan: \'application\', urlParams: [\'id\', \'action\'] } }',
+    qboth: '{ action: { lifespan: \'application\', urlParams: [\'id\', \'action\'] }, request: { lifespan: \'application\', urlParams: [\'id\', \'action\'] } }',
+    qempty: '{ action: { lifespan: \'application\', urlParams: [] }, request: { lifespan: \'application\', urlParams: [] } }'
+  }) ) {
+    controller(name, `
+      let calls = 0
+      export const handler = async (params, request, response, context) => ({
+        cache: ${cache},
+        local: { calls: ++calls, url: { ...params.url }, query: { ...params.query }, hook: context.queryHook,
+                 action: params.route.action, descriptor: params.route.descriptor,
+                 pathname: params.route.pathname, direct: params.route.direct }
+      })
+      export const edit = handler
+    `)
+    view(name, '<html><body><p>${query.code}|${query.state}|${query.name}|${local.calls}</p></body></html>')
+  }
+  controller('qauth', `
+    let calls = 0
+    export const handler = async params => ({
+      local: { calls: ++calls },
+      ...(params.query.code ? { redirect: '/signed-in', header: { 'X-Auth-Call': calls, 'X-Auth-Code': params.query.code } } : {})
+    })
+  `)
+  controller('qparent', `
+    export const handler = async (params, request) => ({
+      local: { url: { ...params.url }, query: { ...params.query } },
+      include: { piece: request.headers['x-object-include']
+        ? { controller: '_qhead', action: 'meta' }
+        : request.headers['x-target'] || '/_qhead' + (params.query.target || '') }
+    })
+  `)
+  view('qparent', '<html><body>${include.piece}</body></html>')
+  controller('_qhead', `
+    let calls = 0
+    export const handler = async params => ({
+      cache: { action: { lifespan: 'application', urlParams: ['action', 'section'] } },
+      local: { calls: ++calls, url: { ...params.url }, query: { ...params.query }, action: params.route.action }
+    })
+    export const meta = handler
+  `)
+  view('_qhead', '<header>${local.calls}</header>')
+  controller('qchain', `
+    export const handler = async (params, request) => ({
+      cache: { request: { lifespan: 'application' } },
+      local: { url: { ...params.url }, query: { ...params.query } },
+      next: request.headers['x-target'] || '/_qtail' + (params.query.target || '')
+    })
+  `)
+  controller('_qtail', `
+    let calls = 0
+    export const handler = async params => ({
+      cache: { action: { lifespan: 'application', urlParams: ['action', 'page'] } },
+      local: { calls: ++calls, url: { ...params.url }, query: { ...params.query },
+               action: params.route.action, pathname: params.route.pathname, parsedPathname: params.route.parsed.pathname }
+    })
+    export const meta = handler
+  `)
+  for ( let name of ['qspecial', 'qpiece', 'qspecialtail'] ) {
+    controller(name, `
+      export const handler = async (params, request, response, context) => {
+        let query = { ...params.query }
+        params.query.__proto__ = '${name}'
+        params.query._onTimeout = '${name}'
+        return { local: { query, url: { ...params.url }, hook: context.queryHook },
+          ${name === 'qspecial' ? 'include: { piece: \'/qpiece\', sibling: \'/qpiece\' }, next: \'/qspecialtail\'' : ''} }
+      }
+    `)
+    view(name, '<p>${query.__proto__}|${query.constructor}|${query.prototype}|${query._onTimeout}|${query[\'\']}</p>')
+  }
+  controller('qdebug', `
+    export const handler = async () => ({ marker: {
+      text: ${JSON.stringify('&lt;<>&"\'')}, values: ['alpha', 'beta'],
+      nested: { child: { value: 'deep-marker' } },
+      invoke() { app.errorReports++; return 'EXECUTED' }
+    } })
+  `)
+  view('qdebug', '<html><body>debug fixture</body></html>')
+}
+
+
+test('HTTP query data stays separate from routing and survives hooks, views, includes, and next', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare: prepareQueryFixture }),
+      route = '/qcallback/id/path?code=a%2Fb&state=two+words&id=query&name=' + encodeURIComponent('<b>query marker</b>'),
+      result = JSON.parse((await request(server.port, route)).body).qcallback,
+      html = await request(server.port, route, { accept: 'text/html' })
+
+  assert.deepEqual(result.url, { id: 'path' })
+  assert.deepEqual(result.query, { code: 'a/b', state: 'two words', id: 'query', name: '<b>query marker</b>' })
+  assert.deepEqual(result.hook, result.query)
+  assert.ok(html.body.includes('a/b|two words|&lt;b&gt;query marker&lt;/b&gt;'))
+  let cached = await request(server.port, route.replace('/qcallback/id/path', '/qboth'), { accept: 'text/html' })
+  assert.equal(cached.status, 200)
+  assert.ok(cached.body.includes('a/b|two words|&lt;b&gt;query marker&lt;/b&gt;'))
+  await server.snapshot({ route: server.url + '/qboth', contentType: 'text/html' })
+  let actionHit = await request(server.port, '/qboth?name=changed', { accept: 'text/html' }),
+      requestHit = await request(server.port, '/qboth?name=changed-again', { accept: 'text/html' })
+  assert.equal(actionHit.body, cached.body)
+  assert.equal(requestHit.body, cached.body)
+  result = JSON.parse((await request(server.port, '/qcallback/action/edit?qcallback=Title&action=missing&direct=true&callback=fn')).body).qcallback
+  assert.equal(result.action, 'edit')
+  assert.equal(result.descriptor, '')
+  assert.equal(result.direct, false)
+  assert.deepEqual(result.query, { qcallback: 'Title', action: 'missing', direct: 'true', callback: 'fn' })
+  assert.deepEqual(Object.keys(JSON.parse((await request(server.port, '/qchain?direct=true')).body)), ['qchain', '_qtail'])
+  assert.equal((await request(server.port, '/asset.txt?v=2', { accept: 'text/plain' })).body, 'static-content')
+
+  let objectInclude = JSON.parse((await request(server.port, '/qparent?code=object&action=ignored', { 'x-object-include': '1' })).body).qparent.include.piece
+  assert.equal(objectInclude.action, 'meta')
+  assert.deepEqual(objectInclude.query, { code: 'object', action: 'ignored' })
+  assert.deepEqual(objectInclude.url, { action: 'meta' })
+
+  let suffix = '?__proto__=literal&constructor=C&prototype=P&_onTimeout=T&=empty',
+      json = JSON.parse((await request(server.port, '/qspecial' + suffix)).body),
+      expected = Object.fromEntries([['__proto__', 'literal'], ['constructor', 'C'], ['prototype', 'P'], ['_onTimeout', 'T'], ['', 'empty']])
+  assert.deepEqual(json.qspecial.query, expected)
+  assert.deepEqual(json.qspecial.include.piece.query, expected)
+  assert.deepEqual(json.qspecial.include.sibling.query, expected)
+  assert.deepEqual(json.qspecialtail.query, expected)
+  assert.deepEqual(json.qspecial.url, {})
+  assert.deepEqual(json.qspecial.hook, expected)
+  assert.equal((await request(server.port, '/qspecial' + suffix, { accept: 'text/html' })).body, '<p>qspecialtail|C|P|qspecialtail|empty</p>')
+})
+
+
+test('HTTP caches ignore query strings and remain clearable by their existing path keys', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare: prepareQueryFixture })
+  for ( let name of ['qaction', 'qrequest', 'qboth', 'qempty'] ) {
+    let pathname = '/' + name, first = await request(server.port, pathname + '?tracking=first&action=missing'),
+        before = await server.snapshot()
+    assert.equal(JSON.parse(first.body)[name].action, 'handler')
+    assert.equal(JSON.parse(first.body)[name].pathname, pathname)
+    for ( let suffix of ['', '?', '?tracking=second', '?tag=a&tag=b', '?q=two+words', '?q=two%20words'] ) {
+      assert.equal((await request(server.port, pathname + suffix)).body, first.body)
+    }
+    let after = await server.snapshot()
+    assert.deepEqual(after.stored, before.stored)
+    assert.ok(!Object.keys(after.entries).some(key => key.includes('?')))
+    if ( name === 'qboth' ) {
+      await server.snapshot({ route: server.url + pathname })
+      assert.equal((await request(server.port, pathname + '?refill=request')).body, first.body)
+    }
+    await server.snapshot({ route: pathname })
+    await server.snapshot({ route: server.url + pathname })
+    assert.equal(JSON.parse((await request(server.port, pathname + '?cleared=all')).body)[name].calls, 2)
+  }
+  let before = await server.snapshot()
+  for ( let code of ['first', 'second'] ) {
+    let response = await request(server.port, '/qauth?code=' + code + '&state=callback')
+    assert.equal(response.status, 302)
+    assert.equal(response.headers.location, '/signed-in')
+    assert.equal(response.headers['x-auth-code'], code)
+    assert.equal(response.headers['x-auth-call'], code === 'first' ? '1' : '2')
+  }
+  assert.deepEqual((await server.snapshot()).stored, before.stored)
+})
+
+
+test('HTTP includes and string next inherit query maps while sharing path cache entries', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare: prepareQueryFixture }),
+      first = JSON.parse((await request(server.port, '/qparent?source=email')).body).qparent.include.piece
+  for ( let source of ['social', 'tracking'] ) {
+    let response = JSON.parse((await request(server.port, '/qparent?source=' + source)).body).qparent.include.piece
+    assert.deepEqual(response, first)
+  }
+  let target = '/_qhead/action/meta/section/path?section=child&action=ignored',
+      parent = JSON.parse((await request(server.port, '/qparent/section/parent?section=original', { 'x-target': target })).body).qparent
+  assert.equal(parent.include.piece.action, 'meta')
+  assert.deepEqual(parent.include.piece.url, { section: 'path', action: 'meta' })
+  assert.deepEqual(parent.include.piece.query, { section: 'child', action: 'ignored' })
+  assert.equal(parent.query.section, 'original')
+  assert.ok((await server.snapshot()).entries['/_qhead/action/meta/section/path'])
+  let explicit = JSON.parse((await request(server.port, '/qparent', { 'x-target': '/_qhead?source=explicit' })).body).qparent.include.piece
+  assert.deepEqual(explicit, first)
+  let json = JSON.parse((await request(server.port, '/qchain/page/1?source=first', { 'x-target': '/_qtail/action/meta?page=2&action=ignored' })).body)
+  assert.equal(json._qtail.action, 'meta')
+  assert.deepEqual(json._qtail.url, { page: '1', action: 'meta' })
+  assert.deepEqual(json._qtail.query, { source: 'first', page: '2', action: 'ignored' })
+  assert.equal(json._qtail.pathname, '/_qtail/action/meta')
+  assert.equal(json._qtail.parsedPathname, '/_qtail/action/meta')
+  await server.snapshot({ route: server.url + '/qchain/page/1' })
+  let second = JSON.parse((await request(server.port, '/qchain/page/1?source=second', { 'x-target': '/_qtail/action/meta?page=3' })).body)
+  assert.deepEqual(second._qtail, json._qtail)
+  let state = await server.snapshot()
+  assert.equal(state.chain[1].pathname, '/_qtail/action/meta')
+  assert.ok(state.entries['/_qtail/action/meta'])
+  assert.ok(state.entries[server.url + '/qchain/page/1'])
+})
+
+
+test('HTTP query data is inspectable while query names cannot activate debug controls', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { mode: 'development', prepare: prepareQueryFixture }),
+      headers = { accept: 'text/html' },
+      ordinary = await request(server.port, '/qdebug?ctzn_debug=1&ctzn_inspect=context.marker.invoke()', headers),
+      selected = await request(server.port, '/qdebug/ctzn_debug/true/ctzn_inspect/params.query?code=abc&state=xyz', headers),
+      conflicting = await request(server.port, '/qdebug/ctzn_debug/true/ctzn_inspect/context.marker.text?ctzn_inspect=context.marker.invoke()', headers)
+
+  assert.equal(ordinary.status, 200)
+  assert.ok(!ordinary.body.includes('citizen-debug'))
+  assert.equal(selected.status, 200)
+  assert.ok(selected.body.includes('abc'))
+  assert.ok(selected.body.includes('xyz'))
+  assert.equal(conflicting.status, 200)
+  assert.ok(conflicting.body.includes('&amp;lt;&lt;&gt;&amp;&quot;&#39;'))
+  assert.equal((await server.snapshot()).errorReports, 0)
+})
+
+
+function prepareDebugFixture(root) {
+  prepareQueryFixture(root)
+  fs.writeFileSync(path.join(root, 'app/controllers/hooks/request.js'), `
+    export const start = async (params, request) => {
+      request.debugObject = Object.defineProperty({ visible: 'visible-marker' }, 'hidden', { value: 'hidden-marker' })
+      Object.defineProperty(request, 'debugFailure', { get() { throw new Error('private-getter-error') } })
+      Object.defineProperty(request, 'debugVisited', { get() { app.errorReports++; return {} } })
+    }
+  `)
+}
+
+
+test('HTTP debug hardening preserves inspection and rejects expressions without errors or side effects', { timeout: 15000 }, async context => {
+  for ( let errors of ['capture', 'exit'] ) {
+    let server = await fixture(context, errors, false, { mode: 'development', prepare: prepareDebugFixture }),
+        headers = { accept: 'text/html' },
+        inspect = async (selector, { depth = 4, hidden = false, query = '' } = {}) => {
+          let response = await request(server.port, '/qdebug/ctzn_debug/true/ctzn_inspect/' + selector +
+            '/ctzn_debugDepth/' + depth + (hidden ? '/ctzn_debugShowHidden/true' : '') + query, headers)
+          assert.equal(response.status, 200)
+          return response.body.match(/<pre>([\s\S]*?)<\/pre>/)[1]
+        }
+
+    assert.ok((await inspect('params')).includes('query:'))
+    assert.equal(await inspect('params.session'), '{}')
+    assert.ok((await inspect('params.query', { query: '?code=abc&state=xyz' })).includes('abc'))
+    assert.ok((await inspect('params.query[\'a.b\']', { query: '?a.b=literal-key' })).includes('literal-key'))
+    assert.equal(await inspect('context.marker.values[1]'), '&#39;beta&#39;')
+    assert.ok((await inspect('context.marker.invoke')).includes('[Function: invoke]'))
+    assert.ok((await inspect('params.route.parsed.href')).includes(server.url + '/qdebug/'))
+    assert.ok((await inspect('params.route.parsed.pathname')).includes('/qdebug/ctzn_debug/true'))
+    let search = await inspect('params.route.parsed.searchParams', { query: '?tag=first&tag=last' })
+    assert.ok(search.includes('URLSearchParams'))
+    assert.ok(search.includes('first'))
+    assert.ok(search.includes('last'))
+    assert.ok((await inspect('request.socket.remoteAddress')).includes('127.0.0.1'))
+    assert.equal(await inspect('response.statusCode'), '200')
+    assert.equal(await inspect('params.missing.child'), 'undefined')
+    assert.ok(!(await inspect('context.marker.nested', { depth: 0 })).includes('deep-marker'))
+    assert.ok((await inspect('context.marker.nested')).includes('deep-marker'))
+    assert.ok(!(await inspect('request.debugObject')).includes('hidden-marker'))
+    assert.ok((await inspect('request.debugObject', { hidden: true })).includes('hidden-marker'))
+    let text = await inspect('context.marker.text')
+    assert.ok(text.includes('&amp;lt;&lt;&gt;&amp;&quot;&#39;'))
+    assert.equal(await inspect('context.marker.text', { query: '?ctzn_inspect=context.marker.invoke()' }), text)
+    for ( let selector of [
+      'context.marker.invoke()', 'params.query[code]', 'params[', 'CTZN',
+      'params.constructor', 'context.marker.prototype', 'request.debugVisited.constructor',
+      'params[\'__proto__\']', 'params[\'constructor\']', 'params[\'prototype\']'
+    ] ) {
+      assert.equal(await inspect(selector), '&#39;Debug inspection unavailable: invalid property selector.&#39;')
+    }
+    let failure = await inspect('request.debugFailure')
+    assert.equal(failure, '&#39;Debug inspection unavailable: property read failed.&#39;')
+    assert.ok(!failure.includes('private-getter-error'))
+    assert.equal((await request(server.port, '/qdebug', headers)).status, 200)
+    assert.equal((await server.snapshot()).errorReports, 0)
+    assert.equal(server.child.exitCode, null)
+  }
+  let production = await fixture(context, 'exit', false, { debug: true, prepare: prepareDebugFixture }),
+      response = await request(production.port, '/qdebug/ctzn_debug/true/ctzn_inspect/context.marker.invoke()', { accept: 'text/html' })
+  assert.equal(response.status, 200)
+  assert.ok(!response.body.includes('citizen-debug'))
+  assert.equal((await production.snapshot()).errorReports, 0)
 })
 
 

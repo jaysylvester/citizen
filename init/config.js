@@ -111,6 +111,7 @@ function getDefaults(options = {}) {
           cookie: true,
           form: true,
           payload: true,
+          query: true,
           route: true,
           session: true,
           url: true
