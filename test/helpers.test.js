@@ -43,3 +43,24 @@ test('copy still preserves active Node timers', () => {
     clearTimeout(timer)
   }
 })
+
+
+test('URL copies and merges preserve URL data without sharing search parameters', () => {
+  let source = new URL('https://example.test/article?tag=one&tag=two#section'),
+      copies = [helpers.copy(source), helpers.copy({ route: { parsed: source } }).route.parsed, helpers.extend({}, { parsed: source }).parsed]
+
+  for ( let clone of copies ) {
+    assert.ok(clone instanceof URL)
+    assert.notEqual(clone, source)
+    assert.notEqual(clone.searchParams, source.searchParams)
+    assert.equal(clone.href, source.href)
+    assert.deepEqual(clone.searchParams.getAll('tag'), ['one', 'two'])
+    clone.searchParams.append('tag', 'clone')
+    clone.pathname = '/changed'
+  }
+  assert.equal(source.href, 'https://example.test/article?tag=one&tag=two#section')
+  source.searchParams.delete('tag')
+  for ( let clone of copies ) {
+    assert.deepEqual(clone.searchParams.getAll('tag'), ['one', 'two', 'clone'])
+  }
+})

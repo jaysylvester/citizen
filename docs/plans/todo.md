@@ -36,9 +36,10 @@ todo (2.0):
 6. Add public API contract tests that call exported functions and load
    representative helper/model/view modules; type-only smoke tests cannot verify
    `app.log()`, `app.cache.*`, `app.session.end()`, or `app.start()` behavior
-   - Correct the scaffolded application error hook's argument order to
-     `(err, params, request, response, context)` and cover it through a loaded
-     hook module; the current template puts `err` last
+   - Complete: aligned the runtime application error hook with the scaffold's
+     `(params, request, response, context, err)` order, with HTTP coverage through
+     a loaded scaffold hook; corrected the start-hook comment and added 1.x
+     upgrade guidance; the broader public API contract suite remains open
 
 7. Test harness
 
@@ -60,23 +61,21 @@ todo (2.0):
 
 11. Review for request blockers and other single-threaded behavior
 
-12. Forcing `response.contentType` in a controller (README "Forcing a Content
-    Type") leaves the negotiated `Content-Type` header in place
-   - `serve()` sets the header during content negotiation, before the
-     controller runs; only request-cache hits reset it from
-     `response.contentType`
-   - An uncached route that forces JSON returns `Content-Type: text/html` with a
-     JSON body
+12. Fix forced `response.contentType` headers (README "Forcing a Content Type")
+   - Complete: response writing applies the final `response.contentType`,
+     including cache paths; explicit header directives for that format are
+     retained, and controllers sending their own responses set their own headers
+   - Action-cache entries omit Content-Type directives superseded by include
+     format changes; regression coverage checks cold responses and real hits
+   - Forced-format cache lookup policy remains separate under Consider #16
 
-13. `helpers.copy()` turns `URL` instances into empty objects, so controllers
-    and views receive `params.route.parsed` as `{}`; hooks get the real URL
-   - Clone with `new URL(source.href)` before the ordinary-object branch; the
-     clone's `searchParams` keeps duplicate values and is independent of the
-     original
-   - Other class instances are out of scope
-   - Cover `copy()`, `extend()`, controller and include copies, and view
-     context; once fixed, `params.route.parsed.searchParams` exposes repeated
+13. Preserve `URL` instances through `helpers.copy()`
+   - Complete: clone with `new URL(source.href)` before the ordinary-object
+     branch, retaining duplicate search parameters and independent mutation
+   - Covered through `copy()`, `extend()`, controllers, string/object includes,
+     and view context; `params.route.parsed.searchParams` exposes repeated
      query values (#8)
+   - Other class instances are out of scope
 
 14. Object-form `next` without a route shares the first controller's
     action-cache key: a cached first controller loops until the request times
@@ -84,14 +83,11 @@ todo (2.0):
     skipping its redirects
    — plan: open/object-next-cache-key.md
 
-15. String-form `next` loses controller-chain state in the next controller's
-    params and view context
-   - `fireController()` replaces `controllerParams.route` with the freshly
-     parsed next route, whose `chain` is empty
-   - A next view reading `route.chain.previous.output` throws; configured
-     layouts preserve the chain and are covered by #2's escaping regression
-   - Found during #2 integration; repair independently of HTML escaping and
-     #14's action-cache key fix
+15. Preserve controller-chain state in string-form `next`
+   - Complete: replacement routes retain the independently copied chain in
+     controller params and view context, including on action-cache hits
+   - Coverage verifies previous output, mutation isolation, target route fields,
+     and inherited path/query values; #14's action-cache key fix remains separate
 
 Consider (weigh pros/cons):
 

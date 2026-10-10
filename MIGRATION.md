@@ -363,7 +363,23 @@ Debug controls remain path-only, and a selector can inspect `params.query`.
 Query values cannot enable debug or replace a path selector. Production
 suppression and the existing output formatting remain in place.
 
-## 9. Verify
+## 9. Check application hook signatures
+
+Check `app/controllers/hooks/application.js`. The application error hook now
+receives `(params, request, response, context, err)`, matching the 1.x scaffold.
+The 1.x runtime passed `err` first; if your hook was adapted to that order, move
+`err` last, keeping your existing hook body. Hooks that kept the original
+scaffold's parameter order already match:
+
+```javascript
+export const error = async (params, request, response, context, err) => {
+  // Existing error handling
+}
+```
+
+The application start hook receives only `config`: `start(config)`.
+
+## 10. Verify
 
 Confirm that no active JSON configuration or startup citizen settings remain:
 

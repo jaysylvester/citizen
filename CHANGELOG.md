@@ -21,11 +21,15 @@
 * The `citizen` property is no longer accepted by `app.start()` because framework settings must be resolved before application modules load
 * Projects are discovered from `<cwd>/app`; processes starting elsewhere must set the absolute `CITIZEN_APP_PATH` bootstrap value before importing citizen
 * Request-cache keys now use origin plus pathname; query strings do not vary cache keys or eligibility, so routes that must process queries on every request should remain uncached
+* Application error hooks receive `(params, request, response, context, err)`, matching the 1.x scaffold; hooks adapted to the old runtime's `err`-first order must move it last. See [the migration guide](MIGRATION.md#9-check-application-hook-signatures)
 
 * Development `ctzn_inspect` accepts restricted property selectors instead of executable JavaScript; calls, computed expressions, and prototype-related segments are rejected
 
 ## Enhancements and fixes
 
+* URL copies preserve their URL fields and repeated search parameters through controllers, includes, and views, with independent mutable state
+* String-form `next` preserves copied controller-chain state in the next controller's parameters and view context
+* Framework response writing applies the final `response.contentType`; explicit header directives for that format are retained, action-cache hits omit superseded Content-Type directives, and controllers sending their own responses set their own headers
 * Template compilation uses Acorn 8.19.0 with grammar-aware raw markers, one final escaping boundary per ordinary interpolation, and helper names checked against decoded identifiers
 * Compiled views are memoized by path, output mode, and current source; production still reads view files on every render and picks up edits without restarting
 * HTML error fallbacks escape stack text, including failures while rendering error views or their layouts

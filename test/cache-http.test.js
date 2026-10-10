@@ -393,6 +393,325 @@ async function fixture(context, errors = 'capture', yieldErrorHook = false, opti
 }
 
 
+test('scaffolded application error hooks receive request arguments followed by err', { timeout: 10000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare(root) {
+        let template = fs.readFileSync(path.join(projectPath, 'util/templates/hooks/application.js'), 'utf8'),
+            marker = '// Anything you want to happen when the application throws an error'
+
+        assert.ok(template.includes(marker), 'Application error hook template is missing the test instrumentation marker')
+        fs.writeFileSync(path.join(root, 'app/controllers/hooks/application.js'), template.replace(marker, `
+          process.send({ errorHookArgs: {
+            message: err.message, pathname: params.route?.pathname, method: request.method,
+            writableResponse: typeof response.writeHead === 'function', marker: context.errorMarker
+          } })
+        `))
+        fs.writeFileSync(path.join(root, 'app/controllers/hooks/request.js'), 'export const start = async () => ({ errorMarker: \'from-request\' })')
+      } }),
+      hook = once(server.child, 'message'),
+      response = await request(server.port, '/failure'),
+      args = (await hook)[0].errorHookArgs
+
+  assert.equal(response.status, 500)
+  assert.deepEqual(args, {
+    message: 'Expected fixture error', pathname: '/failure', method: 'GET',
+    writableResponse: true, marker: 'from-request'
+  })
+})
+
+
+test('URL instances survive controller, include, and view copies independently', { timeout: 10000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare(root) {
+        fs.writeFileSync(path.join(root, 'app/controllers/hooks/request.js'), `
+          export const start = async params => { app.originalUrl = params.route.parsed }
+        `)
+        fs.writeFileSync(path.join(root, 'app/controllers/routes/urlcopy.js'), `
+          export const handler = async params => {
+            let parsed = params.route.parsed, href = parsed.href
+            parsed.searchParams.append('tag', 'controller')
+            app.controllerUrl = parsed
+            return {
+              local: { href, tags: parsed.searchParams.getAll('tag'), originalHref: app.originalUrl.href },
+              include: { string: '/urlpiece?tag=piece1&tag=piece2', object: { controller: 'urlpiece' } }
+            }
+          }
+        `)
+        fs.writeFileSync(path.join(root, 'app/controllers/routes/urlpiece.js'), `
+          export const handler = async params => {
+            let parsed = params.route.parsed
+            parsed.searchParams.append('tag', 'include')
+            return { local: { pathname: parsed.pathname, tags: parsed.searchParams.getAll('tag') } }
+          }
+        `)
+        fs.writeFileSync(path.join(root, 'app/views/urlcopy.html'), '${(route.parsed.searchParams.append(\'tag\', \'view\'), route.parsed.searchParams.getAll(\'tag\').join(\',\'))}|${app.controllerUrl.searchParams.getAll(\'tag\').join(\',\')}|${app.originalUrl.searchParams.getAll(\'tag\').join(\',\')}|${include.string}|${include.object}')
+        fs.writeFileSync(path.join(root, 'app/views/urlpiece.html'), '${route.parsed.pathname}:${route.parsed.searchParams.getAll(\'tag\').join(\',\')}')
+      } }),
+      pathname = '/urlcopy?tag=one&tag=two',
+      json = await request(server.port, pathname),
+      html = await request(server.port, pathname, { accept: 'text/html' })
+
+  assert.equal(json.status, 200, json.body)
+  assert.deepEqual(JSON.parse(json.body).urlcopy, {
+    href: server.url + pathname, tags: ['one', 'two', 'controller'], originalHref: server.url + pathname,
+    include: {
+      string: { pathname: '/urlpiece', tags: ['piece1', 'piece2', 'include'] },
+      object: { pathname: '/urlpiece', tags: ['include'] }
+    }
+  })
+  assert.equal(html.status, 200, html.body)
+  assert.equal(html.body, 'one,two,controller,view|one,two,controller|one,two|/urlpiece:piece1,piece2,include|/urlpiece:include')
+})
+
+
+test('string next preserves copied chain state on cold and action-cache requests', { timeout: 10000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare(root) {
+    fs.writeFileSync(path.join(root, 'app/controllers/routes/quickchain.js'), `
+      let calls = 0
+      export const handler = async () => ({
+        cache: { action: { lifespan: 'application' } }, local: { calls: ++calls },
+        next: '/quicktail/action/show/id/2?target=yes'
+      })
+    `)
+    fs.writeFileSync(path.join(root, 'app/views/quickchain.html'), 'first:${local.calls}')
+    fs.writeFileSync(path.join(root, 'app/controllers/routes/quicktail.js'), `
+      let calls = 0
+      export const show = async params => {
+        let previous = params.route.chain.quickchain,
+            local = { calls: ++calls, previousCalls: previous.context.local.calls,
+                      previousOutput: previous.output, pathname: params.route.pathname,
+                      id: params.url.id, query: params.query }
+        previous.context.local.calls = 999
+        return { local }
+      }
+    `)
+    fs.writeFileSync(path.join(root, 'app/views/quicktail.html'), '${{route.chain.quickchain.output}}|${local.previousCalls}|${route.chain.quickchain.context.local.calls}|${route.pathname}|${url.id}|${query.parent}|${query.target}|${local.calls}')
+  } })
+
+  for ( let accept of ['text/html', 'application/json'] ) {
+    await context.test(accept, async () => {
+      let pathname = '/quickchain/id/1?parent=keep',
+          first = await request(server.port, pathname, { accept }),
+          before = await server.snapshot(),
+          hit = await request(server.port, pathname, { accept }),
+          after = await server.snapshot()
+
+      assert.equal(first.status, 200, first.body)
+      assert.equal(hit.status, 200, hit.body)
+      assert.deepEqual(after.stored['/quickchain/id/1'][accept], before.stored['/quickchain/id/1'][accept])
+      if ( accept === 'text/html' ) {
+        assert.equal(first.body, 'first:1|1|999|/quicktail/action/show/id/2|2|keep|yes|1')
+        assert.equal(hit.body, 'first:1|1|999|/quicktail/action/show/id/2|2|keep|yes|2')
+      } else {
+        let cold = JSON.parse(first.body), warm = JSON.parse(hit.body)
+
+        assert.deepEqual(warm.quickchain, cold.quickchain)
+        assert.equal(warm.quicktail.previousCalls, cold.quickchain.calls)
+        assert.equal(warm.quicktail.previousOutput, before.stored['/quickchain/id/1'][accept].output)
+        assert.equal(warm.quicktail.calls, cold.quicktail.calls + 1)
+        assert.equal(warm.quicktail.pathname, '/quicktail/action/show/id/2')
+        assert.equal(warm.quicktail.id, '2')
+        assert.deepEqual(warm.quicktail.query, { parent: 'keep', target: 'yes' })
+      }
+    })
+  }
+})
+
+
+test('forced content types update headers while preserving explicit header ordering', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { sessions: true, prepare(root) {
+    let force = `
+      const force = (request, response, stage) => {
+        if ( request.headers['x-force-stage'] === stage ) {
+          response.contentType = request.headers['x-force-type']
+          if ( request.headers['x-force-throw'] ) throw new Error('Expected hook format error')
+        }
+      }
+    `
+
+    fs.writeFileSync(path.join(root, 'app/controllers/hooks/request.js'), `
+      ${force}
+      export const start = async (params, request, response) => { force(request, response, 'request.start') }
+      export const end = async (params, request, response) => { force(request, response, 'request.end') }
+    `)
+    fs.writeFileSync(path.join(root, 'app/controllers/hooks/response.js'), `
+      ${force}
+      export const start = async (params, request, response) => { force(request, response, 'response.start') }
+    `)
+    fs.writeFileSync(path.join(root, 'app/controllers/hooks/session.js'), `
+      ${force}
+      export const start = async (params, request, response) => { force(request, response, 'session.start') }
+    `)
+    fs.writeFileSync(path.join(root, 'app/controllers/hooks/application.js'), `
+      ${force}
+      export const error = async (params, request, response) => { force(request, response, 'application.error') }
+    `)
+    fs.writeFileSync(path.join(root, 'app/controllers/routes/forcedtype.js'), `
+      let calls = 0
+      const types = { json: 'application/json', jsonp: 'application/javascript', html: 'text/html', plain: 'text/plain' }
+      export const handler = async (params, request, response) => {
+        if ( !request.headers['x-force-stage'] ) response.contentType = types[params.url.format]
+        return {
+          local: { calls: ++calls },
+          cache: params.url.cache ? { [params.url.cache]: { lifespan: 'application' } } : {},
+          ...(request.headers['x-force-include'] ? { include: { piece: '/_forceinclude' } } : {}),
+          ...(request.headers['x-force-next'] ? { next: '/_forcenext' } : {}),
+          ...(request.headers['x-explicit-type'] ? { header: {
+            [request.headers['x-explicit-type-name'] || 'Content-Type']: request.headers['x-explicit-type'],
+            'X-Explicit': 'kept'
+          } } : {})
+        }
+      }
+    `)
+    fs.writeFileSync(path.join(root, 'app/views/forcedtype.html'), 'forced:${local.calls}')
+    for ( let controller of ['_forceinclude', '_forcenext'] ) {
+      fs.writeFileSync(path.join(root, 'app/controllers/routes', controller + '.js'), `
+        export const handler = async (params, request, response) => {
+          response.contentType = 'application/json'
+          return { local: { forced: true } }
+        }
+      `)
+    }
+  } })
+
+  await context.test('controllers force every supported format after negotiation', async () => {
+    for ( let [format, type, accept] of [
+      ['json', 'application/json', 'text/html'], ['jsonp', 'application/javascript', '*/*'],
+      ['html', 'text/html', 'application/json'], ['plain', 'text/plain', 'application/json']
+    ] ) {
+      let response = await request(server.port, '/forcedtype/format/' + format + '/callback/show', { accept })
+
+      assert.equal(response.status, 200, response.body)
+      assert.equal(response.headers['content-type'], type)
+      if ( format === 'json' || format === 'jsonp' ) {
+        let body = format === 'jsonp' ? response.body.slice('show('.length, -2) : response.body
+
+        assert.ok(JSON.parse(body).forcedtype.calls > 0)
+        if ( format === 'jsonp' ) {
+          assert.ok(response.body.startsWith('show('))
+        }
+      } else {
+        assert.match(response.body, /^forced:\d+$/)
+      }
+    }
+  })
+
+  for ( let stage of ['request.start', 'session.start', 'request.end', 'response.start'] ) {
+    await context.test(stage + ' forces the format before real request/action cache hits', async () => {
+      for ( let cache of ['request', 'action'] ) {
+        let pathname = '/forcedtype/format/jsonp/cache/' + cache + '/callback/show/stage/' + stage,
+            headers = { accept: '*/*', 'x-force-stage': stage, 'x-force-type': 'application/javascript' },
+            first = await request(server.port, pathname, headers),
+            hit = await request(server.port, pathname, headers)
+
+        assert.equal(first.status, 200, first.body)
+        assert.equal(first.headers['content-type'], 'application/javascript')
+        assert.equal(hit.headers['content-type'], 'application/javascript')
+        assert.ok(first.body.startsWith('show('))
+        assert.ok(JSON.parse(first.body.slice('show('.length, -2)).forcedtype.calls > 0)
+        assert.equal(hit.body, first.body)
+        if ( cache === 'request' ) {
+          let conditional = await request(server.port, pathname, { ...headers, 'if-none-match': hit.headers.etag })
+
+          assert.equal(conditional.status, 304)
+          assert.equal(conditional.headers['content-type'], 'application/javascript')
+          assert.equal(conditional.body, '')
+        }
+      }
+    })
+  }
+
+  await context.test('format changes survive throwing hooks and application error hooks', async () => {
+    for ( let stage of ['request.start', 'session.start', 'request.end', 'response.start', 'application.error'] ) {
+      let response = await request(server.port, '/failure', {
+        accept: 'application/json', 'x-force-stage': stage, 'x-force-type': 'text/plain',
+        ...(stage === 'application.error' ? {} : { 'x-force-throw': 'yes' })
+      })
+
+      assert.equal(response.status, 500, stage)
+      assert.equal(response.headers['content-type'], 'text/plain', stage)
+      assert.ok(response.body.includes(stage === 'application.error' ? 'Expected fixture error' : 'Expected hook format error'), response.body)
+    }
+  })
+
+  await context.test('include format changes update the final response header', async () => {
+    let response = await request(server.port, '/forcedtype/format/html', {
+      accept: 'text/html', 'x-force-include': 'yes', 'x-explicit-type': 'text/html; charset=utf-8'
+    })
+
+    assert.equal(response.status, 200, response.body)
+    assert.equal(response.headers['content-type'], 'application/json')
+    assert.deepEqual(JSON.parse(response.body).forcedtype.include, { piece: { forced: true } })
+  })
+
+  await context.test('action-cache hits do not revive headers superseded by include format changes', async () => {
+    for ( let name of ['Content-Type', 'cOnTeNt-TyPe'] ) {
+      let pathname = '/forcedtype/format/html/cache/action/variant/' + name,
+          first = await request(server.port, pathname, {
+            accept: 'text/html', 'x-force-include': 'yes', 'x-explicit-type': 'text/html; charset=utf-8',
+            'x-explicit-type-name': name
+          }),
+          before = await server.snapshot(),
+          hit = await request(server.port, pathname),
+          after = await server.snapshot()
+
+      for ( let response of [first, hit] ) {
+        assert.equal(response.status, 200, response.body)
+        assert.equal(response.headers['content-type'], 'application/json')
+        assert.equal(response.headers['x-explicit'], 'kept')
+        assert.deepEqual(JSON.parse(response.body).forcedtype.include, { piece: { forced: true } })
+      }
+      assert.equal(hit.body, first.body)
+      assert.deepEqual(before.headers[pathname]['application/json'], { 'X-Explicit': 'kept' })
+      assert.deepEqual(after.stored[pathname]['application/json'], before.stored[pathname]['application/json'])
+    }
+  })
+
+  await context.test('next controllers can replace the parent format and header', async () => {
+    let response = await request(server.port, '/forcedtype/format/html', {
+      accept: 'text/html', 'x-force-next': 'yes', 'x-explicit-type': 'text/html; charset=utf-8'
+    })
+
+    assert.equal(response.status, 200, response.body)
+    assert.equal(response.headers['content-type'], 'application/json')
+    assert.deepEqual(JSON.parse(response.body)._forcenext, { forced: true })
+  })
+
+  await context.test('controller-forced repeats keep headers correct without changing cache lookup policy', async () => {
+    for ( let cache of ['request', 'action'] ) {
+      let pathname = '/forcedtype/format/json/cache/' + cache,
+          first = await request(server.port, pathname, { accept: 'text/html' }),
+          repeat = await request(server.port, pathname, { accept: 'text/html' }),
+          hit = await request(server.port, pathname)
+
+      for ( let response of [first, repeat, hit] ) {
+        assert.equal(response.status, 200)
+        assert.equal(response.headers['content-type'], 'application/json')
+      }
+      assert.equal(JSON.parse(repeat.body).forcedtype.calls, JSON.parse(first.body).forcedtype.calls + 1)
+      assert.equal(hit.body, first.body)
+    }
+  })
+
+  await context.test('explicit header directives still run after content-type assignments', async () => {
+    let type = 'application/json; charset=utf-8'
+
+    for ( let cache of ['', 'request', 'action'] ) {
+      let pathname = '/forcedtype/format/json' + (cache ? '/cache/' + cache : '') + '/variant/explicit',
+          first = await request(server.port, pathname, { accept: 'text/html', 'x-explicit-type': type }),
+          repeat = await request(server.port, pathname, { accept: 'application/json', 'x-explicit-type': type })
+
+      for ( let response of [first, repeat] ) {
+        assert.equal(response.status, 200)
+        assert.equal(response.headers['content-type'], type)
+        assert.ok(JSON.parse(response.body).forcedtype.calls > 0)
+      }
+      if ( cache ) {
+        assert.equal(repeat.body, first.body)
+      }
+    }
+  })
+})
+
+
 test('HTTP cache fixes preserve directive options, validators, and rendering', { timeout: 30000 }, async context => {
   let server = await fixture(context)
 

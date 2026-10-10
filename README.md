@@ -908,6 +908,14 @@ export const handler = async (params, request, response) => {
 
 You can force a global response type across all requests within an [event hook](#application-event-hooks).
 
+citizen applies the final `response.contentType` when sending the rendered response. An explicit `Content-Type` header directive is retained if the final format matches `response.contentType` at the time that directive was applied. A different final format replaces that header. If you send the response yourself using `response.write()`, `response.writeHead()`, or `response.end()`, set its header yourself before writing:
+
+```js
+response.contentType = 'application/json'
+response.setHeader('Content-Type', response.contentType)
+response.end(JSON.stringify({ message: 'Hello' }))
+```
+
 
 
 ## Helpers
@@ -1974,6 +1982,8 @@ app/
       response.js     // exports start() and end()
       session.js      // exports start() and end()
 ```
+
+Application hooks receive `start(config)` and `error(params, request, response, context, err)`. The error hook runs for 500-level errors.
 
 `request.start()`, `request.end()`, and `response.start()` are called before your controller is fired, so the output from those events is passed from each one to the next, and ultimately to your controller via the `context` argument. Exactly what actions they perform and what they output—content, citizen directives, custom directives—is up to you.
 
