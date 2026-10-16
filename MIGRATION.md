@@ -19,7 +19,7 @@ view composition and trusted markup as described in step 7 below.
 | citizen settings passed to `app.start()` | `citizen` in `citizen.config.js` |
 | Application settings passed to `app.start()` | Still supported as optional application overrides |
 | Raw `${…}` output in HTML template literal views | Escaped `${…}` data; `${{…}}` for trusted markup |
-| Ignored query strings | Decoded `params.query`, separate from path-only `params.url`, with last-value wins |
+| Ignored query strings | Decoded `params.query`, separate from path-only `params.url`, with first-value selection matching `URLSearchParams.get()` |
 | Query-bearing request-cache keys | Origin plus pathname; queries do not vary cache keys or eligibility |
 | Executable `ctzn_inspect` expressions | Restricted property selectors |
 
@@ -316,8 +316,10 @@ back to an older compiled function or raw source.
 
 Query strings now reach `params.query`, while `params.url` remains the citizen
 path scope. Query names and values are decoded once, stay flat and
-case-sensitive, and remain strings; repeated decoded names use their last
-value. Path values keep their existing encoding. Review callback handlers and
+case-sensitive, and remain strings; repeated decoded names use their first
+value, matching `URLSearchParams.get()`, including an empty first value.
+Use `params.route.parsed.searchParams.getAll(name)` when every occurrence is
+needed. Path values keep their existing encoding. Review callback handlers and
 applications that parsed query strings manually.
 
 Queries do not select framework routing fields. `action`, `direct`, controller
@@ -337,13 +339,20 @@ and other routes that must act on query values on every request should remain
 uncached. A conditional cache directive returned by the controller cannot
 prevent a pre-existing cache hit. Put values that distinguish cached output in
 the citizen path, or leave that route uncached. Inherited values do not vary a
-child action's key. Use its pathname for exact action clearing and the origin
-plus pathname for request clearing. The independent route-less
-object-next identity repair remains tracked separately.
+child action's key. Use `params.route.cacheKey` for exact action clearing
+and the origin plus pathname for request clearing.
 
-Existing path allowlist checks and error handling remain unchanged, including
-inherited path checks on child actions and the `exit` policy. Query names stay
-outside those checks because they are absent from `params.url`.
+Object `next` without `params.route` now uses the selected controller/action as
+its action-cache key, such as `/article` or `/article/action/edit`, while its
+public route fields and inherited data remain intact. These entries are shared
+across parent requests. If the output depends on inherited values, express
+them in a string `next` target's pathname or leave that action uncached.
+
+Requested actions and explicit `next`/include targets retain their path
+allowlist checks, including inherited path parameters. Route-less object
+`next` has no own path inputs, so its action-cache allowlist does not check
+inherited values. Error handling, including the `exit` policy, is unchanged.
+Query names stay outside those checks because they are absent from `params.url`.
 
 Replace executable `ctzn_inspect` expressions with selectors rooted at
 `params`, `request`, `response`, or `context`. Dot properties, quoted literal

@@ -20,7 +20,7 @@ callbacks and other routes that must process each query should remain uncached.
 ## Scope cleanup — 2026-10-09
 
 Review against the new direction removed cache metadata records, router cache
-helpers, `actionCacheKey`, cached-include wrappers, route/path cloning changes,
+helpers, `cacheKey`, cached-include wrappers, route/path cloning changes,
 and own-route allowlist checks. Existing action caching and path parsing need
 no changes. Request caching needs only the two key expressions that omit the
 query from lookup and insertion.
@@ -42,28 +42,31 @@ params.url   // { id: 'path' }
 params.query // { code: 'abc', state: 'xyz', id: 'query' }
 ```
 
-`parseRoute()` uses `Object.fromEntries(url.searchParams)` for
-`route.queryParams`; `serve()` exposes it as `params.query`. Hooks, controllers,
+`parseRoute()` uses native `url.searchParams.get(name)` for each unique decoded
+name and materializes `route.queryParams` with `Object.fromEntries()`;
+`serve()` exposes it as `params.query`. Hooks, controllers,
 and views receive the new scope. `request.url`, `route.url`, and the parsed
 URL retain the complete query. Framework routing remains path-only.
 
 | Query | `params.query` |
 | --- | --- |
-| `?tag=first&tag=last` | `{ tag: 'last' }` |
+| `?tag=first&tag=last` | `{ tag: 'first' }` |
+| `?tag=&tag=last` | `{ tag: '' }` |
 | `?label=two+words&literal=%2B` | `{ label: 'two words', literal: '+' }` |
 | `?empty=&flag` | `{ empty: '', flag: '' }` |
 | `?filter%5Bid%5D=237&a.b=flat` | `{ 'filter[id]': '237', 'a.b': 'flat' }` |
 
 Names remain literal, flat, and case-sensitive. Values remain strings, decoded
 once with the native URL parser's malformed-escape behavior. Repeated decoded
-names use their last value. Own keys such as `__proto__`, `constructor`,
-`prototype`, and `_onTimeout` survive independent copies and merges. Timer
+names use their first value, matching `URLSearchParams.get()`. Own keys such
+as `__proto__`, `constructor`, `prototype`, and `_onTimeout` survive independent
+copies and merges. Timer
 objects retain their existing helper-copy behavior.
 
 Path grammar and encoding are unchanged. `/article/q/a%20b` supplies
 `params.url.q === 'a%20b'`; `?q=a%20b` supplies `params.query.q === 'a b'`.
 Applications needing all duplicates can use
-`new URL(request.url, params.route.base).searchParams.getAll('tag')`.
+`params.route.parsed.searchParams.getAll('tag')`.
 
 Query names such as `action`, `direct`, `callback`, `ctzn_*`, and controller
 names are ordinary data. They do not select actions, descriptors, direct
@@ -118,7 +121,7 @@ independently planned and unimplemented:
   separate query scope does not expand their path-based control surfaces.
 - Nonfatal path-cache allowlist diagnostics. Existing application error-hook
   and `citizen.errors` behavior is retained by this feature.
-- URL copying (#13), [object-next cache identity](../open/object-next-cache-key.md)
+- URL copying (#13), [object-next cache identity](object-next-cache-key.md)
   (#14), and string-next chain state (#15).
 - Method policy, eviction, single-flight, and forced-format cache architecture.
 
@@ -145,6 +148,29 @@ The fallback retains the controller's initial params copy. These cleanups
 preserve query isolation, special keys, routing, and cache behavior.
 The full suite passes **135 tests** on Node.js **24.13.1**, with no failures
 or skips; ESLint and `git diff --check` pass.
+
+## Native repeated-value selection — 2026-10-16
+
+Migration review identified an unnecessary difference from native
+`URLSearchParams.get()`: directly converting the search-parameter iterator
+with `Object.fromEntries()` selected the last repeated value. Query parsing
+was already native; the plain-object conversion introduced the mismatch.
+
+The conversion now enumerates unique decoded names and reads each with native
+`get()`, preserving the first value, including an empty first value. The
+result remains a plain object with special names as own data properties.
+The parsed URL keeps every occurrence for native `getAll()` calls.
+This supersedes the earlier last-value decision in the historical plan.
+
+Router regressions compare query values directly with native `get()` and
+cover encoded duplicate names, empty values/names, Unicode, and special keys.
+HTTP regressions cover first-value selection through hooks, controllers,
+views, includes, and string `next` targets. README, MIGRATION, CHANGELOG,
+and todo record the updated contract.
+
+Validation on Node.js **24.13.1**: `npm test` passes **164 tests**, with no
+failures or skips. ESLint passes for the changed runtime/test files and
+`git diff --check` passes.
 
 ## Future work
 

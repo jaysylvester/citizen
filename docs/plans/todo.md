@@ -1,26 +1,26 @@
 todo (2.0):
 
 1. Comprehensive security review (XSS, cookie parsing, injection, config, log file/stdout contents, CORS implementation)
-   - Add request-level regression coverage for literal CORS origins containing
+  - Add request-level regression coverage for literal CORS origins containing
      regular-expression metacharacters
-   - Complete: replaced development-mode `ctzn_inspect` `eval()` with restricted
+  - Complete: replaced development-mode `ctzn_inspect` `eval()` with restricted
      property selectors; implemented independently of #8; review follow-up
      complete, with shared debug scope selection; 135 tests pass on
      Node.js 24.13.1
      — plan: done/debug-inspect-selector.md
-   - Validate JSONP callbacks and reject invalid ones with a nonfatal 400;
+  - Validate JSONP callbacks and reject invalid ones with a nonfatal 400;
      forced-format acceptance depends on #12
      — plan: open/jsonp-callback-validation.md
-   - Honor hook and controller redirects on direct requests; `direct` only
+  - Honor hook and controller redirects on direct requests; `direct` only
      skips `next` and the default layout
      — plan: open/direct-request-redirects.md
-   - Review query/OAuth values such as `code` and `state` in access logs and
+  - Review query/OAuth values such as `code` and `state` in access logs and
      debug output, alongside configuration secrets
      — notes: done/url-query-params-history.md#smaller-items
 
 2. HTML escaping in template literal views using double-bracket notation ${{local.whatever}}
    — plan: done/html-escaping-double-bracket.md
-   - Complete: compiler, renderer, error fallbacks, and migration documentation
+  - Complete: compiler, renderer, error fallbacks, and migration documentation
      implemented and review corrections applied; 118 tests pass on Node.js
      24.13.1, with 115 passing and 3 unsupported-syntax skips on Node.js 22.0.0
 
@@ -30,13 +30,13 @@ todo (2.0):
 
 5. Fix cache correctness and retain the first completed cold-cache entry
    — plan: open/cache-correctness.md
-   - Confirmed fixes and first-entry retention implemented; remaining cache
+  - Confirmed fixes and first-entry retention implemented; remaining cache
      proposals and API decisions are tracked under "Consider" below
 
 6. Add public API contract tests that call exported functions and load
    representative helper/model/view modules; type-only smoke tests cannot verify
    `app.log()`, `app.cache.*`, `app.session.end()`, or `app.start()` behavior
-   - Complete: aligned the runtime application error hook with the scaffold's
+  - Complete: aligned the runtime application error hook with the scaffold's
      `(params, request, response, context, err)` order, with HTTP coverage through
      a loaded scaffold hook; corrected the start-hook comment and added 1.x
      upgrade guidance; the broader public API contract suite remains open
@@ -45,13 +45,15 @@ todo (2.0):
 
 8. Parse URL query params into params.query, separate from citizen path params
    — plan: done/url-query-params.md
-   - Complete: decoded flat queries, independent inherited scopes, path-only
+  - Complete: decoded flat queries, independent inherited scopes, path-only
      routing, and query-independent caching; existing path allowlists unchanged
-   - Direction updated 2026-10-09: queries do not vary cache keys or eligibility;
+  - Direction updated 2026-10-09: queries do not vary cache keys or eligibility;
      developers decide which routes are appropriate to cache
-   - HTML escaping (#2) and independent debug hardening under #1 are complete;
+  - Duplicate selection updated 2026-10-16: use native `URLSearchParams.get()`
+     for each name, so the first value wins, including an empty first value
+  - HTML escaping (#2) and independent debug hardening under #1 are complete;
      cache diagnostic policy changes remain deferred
-   - 130 tests pass on Node.js 24.13.1; cleanup validation is recorded in the plan
+  - 130 tests pass on Node.js 24.13.1; cleanup validation is recorded in the plan
 
 9. Validate and implement 1.x -> 2.x migration automation
    — guide: ../../MIGRATION.md
@@ -62,32 +64,43 @@ todo (2.0):
 11. Review for request blockers and other single-threaded behavior
 
 12. Fix forced `response.contentType` headers (README "Forcing a Content Type")
-   - Complete: response writing applies the final `response.contentType`,
+  - Complete: response writing applies the final `response.contentType`,
      including cache paths; explicit header directives for that format are
      retained, and controllers sending their own responses set their own headers
-   - Action-cache entries omit Content-Type directives superseded by include
+  - Action-cache entries omit Content-Type directives superseded by include
      format changes; regression coverage checks cold responses and real hits
-   - Forced-format cache lookup policy remains separate under Consider #16
+  - Forced-format cache lookup policy remains separate under Consider #16
 
 13. Preserve `URL` instances through `helpers.copy()`
-   - Complete: clone with `new URL(source.href)` before the ordinary-object
+  - Complete: clone with `new URL(source.href)` before the ordinary-object
      branch, retaining duplicate search parameters and independent mutation
-   - Covered through `copy()`, `extend()`, controllers, string/object includes,
+  - Covered through `copy()`, `extend()`, controllers, string/object includes,
      and view context; `params.route.parsed.searchParams` exposes repeated
      query values (#8)
-   - Other class instances are out of scope
+  - Other class instances are out of scope
 
 14. Object-form `next` without a route shares the first controller's
     action-cache key: a cached first controller loops until the request times
     out, and a cached next controller replaces the first on warm requests,
     skipping its redirects
-   — plan: open/object-next-cache-key.md
+   — plan: done/object-next-cache-key.md
+  - Complete: lookup and insertion share a captured controller/action key;
+     `params.route.cacheKey` exposes it without replacing the inherited
+     route, and route-less targets have no own path inputs to check
+  - Coverage includes cold/warm cache combinations, parent redirects,
+     HTML/JSON, selected actions, explicit routes, shared entries, query data,
+     exact clearing, and mutation isolation
+  - 164 tests pass on Node.js 24.13.1; validation is recorded in the plan
 
 15. Preserve controller-chain state in string-form `next`
-   - Complete: replacement routes retain the independently copied chain in
+  - Complete: replacement routes retain the independently copied chain in
      controller params and view context, including on action-cache hits
-   - Coverage verifies previous output, mutation isolation, target route fields,
-     and inherited path/query values; #14's action-cache key fix remains separate
+  - Coverage verifies previous output, mutation isolation, target route fields,
+     and inherited path/query values; #14's action-cache key fix is complete
+
+16. Public session API to allow updating open sessions outside the controller chain
+  - Ending a session by key/value already exists (is the current method optimal?), so identifying a session and manipulating its contents based on the same mechanism is possible
+  - Pass in object containing session variables to merge, just like the controller session directive
 
 Consider (weigh pros/cons):
 
@@ -95,7 +108,7 @@ These entries track deferred proposals and open decisions. Scope and landing
 requirements are selected separately from the implementation tasks above.
 
 1. Self-contained includes/components
-   - Component directory containing controller and deps, frontend JS/CSS, bundled into site files for deployment
+  - Component directory containing controller and deps, frontend JS/CSS, bundled into site files for deployment
 
 2. Get rid of controllers directory and move routes and hooks up to the app directory
 
@@ -110,41 +123,41 @@ requirements are selected separately from the implementation tasks above.
    — notes: done/url-query-params.md#future-work
 
 6. Single-flight coordination for simultaneous cold-cache requests
-   - Decide automatic versus opt-in enablement, GET/HEAD in-flight equivalence,
+  - Decide automatic versus opt-in enablement, GET/HEAD in-flight equivalence,
      whether to coalesce action fills, and which hooks/context work remains
      per request
-   - Preserve dynamic cache decisions and release followers on failures,
+  - Preserve dynamic cache decisions and release followers on failures,
      redirects, non-cacheable results, and disconnects; decide whether work
      continues after the leader disconnects
    — proposal: open/cache-correctness.md#proposed-cold-fill-design
    — decisions: cache plan 3–6
 
 7. HTTP method eligibility and cache identity for request and action caching
-   - Decide reuse across GET/POST and other methods, GET/HEAD equivalence, and
+  - Decide reuse across GET/POST and other methods, GET/HEAD equivalence, and
      consistency between completed entries and any future in-flight keys
    — notes: open/cache-correctness.md#key-selection-and-request-methods
    — decision: cache plan 8 (method policy remains open)
 
 8. Stronger cache invalidation during clear and hot reload
-   - Decide whether pre-clear work may publish afterward, and address the
+  - Decide whether pre-clear work may publish afterward, and address the
      interval between clearing and loading replacement modules
    — notes: open/cache-correctness.md#clear-and-hot-reload-timing
    — decision: cache plan 7
 
 9. Consistent default ETags for cold responses and retained cache entries
-   - Decide whether insertion should return the selected record so concurrent
+  - Decide whether insertion should return the selected record so concurrent
      cold writers can use the retained entry's validator; a shared cold/hit
      response path is another possible approach
    — decision: cache plan 9
    — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
 
 10. Cache lifespan validation and fallback policy
-    - Define handling of invalid types, zero, negative, and non-finite values
+   - Define handling of invalid types, zero, negative, and non-finite values
     — decision: cache plan 1
     — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
 
 11. Support explicit `undefined` as a cached value
-    - Current behavior treats it as an omitted value; changing that is a
+   - Current behavior treats it as an omitted value; changing that is a
       separate API decision
     — decision: cache plan 2
     — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
@@ -154,7 +167,7 @@ requirements are selected separately from the implementation tasks above.
     — notes: open/cache-correctness.md#file-cache-enablement-and-reset-defaults
 
 13. File-cache enablement and default reset policy
-    - Decide whether file caching follows application or static enablement,
+   - Decide whether file caching follows application or static enablement,
       and application or static `resetOnAccess` defaults
     — decision: cache plan 12
     — notes: open/cache-correctness.md#file-cache-enablement-and-reset-defaults
@@ -164,39 +177,39 @@ requirements are selected separately from the implementation tasks above.
     — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
 
 15. Evaluate whether retired invalid-URL-cache-parameter modes should return
-    - Nonfatal path-cache diagnostics remain deferred with this policy review;
+   - Nonfatal path-cache diagnostics remain deferred with this policy review;
       #8 retains existing error-hook and exit behavior
     — decision: cache plan 13
     — notes: open/cache-correctness.md#design-and-api-decisions-not-confirmed-bugs
 
 16. Cache reuse when a controller forces a different response content type
-    - Lookup currently uses the negotiated type while insertion uses the forced
+   - Lookup currently uses the negotiated type while insertion uses the forced
       one, so mismatched requests keep missing
-    - Classify and select the lookup contract separately from #12's header fix
+   - Classify and select the lookup contract separately from #12's header fix
       and JSONP validation
     — decision: cache plan 17
     — notes: open/cache-correctness.md#forced-content-types-and-the-cache
 
 17. Public trusted-HTML/raw-value API, such as `SafeString` or `raw()`
-    - Evaluate separately from #2's selected `${{…}}` syntax; the current
+   - Evaluate separately from #2's selected `${{…}}` syntax; the current
       implementation plan keeps include values as strings
     — notes: done/html-escaping-double-bracket.md#implementation-readiness-review-and-selected-compiler-policy
 
 18. Define `helpers.copy()` behavior for class instances beyond supported types
-    - Decide preservation versus cloning independently of the bounded URL fix
+   - Decide preservation versus cloning independently of the bounded URL fix
       in #13; do not silently expand that repair
     — notes: done/url-query-params-history.md#repair-url-copying-in-helpers
 
 19. Standalone migration CLI after the #9 agent workflow is validated
-    - Evaluate only after exercising the workflow against representative apps
+   - Evaluate only after exercising the workflow against representative apps
     — proposal: open/migration-1-to-2.md#possible-cli-after-the-workflow-stabilizes
 
 20. Convenience translation from pathnames to full request-cache keys
-    - Decide origin/query handling independently of current supplied-key lookup
+   - Decide origin/query handling independently of current supplied-key lookup
       and exact-match clearing
     — proposal: open/cache-correctness.md#6-route-only-exists-confirmed-documented-bug
 
 21. Cache API option precedence for mixed selectors such as `{ file, key }`
-    - Evaluate separately from the repaired custom file-key replacement and
+   - Evaluate separately from the repaired custom file-key replacement and
       existing lookup/clear behavior
     — notes: open/cache-correctness.md#2-make-cacheexists-total-for-valid-lookup-shapes

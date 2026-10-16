@@ -7,20 +7,27 @@ const request = url => ({ url, headers: { host: 'example.test' } }),
       parse = url => router.parseRoute(request(url), 'http')
 
 
-test('query scope decodes flat strings independently of citizen path parameters', () => {
+test('query scope matches native URLSearchParams.get() independently of citizen path parameters', () => {
   for ( let [url, pathParams, queryParams] of [
     ['/article', {}, {}], ['/article?id=237&page=2', {}, { id: '237', page: '2' }],
     ['/article/id/237?id=999', { id: '237' }, { id: '999' }],
-    ['/article?tag=first&tag=last', {}, { tag: 'last' }],
+    ['/article?tag=first&tag=last', {}, { tag: 'first' }],
+    ['/article?tag=&tag=last&flag&flag=later', {}, { tag: '', flag: '' }],
     ['/article?label=two+words&literal=%2B', {}, { label: 'two words', literal: '+' }],
     ['/article?empty=&flag', {}, { empty: '', flag: '' }],
     ['/article?filter%5Bid%5D=237&a.b=flat', {}, { 'filter[id]': '237', 'a.b': 'flat' }],
     ['/article/q/a%20b?q=a%20b', { q: 'a%20b' }, { q: 'a b' }],
-    ['/article?%61=first&a=last&A=upper&=empty', {}, { a: 'last', A: 'upper', '': 'empty' }],
+    ['/article?%61=first&a=last&A=upper&=empty&=later', {}, { a: 'first', A: 'upper', '': 'empty' }],
+    ['/article?two+words=first&two%20words=last&caf%C3%A9=one&caf%C3%A9=two', {}, { 'two words': 'first', café: 'one' }],
     ['/article?caf%C3%A9=%F0%9F%8C%8E&bad=%ZZ&utf=%FF', {}, { café: '🌎', bad: '%ZZ', utf: '�' }]
   ] ) {
-    assert.deepEqual(parse(url).urlParams, pathParams, url)
-    assert.deepEqual(parse(url).queryParams, queryParams, url)
+    let route = parse(url)
+
+    assert.deepEqual(route.urlParams, pathParams, url)
+    assert.deepEqual(route.queryParams, queryParams, url)
+    for ( let [name, value] of Object.entries(route.queryParams) ) {
+      assert.equal(value, route.parsed.searchParams.get(name), url + ': ' + name)
+    }
   }
 })
 
@@ -50,7 +57,8 @@ test('query parsing retains the untouched request and replacement route URLs', (
   assert.equal(route.url, 'http://example.test/article/id/237?id=999&id=998#fragment')
   assert.equal(route.pathname, '/article/id/237')
   assert.deepEqual(route.urlParams, { id: '237' })
-  assert.deepEqual(route.queryParams, { id: '998' })
+  assert.deepEqual(route.queryParams, { id: '999' })
+  assert.deepEqual(route.parsed.searchParams.getAll('id'), ['999', '998'])
   assert.deepEqual(httpRequest, original)
   let replacement = router.parseRoute(httpRequest, 'http', '/_head?action=meta')
   assert.deepEqual(replacement.urlParams, {})
@@ -61,7 +69,7 @@ test('query parsing retains the untouched request and replacement route URLs', (
 
 
 test('special query names remain ordinary own properties without changing path params', () => {
-  let route = parse('/article?__proto__=query&constructor=C&prototype=P&_onTimeout=T'),
+  let route = parse('/article?__proto__=query&__proto__=later&constructor=C&constructor=later&prototype=P&_onTimeout=T'),
       expected = Object.fromEntries([['__proto__', 'query'], ['constructor', 'C'], ['prototype', 'P'], ['_onTimeout', 'T']])
 
   assert.deepEqual(route.urlParams, {})

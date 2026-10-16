@@ -7,7 +7,7 @@
 > [debug selectors](debug-inspect-selector.md),
 > [JSONP callbacks](../open/jsonp-callback-validation.md),
 > [direct-request redirects](../open/direct-request-redirects.md),
-> [object `next` cache keys](../open/object-next-cache-key.md), and the URL-copy bug
+> [object `next` cache keys](object-next-cache-key.md), and the URL-copy bug
 > (todo #13). Where this snapshot conflicts with those documents, they take
 > precedence. Step numbers, status lines, and "this plan" references below
 > describe the pre-split document.
@@ -388,7 +388,7 @@ the application must put that value explicitly into its target route or avoid
 caching that action. This applies to inherited path and query parameters alike.
 
 Make the key available on the parameters passed to each controller as
-`params.route.actionCacheKey` so applications can target it with
+`params.route.cacheKey` so applications can target it with
 `app.cache.clear({ route })`. Set it on that controller's copied route without
 mutating the original request or another chain link. For object next, this is
 the derived key even though pathname/controller/action/parsed still describe
@@ -441,7 +441,7 @@ change that selection. Preserve existing default action and view selection.
 
 For object next without `params.route`, leave the next controller's existing
 `params.route.pathname`, `controller`, `action`, `descriptor`, `parsed`, and URL
-parameter inheritance unchanged. Add only the per-action `actionCacheKey` to
+parameter inheritance unchanged. Add only the per-action `cacheKey` to
 its copied route. For example, `/first/id/5?source=email` followed by object
 next to `second` still exposes the original pathname and parsed query to that
 controller, but its action key is `/second`, not the first controller's key.
@@ -602,7 +602,7 @@ examples with valid and invalid query names. Update the include-cache warning
 to cover both path and query syntax: inherited values do not vary an action's
 key, and values affecting cached output must be explicit in its target route.
 For route-less object next, use string next to express such inputs explicitly;
-its public route remains inherited and its derived `actionCacheKey` is separate.
+its public route remains inherited and its derived `cacheKey` is separate.
 Explain own-route action insertion versus request-name insertion, the exemption
 for each checked route's path-only descriptor, and the removal of inherited
 path/query names from child eligibility. Parent input must not make cold child
@@ -743,7 +743,7 @@ its scaffolded child-process fixtures:
   no replay loop, and unchanged public pathname/controller/action/descriptor/
   parsed URL fields for route-less object next, including R6 searchParams access.
   The inherited map remains available but does not enter the child's name check.
-  Verify `params.route.actionCacheKey` and exact targeted clearing, without
+  Verify `params.route.cacheKey` and exact targeted clearing, without
   mutating another link or the original full URL used for request caching.
 
 Run focused router, helper, and HTTP regressions, then `npm test`. Include the
@@ -1455,7 +1455,7 @@ from the original request to `/second`, including the R6 `searchParams` access.
 State whether normalization changes `params.route` or only the action key.
 
 Recommendation: derive the action key from the selected controller and action,
-expose it as `actionCacheKey` without replacing the route, and leave
+expose it as `cacheKey` without replacing the route, and leave
 `params.route` unchanged. A cache repair should not change the controller API.
 
 Under R1, an object `next` entry is shared across requests either way. Object
@@ -1621,7 +1621,7 @@ superseded where it checked inherited names on child actions.
 For S1, the selected controller/action determines a separate internal identity
 used at both lookup and insertion. Route-less object next keeps its existing
 pathname, controller, action, descriptor, parsed URL, and inherited URL scope,
-with a per-action `params.route.actionCacheKey` added to that controller's copy.
+with a per-action `params.route.cacheKey` added to that controller's copy.
 Explicit route-bearing next directives retain their existing replacement-route
 behavior. The rationale is to repair collisions without an unrelated controller
 API change. Added the next-only cached regression alongside first-only/both
@@ -1662,3 +1662,17 @@ selector repair from this feature. Existing path behavior remains intact;
 request-cache lookup/insertion omit queries with two key-expression changes.
 The current contract and validation are in [the active plan](url-query-params.md).
 Earlier merged-query decisions in this archive are superseded.
+
+
+## Native repeated-value selection — 2026-10-16
+
+The maintainer identified the inconsistent repeated-value selection while
+migrating an application from manual `URLSearchParams.get()` calls. Query
+parsing already used the native URL parser; `Object.fromEntries(searchParams)`
+introduced last-value selection during conversion to a plain object.
+
+The current implementation now reads each unique decoded name with native
+`URLSearchParams.get()`, preserving the first value, including an empty first
+value. `params.query` stays a flat string map, and the parsed URL retains all
+occurrences for `getAll()`. Earlier last-value statements in this historical
+snapshot are superseded by [the current contract](url-query-params.md#parameter-contract).

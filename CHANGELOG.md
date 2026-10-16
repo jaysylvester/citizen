@@ -29,6 +29,7 @@
 
 * URL copies preserve their URL fields and repeated search parameters through controllers, includes, and views, with independent mutable state
 * String-form `next` preserves copied controller-chain state in the next controller's parameters and view context
+* Object-form `next` without an explicit route caches under the selected controller/action key, preventing parent-key collisions, replay loops, and skipped parent directives; entries are shared across parent requests, and route controllers expose their key as `params.route.cacheKey`
 * Framework response writing applies the final `response.contentType`; explicit header directives for that format are retained, action-cache hits omit superseded Content-Type directives, and controllers sending their own responses set their own headers
 * Template compilation uses Acorn 8.19.0 with grammar-aware raw markers, one final escaping boundary per ordinary interpolation, and helper names checked against decoded identifiers
 * Compiled views are memoized by path, output mode, and current source; production still reads view files on every render and picks up edits without restarting
@@ -36,7 +37,7 @@
 * Development debug output escapes all five HTML characters and preserves literal dollar sequences during insertion into views
 * Debug selectors preserve literal bracket keys, array indexes, and ordinary accessor reads; invalid selectors and throwing getters produce bounded diagnostics without error hooks or process exits
 * Request logs, post-response logs, and configured HTML debug output share scope selection, including the `query` scope
-* Query strings supply decoded flat `params.query` data to hooks, controllers, and views independently of citizen path parameters and framework routing; repeated names use their last value
+* Query strings supply decoded flat `params.query` data to hooks, controllers, and views independently of citizen path parameters and framework routing; repeated names use their first value, matching native `URLSearchParams.get()`
 * Query parameter copying and inheritance preserve special own keys such as `__proto__` and `_onTimeout` without sharing mutable maps
 * The scaffold now works from the project root, updates the existing package, and creates `.env`, `.env.example`, `citizen.config.js`, and an idempotent Git ignore rule
 * The scaffold no longer creates a duplicate package or an `app/config` directory

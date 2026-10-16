@@ -510,7 +510,7 @@ params.query // { id: '999', page: '2' }
 
 Path parameter names may contain letters, numbers, underscores, and dashes, but must start with a letter or underscore. Path values keep their existing encoding: `/article/q/a%20b` supplies `params.url.q === 'a%20b'`.
 
-Query names and values are decoded once and remain strings. `?label=two+words&literal=%2B` supplies `{ label: 'two words', literal: '+' }`. Repeated decoded names use the last value; `?tag=first&tag=last` supplies `{ tag: 'last' }`. Empty values and bare flags supply `''`. Names are literal and case-sensitive: dots, brackets, empty names, and names such as `__proto__` stay ordinary own properties rather than becoming nested objects. To read every repeated occurrence, use `new URL(request.url, params.route.base).searchParams.getAll('tag')`.
+Query names and values are decoded once and remain strings. `?label=two+words&literal=%2B` supplies `{ label: 'two words', literal: '+' }`. Repeated decoded names use the first value, matching `URLSearchParams.get()`; `?tag=first&tag=last` supplies `{ tag: 'first' }`, and `?tag=&tag=last` supplies `{ tag: '' }`. Empty values and bare flags supply `''`. Names are literal and case-sensitive: dots, brackets, empty names, and names such as `__proto__` stay ordinary own properties rather than becoming nested objects. To read every repeated occurrence, use `params.route.parsed.searchParams.getAll('tag')`.
 
 Routing uses the citizen path exclusively. Queries named `action`, `direct`, `callback`, or `ctzn_*`, and queries named after a controller, are ordinary data in `params.query`; they do not select actions, direct responses, JSONP callbacks, debug controls, or descriptors. `/article/action/edit?action=review` selects `edit()` and supplies `params.query.action === 'review'`.
 
@@ -1472,6 +1472,8 @@ Each controller in the chain has access to the previous controller's context and
 
 String `next` and include routes extend the original request's path and query scopes separately. A target's path parameters override inherited `params.url` values; its query parameters override inherited `params.query` values. For example, `/article/page/1?code=parent&page=original` including `/_head/page/2?page=child` supplies `params.url.page === '2'` and `params.query === { code: 'parent', page: 'child' }` to the include without changing the parent's maps. Each target selects its action and descriptor from its own path before inheritance. `/_head?action=meta` still selects `handler()`; use `/_head/action/meta` to select `meta()`. Inherited query data does not get appended to the target's URL.
 
+Object `next` without `params.route` keeps the caller's route fields and inherited path/query data. Its action-cache key follows the selected target: `{ controller: 'article' }` uses `/article`, and `{ controller: 'article', action: 'edit' }` uses `/article/action/edit`. These entries are shared across parent requests. If the output depends on inherited values, put those values in a string `next` target's pathname or leave the target action uncached.
+
 ```js
 // The article controller does its thing, then hands off execution to the _layout controller
 export const handler = async (params, request, response, context) => {
@@ -1681,7 +1683,11 @@ When you cache controller actions, their context is also cached. Setting a cooki
 
 Requested actions and explicit `next`/include targets use their own pathname as the action-cache key. `/article?id=1`, `/article?id=2`, and `/article` share `/article`. Query strings do not vary keys or bypass caching.
 
-Clear an action entry using its target pathname. Inherited parent parameters do not vary that key. Put values that distinguish cached output into the target pathname, or leave that action uncached.
+Object `next` without `params.route` uses the selected controller and action instead of the retained parent pathname: `/article` for `handler()`, or `/article/action/edit` for `edit()`. Parent paths and inherited data do not vary these shared entries.
+
+Route controllers expose their action-cache key as `params.route.cacheKey`, also available as `route.cacheKey` in their views. Clear that entry with `app.cache.clear({ route: params.route.cacheKey })`.
+
+Inherited parent parameters do not vary an action's key. Put values that distinguish cached output into the target pathname, or leave that action uncached.
 
 
 #### cache.request and cache.action options
@@ -1735,7 +1741,7 @@ http://cleverna.me/article/My-Article-Title/dosattack/2
 
 http://cleverna.me/article/My-Article-Title/page/2/dosattack/3
 
-Query names are separate from `params.url`, so they do not participate in cache `urlParams` allowlists. Existing path-parameter checks, including inherited path parameters for actions and includes, are unchanged.
+Query names are separate from `params.url`, so they do not participate in cache `urlParams` allowlists. Requested actions and explicit `next`/include targets retain their path-parameter checks, including inherited path parameters. Object `next` without `params.route` has no own path inputs, so its action-cache allowlist does not check inherited values.
 
 Invalid cache URL parameters report an error through the application error handler and bypass cache insertion. With the default `capture` error policy, rendering continues. The `exit` policy retains its normal process-exit behavior.
 

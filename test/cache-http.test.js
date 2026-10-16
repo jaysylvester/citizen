@@ -516,6 +516,328 @@ test('string next preserves copied chain state on cold and action-cache requests
 })
 
 
+function prepareObjectNextFixture(root) {
+  let inspect = `
+    const inspect = params => ({
+      pathname: params.route.pathname, controller: params.route.controller, action: params.route.action,
+      descriptor: params.route.descriptor, href: params.route.parsed.href,
+      cacheKey: params.route.cacheKey, url: { ...params.url }, query: { ...params.query }
+    })
+  `
+
+  fs.writeFileSync(path.join(root, 'app/controllers/hooks/response.js'), `
+    ${inspect}
+    export const end = async params => {
+      app.chain = { original: inspect(params), links: Object.entries(params.route.chain).map(([name, link]) => ({
+        name, action: link.action, route: inspect(link.params)
+      })) }
+    }
+  `)
+  fs.writeFileSync(path.join(root, 'app/controllers/routes/objectfirst.js'), `
+    import router from 'citizen/lib/router.js'
+    ${inspect}
+    export const handler = async (params, request) => {
+      app.counts.objectFirst = (app.counts.objectFirst || 0) + 1
+      if ( request.headers['x-next-deny'] ) {
+        return { redirect: '/destination', header: { 'X-First-Calls': app.counts.objectFirst } }
+      }
+      let action = request.headers['x-next-action'] || 'handler',
+          target = '/objecttail' + (action === 'handler' ? '' : '/action/' + action),
+          next = { controller: 'objecttail', ...(request.headers['x-next-action'] ? { action } : {}) }
+      if ( request.headers['x-next-route'] ) {
+        let route = router.parseRoute(request, params.route.protocol, request.headers['x-next-route'])
+        next.params = { route, url: { ...params.url, ...route.urlParams }, query: { ...params.query, ...route.queryParams } }
+      } else if ( request.headers['x-next-string'] ) {
+        next = target
+      } else if ( request.headers['x-next-empty-params'] ) {
+        next.params = {}
+      }
+      return {
+        local: { calls: app.counts.objectFirst, route: inspect(params) }, next,
+        ...(request.headers['x-cache-first'] ? { cache: { action: { lifespan: 'application', urlParams: ['id', 'action'] } } } : {})
+      }
+    }
+    export const edit = handler
+  `)
+  fs.writeFileSync(path.join(root, 'app/controllers/routes/objecttail.js'), `
+    ${inspect}
+    const shorthandCache = Object.freeze({ action: true }),
+          longhandCache = Object.freeze({ action: Object.freeze({
+            lifespan: 'application', resetOnAccess: false, urlParams: Object.freeze([])
+          }) })
+    const run = (params, request, invoked) => {
+      app.counts.objectTail = (app.counts.objectTail || 0) + 1
+      let local = { calls: app.counts.objectTail, invoked, route: inspect(params),
+                    parentKey: params.route.chain.objectfirst?.params.route.cacheKey },
+          cacheDirective = request.headers['x-cache-shorthand'] ? shorthandCache
+            : request.headers['x-cache-frozen'] ? longhandCache
+            : { action: { lifespan: 'application', urlParams: request.headers['x-tail-allow'] ? ['action', 'id'] : [] } }
+      if ( request.headers['x-next-mutate'] ) {
+        params.route.cacheKey = '/changed-target'
+        params.route.chain.objectfirst.params.route.cacheKey = '/changed-parent'
+        params.route.parsed.searchParams.set('source', 'changed')
+        params.query.source = 'changed'
+      }
+      return {
+        local,
+        ...(request.headers['x-cache-tail'] ? { cache: cacheDirective } : {})
+      }
+    }
+    export const handler = async (params, request) => run(params, request, 'handler')
+    export const show = async (params, request) => run(params, request, 'show')
+    export const options = async () => ({ local: { shorthand: shorthandCache, longhand: longhandCache } })
+  `)
+  fs.writeFileSync(path.join(root, 'app/views/objectfirst.html'), 'first:${local.calls}:${route.cacheKey}')
+  fs.writeFileSync(path.join(root, 'app/views/objecttail.html'), 'tail:${local.calls}:${local.invoked}:${route.cacheKey}|${{route.chain.objectfirst?.output || ""}}')
+}
+
+
+test('HTTP cached object next actions preserve parent access checks', { timeout: 10000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare: prepareObjectNextFixture }),
+      pathname = '/objectfirst/id/5',
+      headers = { 'x-cache-tail': 'yes', 'x-tail-allow': 'yes' },
+      cold = await request(server.port, pathname + '?source=cold', headers),
+      denied = await request(server.port, pathname + '?source=denied', { ...headers, 'x-next-deny': 'yes' }),
+      warm = await request(server.port, pathname + '?source=warm', headers),
+      state = await server.snapshot()
+
+  assert.equal(cold.status, 200)
+  assert.equal(denied.status, 302)
+  assert.equal(denied.headers.location, '/destination')
+  assert.equal(denied.headers['x-first-calls'], '2')
+  assert.equal(warm.status, 200)
+  let coldBody = JSON.parse(cold.body), warmBody = JSON.parse(warm.body)
+
+  assert.equal(warmBody.objectfirst.calls, 3)
+  assert.equal(warmBody.objectfirst.route.query.source, 'warm')
+  assert.deepEqual(warmBody.objecttail, coldBody.objecttail)
+  assert.equal(state.counts.objectTail, 1)
+  assert.ok(state.entries['/objecttail'])
+  assert.equal(state.entries[pathname], undefined)
+  assert.equal(state.errorReports, 0)
+})
+
+
+test('HTTP object next captures distinct action-cache keys without changing inherited routes', { timeout: 15000 }, async context => {
+  let server = await fixture(context, 'capture', false, { prepare: prepareObjectNextFixture })
+
+  for ( let mode of ['none', 'first', 'tail', 'both'] ) {
+    await context.test(mode + ' cached', async () => {
+      for ( let accept of ['application/json', 'text/html'] ) {
+        for ( let action of ['handler', 'show'] ) {
+          let pathname = '/objectfirst/descriptor/id/' + mode + '-' + action + '/action/edit',
+              target = '/objecttail' + (action === 'handler' ? '' : '/action/' + action),
+              headers = { accept, 'x-next-action': action,
+                ...(['first', 'both'].includes(mode) ? { 'x-cache-first': 'yes' } : {}),
+                ...(['tail', 'both'].includes(mode) ? { 'x-cache-tail': 'yes' } : {}) },
+              before = await server.snapshot({ scope: 'routes' }),
+              cold = await request(server.port, pathname + '?source=cold&action=ignored', headers),
+              warm = await request(server.port, pathname + '?source=warm&action=ignored', headers),
+              state = await server.snapshot(),
+              firstCached = ['first', 'both'].includes(mode),
+              tailCached = ['tail', 'both'].includes(mode),
+              parentRoute = { pathname, controller: 'objectfirst', action: 'edit', descriptor: 'descriptor',
+                href: server.url + pathname + '?source=warm&action=ignored',
+                url: { objectfirst: 'descriptor', id: mode + '-' + action, action: 'edit' },
+                query: { source: 'warm', action: 'ignored' } }
+
+          assert.equal(cold.status, 200, cold.body)
+          assert.equal(warm.status, 200, warm.body)
+          assert.equal(state.counts.objectFirst - (before.counts.objectFirst || 0), firstCached ? 1 : 2)
+          assert.equal(state.counts.objectTail - (before.counts.objectTail || 0), tailCached ? 1 : 2)
+          assert.equal(Boolean(state.entries[pathname]?.[accept]), firstCached)
+          assert.equal(Boolean(state.entries[target]?.[accept]), tailCached)
+          assert.deepEqual(state.chain.original, parentRoute)
+          assert.deepEqual(state.chain.links.map(link => [link.name, link.action]), [['objectfirst', 'edit'], ['objecttail', action]])
+          assert.deepEqual(state.chain.links[0].route, { ...parentRoute, cacheKey: pathname })
+          assert.deepEqual(state.chain.links[1].route, { ...parentRoute, cacheKey: target })
+          if ( accept === 'application/json' ) {
+            let body = JSON.parse(cold.body)
+
+            assert.deepEqual(Object.keys(JSON.parse(warm.body)), ['objectfirst', 'objecttail'])
+            assert.equal(body.objecttail.invoked, action)
+            assert.equal(body.objecttail.route.action, 'edit')
+            assert.equal(body.objecttail.route.cacheKey, target)
+            assert.equal(body.objecttail.parentKey, pathname)
+          } else {
+            assert.ok(cold.body.includes(':' + action + ':' + target + '|first:'))
+            assert.ok(warm.body.includes(':' + action + ':' + target + '|first:'))
+          }
+          assert.equal(state.errorReports, 0)
+        }
+      }
+    })
+  }
+
+  await context.test('shorthand defaults and frozen longhand settings survive without changing source directives', async () => {
+    for ( let kind of ['shorthand', 'frozen'] ) {
+      await server.snapshot({ scope: 'routes' })
+      let headers = { 'x-cache-tail': 'yes', ['x-cache-' + kind]: 'yes' },
+          cold = await request(server.port, '/objectfirst/id/5?source=cold', headers),
+          warm = await request(server.port, '/objectfirst/id/6?source=warm', headers),
+          state = await server.snapshot(),
+          source = await request(server.port, '/objecttail/action/options')
+
+      assert.equal(cold.status, 200, cold.body)
+      assert.equal(warm.status, 200, warm.body)
+      assert.deepEqual(JSON.parse(warm.body).objecttail, JSON.parse(cold.body).objecttail)
+      assert.deepEqual(state.entries['/objecttail']['application/json'], {
+        lifespan: kind === 'shorthand' ? 5 * 60000 : 'application',
+        resetOnAccess: kind === 'shorthand', timer: kind === 'shorthand'
+      })
+      assert.equal(state.entries['/objectfirst/id/5'], undefined)
+      assert.equal(state.entries['/objectfirst/id/6'], undefined)
+      assert.equal(source.status, 200, source.body)
+      assert.deepEqual(JSON.parse(source.body).objecttail, {
+        shorthand: { action: true },
+        longhand: { action: { lifespan: 'application', resetOnAccess: false, urlParams: [] } }
+      })
+      assert.equal(state.errorReports, 0)
+    }
+  })
+
+  await context.test('explicit object routes and string next keep their target pathname keys', async () => {
+    let target = '/objecttail/action/show/id/7?source=target',
+        headers = { 'x-cache-tail': 'yes', 'x-tail-allow': 'yes', 'x-next-route': target },
+        cold = await request(server.port, '/objectfirst/id/5?source=parent', headers),
+        warm = await request(server.port, '/objectfirst/id/6?source=other', headers),
+        state = await server.snapshot(),
+        tail = JSON.parse(cold.body).objecttail
+
+    assert.equal(cold.status, 200, cold.body)
+    assert.equal(warm.status, 200, warm.body)
+    assert.deepEqual(JSON.parse(warm.body).objecttail, tail)
+    assert.equal(tail.invoked, 'show')
+    assert.equal(tail.route.pathname, '/objecttail/action/show/id/7')
+    assert.equal(tail.route.cacheKey, tail.route.pathname)
+    assert.equal(tail.route.href, server.url + target)
+    assert.deepEqual(tail.route.url, { id: '7', action: 'show' })
+    assert.deepEqual(tail.route.query, { source: 'target' })
+    assert.ok(state.entries[tail.route.pathname])
+
+    await server.snapshot({ scope: 'routes' })
+    let shared
+
+    for ( let string of [false, true] ) {
+      let response = await request(server.port, '/objectfirst', { 'x-cache-tail': 'yes', ...(string ? { 'x-next-string': 'yes' } : {}) }),
+          state = await server.snapshot()
+
+      assert.equal(response.status, 200, response.body)
+      assert.ok(state.entries['/objecttail'])
+      let local = JSON.parse(response.body).objecttail
+
+      assert.equal(local.invoked, 'handler')
+      assert.equal(local.route.cacheKey, '/objecttail')
+      assert.equal(state.chain.links[1].route.pathname, string ? '/objecttail' : '/objectfirst')
+      if ( string ) {
+        assert.deepEqual(local, shared)
+      } else {
+        shared = local
+      }
+    }
+  })
+
+  await context.test('route-less targets have empty own inputs while explicit targets retain allowlist checks', async () => {
+    await server.snapshot({ scope: 'routes' })
+    let response = await request(server.port, '/objectfirst/id/5/unlisted/1?source=parent', {
+          'x-cache-tail': 'yes', 'x-next-empty-params': 'yes'
+        }),
+        state = await server.snapshot()
+
+    assert.equal(response.status, 200, response.body)
+    assert.deepEqual(JSON.parse(response.body).objecttail.route.url, { id: '5', unlisted: '1' })
+    assert.ok(state.entries['/objecttail'])
+    assert.equal(state.errorReports, 0)
+    await server.snapshot({ scope: 'routes' })
+    response = await request(server.port, '/objectfirst/id/5', {
+      'x-cache-tail': 'yes', 'x-next-route': '/objecttail/id/7'
+    })
+    state = await server.snapshot()
+    assert.equal(response.status, 200, response.body)
+    assert.equal(state.entries['/objecttail/id/7'], undefined)
+    assert.equal(state.errorReports, 1)
+  })
+
+  await context.test('query-bearing request and action caches retain independent keys and exact clearing', async () => {
+    let before = await server.snapshot({ scope: 'routes' }),
+        pathname = '/objectfirst/id/5/action/edit',
+        headers = { 'x-cache-first': 'yes', 'x-cache-tail': 'yes', 'x-fixture-cache-request': 'yes' },
+        cold = await request(server.port, pathname + '?source=cold&action=ignored', headers),
+        stored = await server.snapshot(),
+        hit = await request(server.port, pathname + '?source=hit', headers),
+        state = await server.snapshot()
+
+    assert.equal(cold.status, 200, cold.body)
+    assert.equal(hit.body, cold.body)
+    assert.deepEqual(Object.keys(stored.entries).sort(), [pathname, '/objecttail', server.url + pathname].sort())
+    assert.equal(state.counts.objectFirst, stored.counts.objectFirst)
+    assert.equal(state.counts.objectTail, stored.counts.objectTail)
+    state = await server.snapshot({ route: '/objecttail', contentType: 'application/json' })
+    assert.equal(state.entries['/objecttail'], undefined)
+    assert.deepEqual(state.stored[pathname], stored.stored[pathname])
+    assert.deepEqual(state.stored[server.url + pathname], stored.stored[server.url + pathname])
+    await server.snapshot({ route: server.url + pathname })
+
+    let refill = await request(server.port, pathname + '?source=refill', headers),
+        refillBody = JSON.parse(refill.body),
+        refilled = await server.snapshot()
+
+    assert.equal(refill.status, 200, refill.body)
+    assert.deepEqual(refillBody.objectfirst, JSON.parse(cold.body).objectfirst)
+    assert.equal(refillBody.objecttail.route.cacheKey, '/objecttail')
+    assert.equal(refillBody.objecttail.parentKey, pathname)
+    assert.deepEqual(refillBody.objecttail.route.query, { source: 'refill' })
+    assert.equal(refilled.counts.objectFirst, stored.counts.objectFirst)
+    assert.equal(refilled.counts.objectTail, stored.counts.objectTail + 1)
+    state = await server.snapshot({ route: pathname })
+    assert.equal(state.entries[pathname], undefined)
+    assert.deepEqual(state.stored['/objecttail'], refilled.stored['/objecttail'])
+    assert.ok(state.entries[server.url + pathname])
+    await server.snapshot({ route: server.url + pathname })
+
+    let otherPath = '/objectfirst/id/6/action/edit',
+        shared = await request(server.port, otherPath + '?source=other', headers)
+
+    state = await server.snapshot()
+    assert.equal(shared.status, 200, shared.body)
+    assert.equal(JSON.parse(shared.body).objectfirst.route.url.id, '6')
+    assert.deepEqual(JSON.parse(shared.body).objecttail, refillBody.objecttail)
+    assert.deepEqual(state.stored['/objecttail'], refilled.stored['/objecttail'])
+    assert.equal(state.chain.original.href, server.url + otherPath + '?source=other')
+    assert.equal(state.chain.links[0].route.cacheKey, otherPath)
+    assert.equal(state.chain.links[1].route.cacheKey, '/objecttail')
+    assert.equal(state.errorReports, before.errorReports)
+  })
+
+  await context.test('controller parameter mutations do not change captured keys or another link', async () => {
+    await server.snapshot({ scope: 'routes' })
+    let pathname = '/objectfirst/id/9',
+        headers = { 'x-cache-first': 'yes', 'x-cache-tail': 'yes', 'x-next-mutate': 'yes', 'x-fixture-cache-request': 'yes' },
+        cold = await request(server.port, pathname + '?source=original', headers),
+        stored = await server.snapshot()
+
+    assert.equal(cold.status, 200, cold.body)
+    assert.deepEqual(Object.keys(stored.entries).sort(), [pathname, '/objecttail', server.url + pathname].sort())
+    assert.equal(stored.chain.original.href, server.url + pathname + '?source=original')
+    assert.deepEqual(stored.chain.original.query, { source: 'original' })
+    assert.equal(stored.chain.links[0].route.cacheKey, pathname)
+    assert.equal(stored.chain.links[1].route.cacheKey, '/changed-target')
+    await server.snapshot({ route: server.url + pathname })
+
+    let hit = await request(server.port, pathname + '?source=warm', headers),
+        state = await server.snapshot()
+
+    assert.equal(hit.body, cold.body)
+    assert.equal(state.counts.objectFirst, stored.counts.objectFirst)
+    assert.equal(state.counts.objectTail, stored.counts.objectTail)
+    assert.deepEqual(state.stored['/objecttail'], stored.stored['/objecttail'])
+    assert.equal(state.chain.original.href, server.url + pathname + '?source=warm')
+    assert.equal(state.chain.links[0].route.cacheKey, pathname)
+    assert.equal(state.chain.links[1].route.cacheKey, '/objecttail')
+  })
+})
+
+
 test('forced content types update headers while preserving explicit header ordering', { timeout: 15000 }, async context => {
   let server = await fixture(context, 'capture', false, { sessions: true, prepare(root) {
     let force = `
@@ -1351,7 +1673,7 @@ function prepareQueryFixture(root) {
 
 test('HTTP query data stays separate from routing and survives hooks, views, includes, and next', { timeout: 15000 }, async context => {
   let server = await fixture(context, 'capture', false, { prepare: prepareQueryFixture }),
-      route = '/qcallback/id/path?code=a%2Fb&state=two+words&id=query&name=' + encodeURIComponent('<b>query marker</b>'),
+      route = '/qcallback/id/path?code=a%2Fb&%63ode=ignored&state=two+words&id=query&name=' + encodeURIComponent('<b>query marker</b>'),
       result = JSON.parse((await request(server.port, route)).body).qcallback,
       html = await request(server.port, route, { accept: 'text/html' })
 
@@ -1433,7 +1755,7 @@ test('HTTP includes and string next inherit query maps while sharing path cache 
     let response = JSON.parse((await request(server.port, '/qparent?source=' + source)).body).qparent.include.piece
     assert.deepEqual(response, first)
   }
-  let target = '/_qhead/action/meta/section/path?section=child&action=ignored',
+  let target = '/_qhead/action/meta/section/path?section=child&section=ignored&action=ignored',
       parent = JSON.parse((await request(server.port, '/qparent/section/parent?section=original', { 'x-target': target })).body).qparent
   assert.equal(parent.include.piece.action, 'meta')
   assert.deepEqual(parent.include.piece.url, { section: 'path', action: 'meta' })
@@ -1442,7 +1764,7 @@ test('HTTP includes and string next inherit query maps while sharing path cache 
   assert.ok((await server.snapshot()).entries['/_qhead/action/meta/section/path'])
   let explicit = JSON.parse((await request(server.port, '/qparent', { 'x-target': '/_qhead?source=explicit' })).body).qparent.include.piece
   assert.deepEqual(explicit, first)
-  let json = JSON.parse((await request(server.port, '/qchain/page/1?source=first', { 'x-target': '/_qtail/action/meta?page=2&action=ignored' })).body)
+  let json = JSON.parse((await request(server.port, '/qchain/page/1?source=first&source=ignored', { 'x-target': '/_qtail/action/meta?page=2&page=ignored&action=ignored' })).body)
   assert.equal(json._qtail.action, 'meta')
   assert.deepEqual(json._qtail.url, { page: '1', action: 'meta' })
   assert.deepEqual(json._qtail.query, { source: 'first', page: '2', action: 'ignored' })

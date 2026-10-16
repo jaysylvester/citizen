@@ -1,7 +1,7 @@
 # Object `next` action-cache identity
 
 Target release: **2.0** (see [todo #14](../todo.md)).
-Status: **Approved; implementation pending.** Bug; reproduced; predates query
+Status: **Complete.** Bug; reproduced; predates query
 parsing ([todo #8](../done/url-query-params.md)).
 
 Moved out of the query plan (pre-split step 5, findings R7 and S1) on
@@ -69,7 +69,7 @@ invokes, and leave its `params.route` unchanged.
 
 Derive the key from the controller and action actually selected by the `next`
 directive, before the directive is cleared. `next: { controller: 'second' }`
-uses `/second`; an explicit action uses `/second/action/<action>`. An inherited
+uses `/second`; an explicit non-default action uses `/second/action/<action>`. An inherited
 `params.url.action` or the retained `params.route.action` must not change that
 selection. Default action and view selection are unchanged.
 
@@ -94,11 +94,11 @@ target route, or no action caching.
 
 Todo #8 exposes query data separately as `params.query`; query names affect
 neither cache keys nor allowlists. The existing pathname-based action caching
-is unchanged. No action-cache metadata helper or exposed `actionCacheKey` is
+is unchanged. No action-cache metadata helper or exposed `cacheKey` is
 implemented by #8.
 
 This repair owns capturing its derived key on the chain link for shared lookup
-and insertion, exposing that key as `params.route.actionCacheKey`, and any
+and insertion, exposing that key as `params.route.cacheKey`, and any
 necessary own-parameter eligibility handoff for route-less object `next`.
 Do not derive the key again from the retained public route. Explicit routes
 retain their own pathname identity. Keep inherited query data available through
@@ -118,7 +118,7 @@ for query parsing. There is no need to prewire this repair into #8.
   output parity with string `next`.
 - Assert distinct lookup and insertion keys, invocation counts, no replay loop,
   and unchanged public route fields for route-less object `next`.
-- After todo #8, add query-bearing input and check `actionCacheKey` and exact
+- After todo #8, add query-bearing input and check `cacheKey` and exact
   targeted clearing, without mutating another chain link or the original full
   URL.
 
@@ -145,3 +145,34 @@ Removed #8's prewired metadata handoff after the maintainer selected separate
 query data and unchanged action caching. This repair will introduce its own
 key capture and public key when implemented; queries remain outside identity
 and eligibility in either landing order.
+
+## Implementation — 2026-10-10
+
+`fireController()` captures the action-cache route and input scope before
+clearing `next`. Route-less targets derive the key from the selected controller
+and action and use an empty own-input map; requested actions and explicit
+routes retain their pathname keys and existing path eligibility checks.
+The controller's `context.cache.action` retains this metadata as `route` and
+`pathParams` for insertion after rendering. Shorthand `action: true` expands
+to an options object, while longhand settings are preserved. Normalization
+copies the returned context and cache options so source directives stay intact.
+
+Each route controller receives `params.route.cacheKey` in its copied
+parameters. Its existing route fields and inherited data remain intact, and
+mutating this public field or a copied earlier link does not change the
+captured insertion identity or the original request route. Includes retain
+their existing pathname keys and allowlist behavior.
+
+HTTP regressions cover both collision directions, including a cached next
+action skipping its parent's access redirect before the repair. They exercise
+uncached/first/next/both cache combinations in HTML and JSON, default and named
+actions despite inherited action parameters, explicit object routes, string
+target reuse, an object with no `params.route`, query-independent request and
+action entries, exact clearing, shared entries across parent paths,
+controller-parameter mutation isolation, shorthand defaults, and frozen
+longhand/source directive preservation.
+
+Validation: **164 tests pass** on Node.js **24.13.1**, with no failures or
+skips. ESLint passes for the changed runtime and test files, and
+`git diff --check` passes. The access-check regression failed before the
+repair with HTTP 200 instead of the parent's expected 302 redirect.
