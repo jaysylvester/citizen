@@ -24,7 +24,7 @@ todo (2.0):
      implemented and review corrections applied; 118 tests pass on Node.js
      24.13.1, with 115 passing and 3 unsupported-syntax skips on Node.js 22.0.0
 
-3. Option to send production logs to stdout
+3. Option to send logs to stdout/stderr
 
 4. Cluster support that maintains citizen cache, session scope, etc.
 
