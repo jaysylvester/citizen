@@ -276,6 +276,7 @@ citizen begins with the following config, which `citizen.config.js` extends:
     },
     errors             : 'capture',
     logs: {
+      destination      : 'file',
       access           : false, // performance-intensive, opt-in only
       error: {
         client         : true, // 400 errors
@@ -368,10 +369,11 @@ Paths in `citizen.directories`, other than the bootstrap-owned `citizen.director
 | `citizen.cache.static.resetOnAccess` | Boolean | `true` | Extends static cache lifetime when an item is read. |
 | `citizen.cors` | Object or false | unset | Optional application-wide CORS headers. Controller/action objects merge with this baseline; `false` disables it for a route. |
 | `citizen.errors` | String | `capture` | `capture` attempts recovery; `exit` terminates after an error. |
-| `citizen.logs.access` | Boolean | `false` | Enables access logging. |
-| `citizen.logs.debug` | Boolean | `false` | Writes debug logs to a file. |
-| `citizen.logs.error.client` | Boolean | `true` | Writes 4xx errors to the error log. |
-| `citizen.logs.error.server` | Boolean | `true` | Writes 5xx errors to the error log. |
+| `citizen.logs.destination` | String | `file` | Sends enabled log categories to files (`file`) or stdout/stderr (`stdio`). |
+| `citizen.logs.access` | Boolean | `false` | Enables access logging to the configured destination. |
+| `citizen.logs.debug` | Boolean | `false` | Enables debug logging to the configured destination. |
+| `citizen.logs.error.client` | Boolean | `true` | Logs 4xx errors to the configured destination. |
+| `citizen.logs.error.server` | Boolean | `true` | Logs 5xx errors to the configured destination. |
 | `citizen.logs.maxFileSize` | Number | `10000` | Rotates log files at this size in KB; `0` disables rotation. |
 | `citizen.logs.watcher.interval` | Number | `60000` | Log watcher polling interval in milliseconds. |
 | `citizen.development.debug.depth` | Number | `4` | Object inspection depth for debug output. |
@@ -2276,29 +2278,48 @@ citizen's `log()` function is exposed for use in your app via `app.log()`.
 
 ### log(options)
 
-Makes it easy to log comments to either the console or a file (or both) in a way that's dependent on the mode of the framework.
+Logs to the console, a file, or both, according to the framework mode, configured categories, and per-call options.
 
-When citizen is in production mode, `log()` does nothing by default. In development mode, `log()` will log whatever you pass to it. This means you can place it throughout your application's code and it will only write to the log in development mode. You can override this behavior globally with the log settings in your config file or inline with the `console` or `file` options when calling `log()`.
+Calls without a `type` use `debug`, which is disabled by default in production. Client and server error logging are enabled by default. In development, every call also produces console output. Enable categories with `citizen.logs.access`, `citizen.logs.debug`, and `citizen.logs.error.client` / `server`.
+
+`citizen.logs.destination` defaults to `'file'`: enabled access records go to `access.log`, and enabled error and debug records go to `error.log`. Set it to `'stdio'` to send enabled access/debug records to stdout and client/server errors to stderr instead:
+
+```js
+// citizen.config.js
+export default {
+  citizen: {
+    logs: {
+      destination: 'stdio',
+      access: true,
+      error: { client: true, server: true },
+      debug: false
+    }
+  }
+}
+```
+
+Stdio output preserves labels, timestamps, dividers, and object inspection without adding ANSI colors; escape sequences supplied by the application are preserved. Development output and `console: true` use the same streams and emit each record once, even when its category is also enabled. Explicit console records with `type: 'error'` also use stderr; other custom types use stdout. With the default file destination, console output keeps its existing formatting and stdout behavior.
+
+Configuration-loading and module-import messages are emitted before the logger is initialized and keep their existing output independently of this setting.
 
 ```js
 app.log({
-  // Optional. Valid settings are "status" (default) or "error".
-  type: 'status',
+  // Optional. Categories are "debug" (default), "access",
+  // "error:client", and "error:server".
+  type: 'debug',
 
   // Optional string. Applies a label to your log item.
   label: 'Log output',
 
   // The content of your log. If it's anything other than a string or
   // number, log() will run util.inspect on it and dump the contents.
-  contents: someObject,
+  content: someObject,
 
-  // Optional. Enables console logs.
+  // Optional. Forces console output, including in production.
   console: true,
 
-  // Optional. Enables file logging.
-  file: false,
-
-  // Optional. File name you'd like to write your log to.
+  // Optional. Forces a file write, even with destination: 'stdio'.
+  // Use true for the default filename, or a nonempty string for a custom name.
   file: 'my-log-file.log',
 
   // Optional. Disables the timestamp that normally appears in front of the log
@@ -2306,7 +2327,11 @@ app.log({
 })
 ```
 
-Log files appear in the directory exposed as `app.config.citizen.directories.logs`.
+An explicit filename selects the file for that record; `file: true` forces a write to `access.log` for access records and `error.log` for all other types. Neither suppresses console output or an enabled stdio category. Custom types such as `status` and `error` have no category switch, so use `console` or `file` to enable them in production. `console: false` and `file: false` do not disable output selected by development mode or category settings.
+
+During `app.start()`, citizen attempts to check or create `app.config.citizen.directories.logs` before calling the application's `start` hook, even when all categories are disabled. With the `file` destination, preparation failures, including a path that is a regular file, stop startup with exit code 1. With `stdio`, they produce a warning on stderr and startup continues without log rotation. Successful preparation makes the directory available for subsequent explicit file writes.
+
+After successful directory preparation, rotation remains controlled by `citizen.logs.maxFileSize` for both destinations; set it to `0` to disable rotation. Logging calls do not create directories themselves. An explicit file write is still attempted after a startup warning; if it fails, the logger reports the error to stderr and drops that record's file output without terminating the application.
 
 
 ## Debugging

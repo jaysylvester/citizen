@@ -27,6 +27,11 @@
 
 ## Enhancements and fixes
 
+* `citizen.logs.destination: 'stdio'` sends enabled access/debug records to stdout and client/server errors to stderr, without adding ANSI colors or duplicating development/console output; file logging remains the default and explicit filenames still select file writes
+* Startup attempts to prepare the logs directory regardless of destination or enabled categories; failures now exit with code 1 for the file destination, including paths that are regular files, while stdio warns and continues without rotation
+* After successful directory preparation, rotation remains controlled by `citizen.logs.maxFileSize`; file-write failures are reported to stderr without terminating the application
+* `app.log({ file: true })` writes to the type's default log file instead of a file named `true`
+* Log rotation skips files that disappear before inspection and reports other stat failures to stderr instead of crashing
 * URL copies preserve their URL fields and repeated search parameters through controllers, includes, and views, with independent mutable state
 * String-form `next` preserves copied controller-chain state in the next controller's parameters and view context
 * Object-form `next` without an explicit route caches under the selected controller/action key, preventing parent-key collisions, replay loops, and skipped parent directives; entries are shared across parent requests, and route controllers expose their key as `params.route.cacheKey`

@@ -122,6 +122,7 @@ test('defaults use the conventional project layout', () => {
 
   assert.equal(defaults.citizen.mode, 'production')
   assert.equal(defaults.citizen.http.port, 80)
+  assert.equal(defaults.citizen.logs.destination, 'file')
   assert.equal(defaults.citizen.development.watcher.interval, 100)
   assert.equal(defaults.citizen.directories.app, path.join(root, 'app'))
   assert.equal(defaults.citizen.directories.web, path.join(root, 'web'))
@@ -172,6 +173,21 @@ test('unsupported resolved modes fall back to production', () => {
       config = resolve({ citizen: { mode: 'test' } }, { appPath: path.join(root, 'app') })
 
   assert.equal(config.citizen.mode, 'production')
+})
+
+
+test('log destinations accept file and stdio and reject unsupported values', () => {
+  for ( let destination of ['file', 'stdio'] ) {
+    let config = resolve({ citizen: { logs: { destination } } })
+
+    assert.equal(config.citizen.logs.destination, destination)
+    assert.equal(config.citizen.logs.error.server, true)
+  }
+  for ( let destination of ['stdout', 'both', '', null, false, 0, [], {}] ) {
+    assert.throws(() => resolve({ citizen: { logs: { destination } } }), {
+      name: 'TypeError', message: 'citizen.logs.destination must be "file" or "stdio".'
+    })
+  }
 })
 
 

@@ -25,6 +25,16 @@ todo (2.0):
      24.13.1, with 115 passing and 3 unsupported-syntax skips on Node.js 22.0.0
 
 3. Option to send logs to stdout/stderr
+  - Complete: `citizen.logs.destination: 'stdio'` routes enabled access/debug
+     records to stdout and errors to stderr; file logging remains the default
+  - Startup attempts to prepare the logs directory for explicit file writes;
+     failures are fatal for file logging, while stdio warns and continues
+     without rotation; successful preparation retains `maxFileSize` rotation
+  - `file: true` forces the type's default filename instead of a file named `true`
+  - Rotation handles failed stats without crashing; vanished files are skipped
+     and other stat failures are reported to stderr
+  - Logger, public API, startup, and HTTP regression coverage added;
+     all 190 tests pass on Node.js 24.13.1, including full HTTP validation
 
 4. Cluster support that maintains citizen cache, session scope, etc.
 
@@ -101,6 +111,15 @@ todo (2.0):
 16. Public session API to allow updating open sessions outside the controller chain
   - Ending a session by key/value already exists (is the current method optimal?), so identifying a session and manipulating its contents based on the same mechanism is possible
   - Pass in object containing session variables to merge, just like the controller session directive
+
+17. First-class streaming responses, built-in SSE, and UTF-8 JSON request bodies
+   — plan: open/streaming-support.md
+  - Scope agreed: generic streams and built-in SSE ship together, including
+     framing, serialization, heartbeats, retry fields, and reconnect ID access
+  - API details remain draft: controller stream returns, hook headers,
+     backpressure, cancellation, safe errors, and exactly-once completion
+  - Reuse existing controller/action payload limits; repair JSON decoding and
+     byte-limit enforcement, including chunked requests
 
 Consider (weigh pros/cons):
 

@@ -92,6 +92,7 @@ function getDefaults(options = {}) {
     },
     errors: 'capture',
     logs: {
+      destination: 'file',
       access: false, // performance-intensive, opt-in only
       error: {
         client: true, // 400 errors
@@ -216,6 +217,9 @@ function resolve(projectConfig = {}, options = {}) {
 
   if ( !modes.has(config.citizen.mode) ) {
     config.citizen.mode = 'production'
+  }
+  if ( config.citizen.logs.destination !== 'file' && config.citizen.logs.destination !== 'stdio' ) {
+    throw new TypeError('citizen.logs.destination must be "file" or "stdio".')
   }
   config.citizen.directories.app = app
   Object.keys(config.citizen.directories).forEach( directory => {
