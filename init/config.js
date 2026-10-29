@@ -64,6 +64,13 @@ function getDefaults(options = {}) {
       controller: '',
       view: ''
     },
+    streaming: {
+      enabled: false,
+      sse: {
+        heartbeat: 15000,
+        retry: false
+      }
+    },
     // Allowable response content types
     contentTypes: [
       'text/html',

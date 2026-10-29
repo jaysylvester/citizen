@@ -249,6 +249,13 @@ citizen begins with the following config, which `citizen.config.js` extends:
       controller       : '',
       view             : ''
     },
+    streaming: {
+      enabled          : false,
+      sse: {
+        heartbeat      : 15000,
+        retry          : false
+      }
+    },
     contentTypes       : [
                           'text/html',
                           'text/plain',
@@ -355,6 +362,9 @@ Paths in `citizen.directories`, other than the bootstrap-owned `citizen.director
 | `citizen.sessions.lifespan` | Number | `20` | Session lifetime in minutes. |
 | `citizen.layout.controller` | String | `''` | Default layout controller. |
 | `citizen.layout.view` | String | `''` | Default layout view. |
+| `citizen.streaming.enabled` | Boolean | `false` | Enables managed streaming. |
+| `citizen.streaming.sse.heartbeat` | Number or false | `15000` | Idle SSE heartbeat interval in milliseconds; `false` disables heartbeats. |
+| `citizen.streaming.sse.retry` | Number or false | `false` | Initial SSE reconnect interval in milliseconds; `false` omits the directive. |
 | `citizen.contentTypes` | Array | HTML, text, JSON, JavaScript | Response formats allowed during content negotiation. |
 | `citizen.forms.enabled` | Boolean | `true` | Enables citizen's request payload parsing. |
 | `citizen.forms.maxPayloadSize` | Number | `524288` | Maximum parsed payload size in bytes. |
@@ -368,7 +378,7 @@ Paths in `citizen.directories`, other than the bootstrap-owned `citizen.director
 | `citizen.cache.static.lifespan` | Number | `15` | Static cache lifetime in minutes. |
 | `citizen.cache.static.resetOnAccess` | Boolean | `true` | Extends static cache lifetime when an item is read. |
 | `citizen.cors` | Object or false | unset | Optional application-wide CORS headers. Controller/action objects merge with this baseline; `false` disables it for a route. |
-| `citizen.errors` | String | `capture` | `capture` attempts recovery; `exit` terminates after an error. |
+| `citizen.errors` | String | `capture` | `capture` attempts recovery; `exit` terminates on application errors (500–599). |
 | `citizen.logs.destination` | String | `file` | Sends enabled log categories to files (`file`) or stdout/stderr (`stdio`). |
 | `citizen.logs.access` | Boolean | `false` | Enables access logging to the configured destination. |
 | `citizen.logs.debug` | Boolean | `false` | Enables debug logging to the configured destination. |
@@ -920,6 +930,380 @@ response.end(JSON.stringify({ message: 'Hello' }))
 
 
 
+## Streaming responses
+
+Enable streaming application-wide or on the entry controller or action, then
+return a Node Readable or async iterable. Citizen applies accumulated hook/action
+headers, cookies, session changes, and redirects before taking ownership of the response. It
+handles backpressure, cancellation, source cleanup, and completion hooks.
+
+```js
+// app/controllers/routes/export.js
+import { open } from 'node:fs/promises'
+
+export const config = {
+  controller: { streaming: { enabled: true }, contentTypes: ['text/csv'] }
+}
+
+export const handler = async (params, request) => {
+  // Authorize and prepare the export before returning its stream.
+  const filename = await app.models.exports.prepare(params, { signal: request.signal })
+  const file = await open(filename)
+  return {
+    header: { 'Content-Disposition': 'attachment; filename="export.csv"' },
+    stream: file.createReadStream()
+  }
+}
+```
+
+`{ stream: source }` and returning `source` directly are equivalent. Raw sources
+yield strings (UTF-8), Buffers, or Uint8Arrays; objects are not serialized. Web
+ReadableStreams work through their async-iterator interface. Strings, arrays,
+and Buffers are chunks, not sources. Raw mode also supports already-encoded SSE,
+NDJSON, and binary downloads without another format adapter.
+
+### Server-sent events
+
+Use the SSE descriptor to let Citizen encode event records and manage keepalive
+comments. A dual-format action can branch on the negotiated type:
+
+```js
+export const config = {
+  handler: {
+    streaming: { enabled: true },
+    contentTypes: ['application/json', 'text/event-stream']
+  }
+}
+
+export const handler = async (params, request, response) => {
+  if ( response.contentType === undefined ) {
+    return {} // Citizen returns 406; avoid unnecessary upstream work.
+  }
+  const job = await app.models.jobs.prepare(params.url.id, {
+    session: params.session,
+    signal: request.signal
+  })
+  if ( response.contentType === 'application/json' ) {
+    return { local: await job.snapshot() }
+  }
+  return {
+    stream: {
+      format: 'sse',
+      source: job.events({ signal: request.signal, after: request.lastEventId }),
+      heartbeat: 15000,
+      retry: 3000
+    }
+  }
+}
+```
+
+The model's `events()` yields records such as
+`{ event: 'progress', id: '42', data: { completed: 75 } }`. Supported fields:
+
+| Field | Value and behavior |
+| --- | --- |
+| `data` | Strings pass through; other JSON-compatible values use `JSON.stringify()`. Multiline and empty strings are supported. |
+| `event` | Optional event name; a string without CR/LF. |
+| `id` | Optional opaque string without CR/LF/NUL. An empty string clears the reconnect ID. |
+| `retry` | Nonnegative safe-integer reconnect interval in milliseconds, including zero. |
+| `comment` | String, including multiline text; does not dispatch an event. |
+
+A record must contain at least one supported field. Unknown fields, explicit
+undefined data, circular values, and non-string serialization results are errors.
+A descriptor's optional `serialize(value)` replaces data serialization and must
+return a string. Comment-only, ID-only, and retry-only records are valid controls.
+
+SSE descriptors inherit `heartbeat` and `retry` from `streaming.sse`, resolved
+per field from application, controller, and action settings. Explicit descriptor
+values take precedence. These options do not affect raw streams.
+
+The `heartbeat` default is 15000 milliseconds; use `false` to disable it or a
+positive integer up to 2147483647 to change it. Citizen sends an idle comment
+while awaiting the next event, with one outstanding source read and no queued
+heartbeat backlog under backpressure. A nonnegative integer `retry` writes an
+initial retry control. Its default, `false`, omits that control and leaves the
+client's retry setting alone. A descriptor can use `retry: false` to override a
+configured interval; this does not disable automatic reconnection. Event records
+can still update the retry interval with a nonnegative integer.
+
+`request.lastEventId` is a decoded UTF-8 string, null when absent, and `''` when
+explicitly empty. Malformed UTF-8 on a declared endpoint returns 400; undeclared
+endpoints expose null without validating this header. Treat IDs as untrusted
+input. The application owns replay, authorization, event names, and any final
+completion event. Citizen does not store events or append a magic EOF record.
+
+Native EventSource uses GET and normally reconnects after EOF. Close it on an
+application completion event, or return HTTP 204 on a subsequent request to stop
+reconnection:
+
+```js
+const events = new EventSource('/jobs/id/42')
+events.addEventListener('progress', event => {
+  console.log(JSON.parse(event.data))
+})
+events.addEventListener('stream-error', event => {
+  console.error(JSON.parse(event.data))
+  events.close()
+})
+events.addEventListener('complete', () => events.close())
+```
+
+To report an application failure to the client, yield a record such as
+`{ event: 'stream-error', data: { message: error.message } }` and return. Use a
+distinct name to distinguish it from EventSource's transport `error` event, and
+close EventSource on this terminal record. Throwing after headers are committed
+instead destroys the connection; EventSource normally reconnects and receives no
+application error record. A caught failure delivered as an event finishes
+normally (`response.completion === 'finished'`) and does not invoke Citizen's
+application error hook, so log handled failures in the application as needed.
+
+To stop without creating a source, a declared action sets
+`response.statusCode = 204` and returns `{ view: false }`. SSE bodies require 200;
+SSE descriptors allow only 200 or 204. Raw streams retain ordinary HTTP statuses.
+On declared endpoints, 204/205/304 bypass includes, chaining, layouts, encoding,
+and format validation. HEAD and bodyless responses never pull returned sources.
+
+POST/fetch works too, with explicit `Accept: text/event-stream`. Fetch requires
+an SSE parser and an application reconnect policy; network chunks are not event
+boundaries. Check status and Content-Type before decoding an error, because a
+proxy may return an HTML error page:
+
+```js
+const response = await fetch('/jobs/id/42', {
+  method: 'POST',
+  headers: { Accept: 'text/event-stream', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message: 'Hello, 世界' }),
+  signal: abortController.signal
+})
+const type = response.headers.get('content-type') || ''
+if ( !response.ok ) {
+  const error = type.includes('application/json')
+    ? await response.json() : await response.text()
+  throw new Error(JSON.stringify(error))
+}
+if ( !type.startsWith('text/event-stream') ) {
+  throw new Error('Expected an event stream')
+}
+// Feed response.body through your SSE parser, decoding UTF-8 incrementally.
+```
+
+#### Token streaming
+
+An LLM token stream uses the same SSE contract. In this POST/fetch example,
+the application's `chat.stream()` model wraps its SDK, forwards `signal` to the
+SDK request, and returns an async iterable of text chunks. Adapt the SDK's
+chunk format in that model; Citizen needs no provider-specific integration.
+
+```js
+// app/controllers/routes/chat.js
+export const config = {
+  controller: { streaming: { enabled: true }, contentTypes: ['text/event-stream'] }
+}
+
+export const handler = async (params, request, response) => {
+  if ( response.contentType === undefined ) {
+    return {}
+  }
+  const tokens = await app.models.chat.stream(params.payload, { signal: request.signal })
+  return {
+    stream: {
+      format: 'sse',
+      source: (async function* () {
+        try {
+          for await ( const text of tokens ) {
+            yield { data: text }
+          }
+        } catch (error) {
+          if ( request.signal.aborted ) {
+            throw error
+          }
+          yield { event: 'stream-error', data: { message: error.message } }
+          return
+        }
+        yield { event: 'complete', data: {} }
+      })()
+    }
+  }
+}
+```
+
+Send JSON to `/chat` with `Accept: text/event-stream`, using the fetch pattern
+above. Setup errors occur before handoff and use Citizen's normal error response;
+the generator handles failures during token delivery. The model must honor the
+signal and release its SDK resources when iteration ends or is cancelled.
+
+#### Event emitters and callbacks
+
+For an EventEmitter producer, Node's
+[`events.on()`](https://nodejs.org/docs/latest-v22.x/api/events.html#eventsonemitter-eventname-options)
+provides an async iterator. Inside your source generator, iterate
+`on(producer, 'progress', { signal: request.signal, close: ['end'] })` and map
+each `[data]` argument array to `{ event: 'progress', data }`. Subscribe before
+starting emission, and stop request-owned producers when cancelled; removing
+listeners alone does not stop their work. Callback APIs can instead feed an
+object-mode [Readable](https://nodejs.org/docs/latest-v22.x/api/stream.html#readablepushchunk-encoding)
+used as the SSE source. Keep the adapter's queue bounded:
+`events.on()` watermarks require a producer with `pause()`/`resume()`, and a
+Readable producer must honor `push()` returning false. Citizen's response
+backpressure cannot automatically slow an independent push producer.
+
+### Streaming lifecycle and limits
+
+`streaming` is a configuration object. Its `enabled` property resolves from
+`config[action].streaming`, then `config.controller.streaming`, then the
+application default `citizen.streaming` (`enabled: false`). To enable it
+throughout an application:
+
+```js
+// citizen.config.js
+export default {
+  citizen: { streaming: { enabled: true } }
+}
+```
+
+A controller or action can opt out with `streaming: { enabled: false }`.
+Partial settings inherit omitted fields, so configuring `sse` alone does not
+change whether streaming is enabled. Enabling streaming allows both streamed
+and buffered returns; it does not force a streamed response.
+Streaming settings are checked at dispatch, including selected include/next
+targets, before cache lookup or source consumption. Each target
+resolves against the application default, without inheriting a preceding
+controller's declaration. A merged `params.config.citizen.streaming` is
+informational for later actions. Only enabled entry requests receive
+`request.signal` before hooks, for forwarding to fetch, database calls, and
+producers.
+
+A stream must come from the entry action. Streams from includes, later actions,
+or undeclared endpoints are disposed and rejected with 500. Explicit stream
+combinations with `include`, `next`, rendered views, cache directives, or refresh
+redirects are also 500s. `view: false` and `local` hook metadata are allowed.
+Inherited rendering directives are ignored at stream handoff. Server redirects
+win before consuming the source, including managed direct requests.
+
+Declared entry requests bypass Citizen's request/action caches, including their
+buffered fallbacks and nested work. Declared include/next actions bypass their
+own action caches. Returning an explicit cache directive from any declared
+action is an error. With `citizen.streaming.enabled: true`, these rules apply to
+every dynamic endpoint unless it opts out. Static assets are unaffected. This does not
+disable proxy/CDN caches.
+
+Complete fallible setup before returning a source. Citizen flushes headers
+before the first iterator pull; even a first-pull failure therefore occurs after
+HTTP commit. Before commit, errors retain message/stack diagnostics in the
+appropriate buffered format, with JSON used for unresolved or stream-only types.
+After commit, Citizen reports genuine errors, aborts work, and destroys the
+response without rendering another body. Manual response writers retain their
+existing responsibilities; do not write, flush, or end a managed response yourself.
+
+On disconnect or failure, Citizen aborts the signal and destroys a Readable or
+requests iterator `return()` without waiting indefinitely. Producers must honor
+the signal and release resources in `finally`; arbitrary application promises
+cannot be forcibly interrupted. Expected disconnect cancellation does not invoke
+the application error hook or exit. An unrelated late bug remains an error.
+
+Managed `response.end` hooks run once after finish, cancellation, or failure and
+can inspect `response.completion` (`finished`, `cancelled`, or `failed`) and
+`request.signal.aborted`. The property is null before completion. Cancelled and
+failed responses do not produce success access logs. On undeclared endpoints,
+errors after headers are sent close the response without running the
+`response.end` hook; other buffered/manual hook timing is retained.
+Node's finish/close events concern its immediate peer;
+behind a proxy they do not acknowledge browser consumption. Open streams do not
+extend sessions; applications must revalidate continued authorization as needed.
+
+Managed streams default `Cache-Control: no-store` and `X-Accel-Buffering: no` only
+when absent. They add no ETag and bypass Citizen compression even when forced.
+Explicit non-identity Content-Encoding and Transfer-Encoding are rejected;
+Node owns HTTP framing. Raw streams can specify a nonnegative safe-integer
+Content-Length, which is checked against UTF-8 byte counts. SSE rejects it.
+Citizen sets SSE Content-Type to `text/event-stream; charset=utf-8`; a descriptor
+must agree with the selected or explicitly forced representation and headers.
+
+### Content negotiation
+
+All dynamic endpoints negotiate against their effective global/controller/action
+`contentTypes`. Entries are bare media types, without parameters or wildcards;
+listing a type does not add a buffered renderer. Citizen selects before hooks
+and actions, preserving the configured spelling in `response.contentType`.
+
+Each offered type uses its most specific matching Accept range to determine its
+quality. Quality zero excludes it even when a broader wildcard allows it.
+Candidates rank by quality, range specificity (exact, `type/*`, `*/*`), client
+order, then configured order. Missing, empty, or whitespace-only Accept values
+and unrestricted `*/*` select the first offered type.
+Axios's `application/json, text/plain, */*` still selects
+JSON with the default list. Put JSON first for a finite dual-format default.
+
+Matching ignores case and non-quality parameters; parameter-based variants are
+not supported. The matcher accepts qvalues from 0 to 1 with up to three decimals,
+including `1.000` and the compatibility extension `.5`. Malformed ranges/weights
+are skipped. No match leaves the type undefined until an application override;
+an unresolved outcome becomes 406. Redirects and supported bodyless responses
+retain their own handling. A buffered return requiring an unavailable renderer
+is 500. Existing explicit `response.contentType` overrides remain available.
+
+For the unchanged default offered list, `*/*` now selects HTML instead of plain
+text. JSON-only endpoints default to JSON. Explicit fetch/curl Accept headers
+avoid depending on defaults: `curl -N -H 'Accept: text/event-stream' URL`.
+
+### Streaming behind Nginx
+
+Use this location inside the deployment's existing HTTP(S) server block, adjusting
+the route, upstream, timeout, and upload ceiling:
+
+```nginx
+location = /events {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_set_header Forwarded "for=$remote_addr;host=$http_host;proto=$scheme;";
+
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_intercept_errors off;
+    proxy_ignore_client_abort off;
+    gzip off;
+
+    proxy_read_timeout 60s;
+    proxy_request_buffering on;
+    client_max_body_size 2m;
+}
+```
+
+An HTTP/2 TLS frontend can use HTTP/1.1 upstream. Preserve external host/protocol
+information for cookies, redirects, and CORS. WebSocket upgrade headers and
+application-supplied chunked encoding are unnecessary.
+
+Response buffering can hold events. Citizen's X-Accel header is a hint that
+Nginx normally consumes; an application override or proxy configuration can
+change its effect. Other gateways have different controls. Compression is
+optional, but verify decoded events arrive before EOF if enabling it. The tested
+Nginx configuration held events with gzip plus buffering and delivered them
+incrementally with buffering disabled.
+
+Choose the read timeout for upstream inactivity, including controller setup.
+Heartbeats start after handoff and cannot cover slow setup, a blocked connection,
+proxy buffering, or absolute client/gateway deadlines. Raw streams get no
+synthetic heartbeat bytes. Keep disconnect propagation enabled so Citizen can
+cancel upstream work. Error interception can replace its JSON diagnostics.
+
+Disable proxy caching for the **whole dual-format location**, including JSON:
+a previously cached snapshot can hide an SSE request before Citizen runs.
+Citizen does not automatically add `Vary: Accept`; applications supplying it must
+preserve other Vary values and review their cache policy.
+
+Request buffering may remain on for JSON uploads and is independent of response
+streaming. It can delay Citizen's hooks until an upload completes. Coordinate
+proxy limits with endpoint `forms.maxPayloadSize`; `2m` above is an example,
+not a Citizen default. Citizen's overflow closes its upstream connection after
+sending 413; it cannot reclaim a body already buffered by a proxy or require a
+browser's HTTP/2 connection to close. Proxy-generated 413/504 responses may be HTML.
+
+See the [Nginx proxy directives](https://nginx.org/en/docs/http/ngx_http_proxy_module.html)
+and [streaming test instructions](docs/testing-streaming.md) for deployment validation.
+
+&nbsp;
+
 ## Helpers
 
 Helpers are optional utility modules and their structure is completely up to you. They're stored in `app.helpers` for your convenience. You can also import them manually into your controllers and models if you prefer.
@@ -998,7 +1382,7 @@ The app skeleton created by the [scaffold utility](#scaffold) includes optional 
 
 ### Capture vs. Exit
 
-citizen's default error handling method is `capture`, which attempts graceful recovery. If you'd prefer to exit the process after an error, set `citizen.errors` to `exit`.
+citizen's default error handling method is `capture`, which attempts graceful recovery. To exit the process on an application error (HTTP 500–599), set `citizen.errors` to `exit`. Client errors (4xx) never exit or invoke the application error hook, including when an error explicitly requests `result: 'exit'`.
 
 ```js
 // citizen.config.js
@@ -1127,6 +1511,8 @@ All cookies set by citizen start with the `ctzn_` prefix to avoid collisions. Do
 
 #### Proxy Header
 
+For long-lived responses, also see [Streaming behind Nginx](#streaming-behind-nginx).
+
 If you use citizen behind a proxy, such as NGINX or Apache, make sure you have an HTTP `Forwarded` header in your server configuration so citizen's handling of secure cookies works correctly.
 
 Here's an example of how you might set this up in NGINX:
@@ -1205,6 +1591,8 @@ Using the Location header breaks (in my opinion) the Referer header because the 
 If you haven't enabled sessions, citizen falls back to creating a cookie named `ctzn_referer` instead.
 
 #### Proxy Header
+
+For long-lived responses, also see [Streaming behind Nginx](#streaming-behind-nginx).
 
 If you use citizen behind a proxy, such as NGINX or Apache, make sure you have an HTTP `Forwarded` header in your server configuration so `ctzn_referer` works correctly.
 
@@ -1902,6 +2290,28 @@ If you have [request caching](#caching-requests-and-controller-actions) enabled,
 
 ## Forms
 
+JSON request bodies are decoded as UTF-8, including `application/json` with a
+UTF-8 charset parameter. `request.payload` contains the decoded JSON text;
+`params.payload` contains its parsed value. Malformed JSON or UTF-8 returns 400,
+and an unsupported JSON charset returns 415. URL-encoded and multipart parsing
+retain their existing representations, including binary file bytes.
+
+`forms.maxPayloadSize` is a positive safe integer measured in bytes. Bodies
+exactly at the limit and chunked uploads are accepted; overflow returns 413 and
+closes the connection after flushing the error. A bodyless DELETE needs no
+Content-Length. Reuse controller/action configuration for a larger endpoint
+limit without changing the global form limit:
+
+```js
+export const config = {
+  continue: { forms: { maxPayloadSize: 2097152 } }
+}
+```
+
+Rejected bodies do not run the controller or request-end hook. Proxy upload
+limits and buffering are independent; see [Streaming behind Nginx](#streaming-behind-nginx).
+
+
 citizen includes basic request payload parsing. When a user submits a form, the parsed form data is available in your controller via `params.form`. If you want to use a third-party package to parse the form data yourself, you can disable form parsing in the config and access the raw payload via `request.payload`.
 
 ```js
@@ -2070,6 +2480,8 @@ For more details on CORS, check out [the W3C spec](http://www.w3.org/TR/cors/) a
 
 
 ### Proxy Header
+
+For long-lived responses, also see [Streaming behind Nginx](#streaming-behind-nginx).
 
 If you use citizen behind a proxy, such as NGINX or Apache, make sure you have a `Forwarded` header in your server configuration so citizen handles CORS requests correctly. Different protocols (HTTPS on your load balancer and HTTP in your citizen app) will cause CORS requests to fail without these headers.
 

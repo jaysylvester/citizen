@@ -388,7 +388,62 @@ export const error = async (params, request, response, context, err) => {
 
 The application start hook receives only `config`: `start(config)`.
 
-## 10. Verify
+## 10. Review negotiation, bodies, errors, and streaming
+
+Dynamic responses now negotiate against the effective endpoint `contentTypes`.
+With the default list, `Accept: */*` selects HTML instead of plain text. Missing,
+empty, or whitespace-only Accept also uses the endpoint's first configured type,
+so JSON-only actions naturally return JSON. Quality weights, specificity, and client order preserve
+explicit preferences such as Axios's JSON-first default. An unavailable preferred
+type can fall back to an acceptable offered type; no match becomes 406 unless
+application code forces a supported type. Wildcards do not override explicit
+quality-zero exclusions. Use bare configured media types; non-q Accept parameters
+are ignored and parameter-based variants remain unsupported.
+
+Audit fetch/curl clients that relied on the old plain-text fallback and send an
+explicit Accept header where appropriate. A selected stream-only type requires
+a stream, a supported bodyless response, or an explicit buffered format override;
+an ordinary object does not implicitly become SSE or JSON.
+
+JSON bodies now use strict UTF-8. Remove ASCII-escaping/latin1 workarounds and
+send `application/json` with no charset or UTF-8. Malformed JSON/UTF-8 returns 400;
+unsupported charsets return 415. Payload limits count bytes, accept an exact fit
+and chunked uploads, and reject overflow with 413 before closing the connection.
+Existing controller/action `forms.maxPayloadSize` overrides can increase a gateway
+limit without loosening other endpoints.
+
+`errors: 'exit'` exits only for application errors (500–599); 4xx remains nonfatal
+and does not invoke the application error hook. JSON errors now include a body
+without a layout, retaining their message/stack diagnostics. Unresolved and
+stream-only formats use JSON errors before commit. Error disclosure policy has
+not been changed. Errors after commit terminate the response without re-rendering.
+
+To adopt managed streaming, set `citizen.streaming.enabled: true` application-wide
+or declare `streaming: { enabled: true }` in controller/action config, and return
+a source instead of writing directly. Action settings override controller settings, which override
+the application default (`enabled: false`); use `streaming: { enabled: false }`
+to opt out. Use the SSE descriptor for event records and remove application SSE
+framing/heartbeat timers when adopting it. Forward `request.signal` to upstream
+work and release producer resources on
+cancellation. Keep fallible authorization/setup before returning the source:
+headers flush before the first pull. Managed streams cannot be returned from
+includes/later actions or combined with rendering/cache directives. Declared
+entry endpoints also bypass Citizen caches for buffered fallbacks. Enabling the
+application default applies that lifecycle and cache bypass to every dynamic
+endpoint unless it opts out; controllers may still return buffered responses.
+SSE heartbeat and initial retry defaults live in `streaming.sse`, with controller,
+action, and descriptor overrides. The defaults are `heartbeat: 15000` and
+`retry: false` (no initial retry directive); raw streams ignore both options.
+
+Review proxy buffering/compression, cache policy for every dual-format branch,
+read timeouts, disconnect propagation, error interception, and upload ceilings.
+Request buffering does not need to be disabled merely to stream responses.
+Citizen's buffering header is a hint; verify incremental delivery through your
+actual deployment. See [Streaming responses](README.md#streaming-responses),
+[Streaming behind Nginx](README.md#streaming-behind-nginx), and the
+[acceptance test commands](docs/testing-streaming.md).
+
+## 11. Verify
 
 Confirm that no active JSON configuration or startup citizen settings remain:
 

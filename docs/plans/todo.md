@@ -113,13 +113,17 @@ todo (2.0):
   - Pass in object containing session variables to merge, just like the controller session directive
 
 17. First-class streaming responses, built-in SSE, and UTF-8 JSON request bodies
-   — plan: open/streaming-support.md
-  - Scope agreed: generic streams and built-in SSE ship together, including
-     framing, serialization, heartbeats, retry fields, and reconnect ID access
-  - API details remain draft: controller stream returns, hook headers,
-     backpressure, cancellation, safe errors, and exactly-once completion
-  - Reuse existing controller/action payload limits; repair JSON decoding and
-     byte-limit enforcement, including chunked requests
+   — plan: done/streaming-support.md
+  - Complete: raw/SSE returns, framing, heartbeat/retry/ID support, prepared
+     handoff, backpressure, scoped cancellation, and exactly-once managed completion
+  - Shared negotiation, 5xx-only exit, diagnostic JSON errors with stacks, and
+     UTF-8 byte-limited bodies implemented; controller/action limit overrides retained
+  - README, migration/changelog, hook comments, Nginx recipe, and acceptance
+     commands updated; no automatic Vary or broader lifecycle/policy rewrite
+  - Node 24.13.1: 253 passed, 2 optional integration skips. Node 22.0.0:
+     250 passed, 5 skips including 3 existing unsupported-syntax cases
+  - Managed Nginx HTTP/1.1/TLS HTTP/2 matrix passed; native Chrome EventSource
+     and fetch contract passed directly and through Nginx
 
 Consider (weigh pros/cons):
 
@@ -232,3 +236,21 @@ requirements are selected separately from the implementation tasks above.
    - Evaluate separately from the repaired custom file-key replacement and
       existing lookup/clear behavior
     — notes: open/cache-correctness.md#2-make-cacheexists-total-for-valid-lookup-shapes
+
+22. Automatic `Vary: Accept` for negotiated responses
+   - Caching correctness: intermediaries need to distinguish cacheable
+      representations selected by Accept at the same URL
+   - Define response coverage and merging with existing Vary fields separately
+      from #17's streaming and negotiation implementation
+   - Local Nginx probe reproduced cached JSON reaching an SSE request without
+      Vary; disable proxy caching for dual-format streaming routes in #17's recipe
+    — notes: done/streaming-support.md#separate-work-not-streaming-prerequisites
+
+23. Separate citizen and app config
+   - citizen.config.js
+   - app.config.js
+   - Get rid of nested citizen object in citizen config
+
+24. Config validation
+   - The coding agent keeps trying to add one-off config validations as we make changes. We should validate the entire config in one shot at app startup.
+   - Review all code for any redundant config checks and remove them

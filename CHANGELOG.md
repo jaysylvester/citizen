@@ -12,8 +12,15 @@
 * Application-wide CORS can be configured as a baseline and extended, overridden, or disabled by controller/action config
 * Development watcher polling options pass through to Chokidar for Docker and network-filesystem use
 
+## Streaming support
+
+Controllers can return raw streams or server-sent events (SSE), with built-in backpressure, cancellation, and heartbeats.
+
 ## Breaking changes
 
+* `Accept: */*` now selects the first configured type (HTML by default); unmatched types return 406 unless overridden
+* Buffered output for a type without a renderer now returns 500
+* Unsupported controller return values now produce 500
 * Node.js 22 or newer is required
 * The default `templateLiterals` engine HTML-escapes ordinary `${…}` output; trusted markup expressions and controller-chain output require `${{…}}`. Direct top-level include references remain raw, and include values remain strings
 * Adjacent `${{` and `}}` now delimit raw expressions; use `${ {a: 1} }` for ordinary object interpolation. Shared plain-text views accept raw markers without HTML escaping
@@ -27,6 +34,10 @@
 
 ## Enhancements and fixes
 
+* `errors: 'exit'` now applies only to 5xx errors
+* JSON/JSONP errors render without a layout, preserving messages and stacks
+* Errors after headers are sent no longer attempt a second response
+* Fixed UTF-8 JSON parsing and byte-based payload limits, including chunked uploads
 * `citizen.logs.destination: 'stdio'` sends enabled access/debug records to stdout and client/server errors to stderr, without adding ANSI colors or duplicating development/console output; file logging remains the default and explicit filenames still select file writes
 * Startup attempts to prepare the logs directory regardless of destination or enabled categories; failures now exit with code 1 for the file destination, including paths that are regular files, while stdio warns and continues without rotation
 * After successful directory preparation, rotation remains controlled by `citizen.logs.maxFileSize`; file-write failures are reported to stderr without terminating the application

@@ -810,3 +810,15 @@ test('global CORS merges, overrides, and disables through a scaffolded server', 
     }
   }
 })
+
+test('project streaming options merge defaults', () => {
+  let defaults = { enabled: false, sse: { heartbeat: 15000, retry: false } }
+  assert.deepEqual(resolve().citizen.streaming, defaults)
+  assert.deepEqual(resolve({ citizen: { streaming: {} } }).citizen.streaming, defaults)
+  for ( let enabled of [true, false] ) {
+    assert.deepEqual(resolve({ citizen: { streaming: { enabled, sse: { retry: 0 } } } }).citizen.streaming,
+      { enabled, sse: { heartbeat: 15000, retry: 0 } })
+  }
+  assert.deepEqual(resolve({ citizen: { streaming: { sse: { heartbeat: false, retry: false } } } }).citizen.streaming,
+    { enabled: false, sse: { heartbeat: false, retry: false } })
+})

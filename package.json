@@ -54,7 +54,9 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "test:proxy": "node --test test/proxy-http.test.js",
+    "test:browser": "node --test test/browser-stream.test.js"
   },
   "license": "MIT"
 }
