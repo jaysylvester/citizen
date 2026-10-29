@@ -1442,6 +1442,8 @@ export const edit = async (params) => {
 }
 ```
 
+The view is rendered and stored with the controller action's cached output, so a cached action serves whichever view it rendered on the first request. If your controller chooses between views based on anything other than the citizen path, put that value in the path, use a separate action for each view, or leave the action uncached. See [Caching Requests and Controller Actions](#caching-requests-and-controller-actions).
+
 
 ### Cookies
 
